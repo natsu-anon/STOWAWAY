@@ -4,6 +4,8 @@ Thanks for the free network.
 ### INSTALL NODE.JS
 [choose the LTS (current version 14.15.4 LTS)](https://nodejs.org/en/)
 
+### Discord Bot
+Make your own [discord bot](https://discord.com/developers/docs/intro#bots-and-apps), then save its token (NOT client secret) to a file named token (make sure its copy pasted properly)
 
 ## END-TO-END ENCRYPTION LAYER FOR DISCORD VIA BOTS.  THINK ABOUT IT.
 - [PGP FAQ](http://www.pgp.net/pgpnet/pgp-faq/pgp-faq.html)
