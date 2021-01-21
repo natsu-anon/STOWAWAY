@@ -20,7 +20,14 @@ npm install nedb --save
 ```
 npm install discord.js // no voice support
 ```
-- [blessed](https://github.com/chjj/blessed)curses-like library for node.js
+- [blessed](https://github.com/chjj/blessed) curses-like library for node.js
+```
+npm install blessed
+```
+- [nexe](https://github.com/nexe/nexe) compile node.js app to a single executable file
+```
+npm i nexe -g
+```
 
 ### NOTA BENE
 - lmao hash discord snowflakes -- don't use channel/user ids when querying about people via comms
