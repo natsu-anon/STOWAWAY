@@ -1,0 +1,7 @@
+0. HASH FINGERPRINTS -- THAT'S YOUR ZK SNARK
+1. you can serialize the armored keys just fine & then you can use openpgp.key.readArmored to reconstruct the key objects from public & private armored keys
+2. if you want to be able to read your own message you have to pass your own public key
+3. keys resultant from revocation have matching fingerprints -- use this to facilitate key revocation p2p
+	i.e. if a new public key offered CONTAINS the proper revoked key with a good fingerprint automagically UPDATE that shit fam
+	- NOTA BENE: supply the revoked private key bruh
+4. Public keys get too big (because of signatures) you'll have to send them as files
