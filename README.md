@@ -7,6 +7,11 @@ Thanks for the free network.
 ### Discord Bot
 Make your own [discord bot](https://discord.com/developers/docs/intro#bots-and-apps), then save its token (NOT client secret) to a file named token (make sure its copy pasted properly)
 
+## REFERENCES
+- [Regular Expressions in javasvcript](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions)
+- [discord.js docs](https://discord.js.org/#/docs/main/stable/general/welcome)
+- [nedb api](https://github.com/louischatriot/nedb/#api)
+
 ## END-TO-END ENCRYPTION LAYER FOR DISCORD VIA BOTS.  THINK ABOUT IT.
 - [PGP FAQ](http://www.pgp.net/pgpnet/pgp-faq/pgp-faq.html)
 - use node to run filthy javascript -- sorry, Terry.
