@@ -5,7 +5,7 @@ Thanks for the free network.
 [choose the LTS (current version 14.15.4 LTS)](https://nodejs.org/en/)
 
 
-## END-TO-END LAYER FOR DISCORD VIA BOTS.  THINK ABOUT IT.
+## END-TO-END ENCRYPTION LAYER FOR DISCORD VIA BOTS.  THINK ABOUT IT.
 - [PGP FAQ](http://www.pgp.net/pgpnet/pgp-faq/pgp-faq.html)
 - use node to run filthy javascript -- sorry, Terry.
 - [OpenPGP.js](https://github.com/openpgpjs/openpgpjs) for encryption
