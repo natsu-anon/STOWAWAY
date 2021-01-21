@@ -31,6 +31,7 @@ npm i nexe -g
 
 ### NOTA BENE
 - lmao hash discord snowflakes -- don't use channel/user ids when querying about people via comms
+
 __vim development__
 - use `! your-command` to run commands from within vim
 - use `! start your-command` to do it ASYNCHRONOUSLY (opens up a new terminal)
