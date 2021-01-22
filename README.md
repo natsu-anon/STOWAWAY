@@ -44,6 +44,7 @@ npm i pkg -g
 ```
 
 ### NOTA BENE
+- use `cmd` to run `pkg` -- powershell won't allow it & command prompt is simpler than powershell's changing execution policy.
 - lmao hash discord snowflakes -- don't use channel/user ids when querying about people via comms
 
 __vim development__
