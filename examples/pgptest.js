@@ -15,6 +15,8 @@ async function test () {
 		userIds: [{ name: 'John Doe'}],
 		curve: 'curve25519',
 	});
+	console.log(`${pka}`);
+	console.log(r2);
 	console.log(`
 fingerprint: ${key.getFingerprint()}
 userIds: ${key.getUserIds()}
