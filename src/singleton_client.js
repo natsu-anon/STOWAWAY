@@ -1,5 +1,11 @@
+// this is probably an awful idea, I'll delete it later
 function prepare (client) {
-	// TODO hook into 'guildCreate',emitted whenever the client joins a guild
+	/* TODO hook into 'guildCreate',emitted whenever the client joins a guild
+	whenever bot joins a guild:
+	1. fetch all members
+	2. loop over all of them
+	3. if a member is a bot: send start handshake over DM
+	*/
 	// TODO hook into 'message', emitted whenever a message is created
 	return client;
 }
