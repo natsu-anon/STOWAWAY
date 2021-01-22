@@ -1,5 +1,18 @@
-const Database = require('./database.js');
+const fs = require('fs');
+const openpgp = require('openpgp');
+console.log(fs.readFileSync('./banner.txt', 'utf8'));
+console.log("(C) 2021 WTFPL - Do What the Fuck You Want to Public License\n");
 
-const db = Database.Init()
-.then(() => { console.log("\n#### DONE! ####"); })
-.catch((err) => { console.error(err); })
+function prepClient (client) {
+	// set up client event listeners here
+	return client;
+}
+
+require('./database.js').Init(openpgp)
+	.then((db) => { return require('./client.js').Login(fs, db, prepClient); })
+	.then(({database: db, client: cli}) =>  {
+		// continue on with application now that you have ready database, logged in prepped client, and openpgp.
+		console.log(`logged in as: ${cli.user.username}`);
+		console.log("LAUNCH BLESSED");
+	})
+	.catch((err) => { console.error(err); });
