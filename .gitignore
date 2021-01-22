@@ -4,6 +4,9 @@ token*
 # local database
 data.db
 
+# windows binaries
+*.exe
+
 # Logs
 logs
 *.log
