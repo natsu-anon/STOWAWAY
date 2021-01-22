@@ -1,6 +1,9 @@
 # discord bot token
 token
 
+# local database
+data.db
+
 # Logs
 logs
 *.log
