@@ -1,6 +1,11 @@
 # STOWAWAY
 Thanks for the free network.
 
+how to run javascript in a console:
+1. open up a console in repository folder
+2. run `node .\path\to\source_file_you_want.js`
+3. simple as
+
 ### INSTALL NODE.JS
 [choose the LTS (current version 14.15.4 LTS)](https://nodejs.org/en/)
 
@@ -10,7 +15,9 @@ Make your own [discord bot](https://discord.com/developers/docs/intro#bots-and-a
 ## REFERENCES
 - [Regular Expressions in javasvcript](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions)
 - [discord.js docs](https://discord.js.org/#/docs/main/stable/general/welcome)
+- [OpenPGP.js documentations](https://openpgpjs.org/openpgpjs/doc/)
 - [nedb api](https://github.com/louischatriot/nedb/#api)
+- [blessed api](https://github.com/chjj/blessed#documentation)
 
 ## END-TO-END ENCRYPTION LAYER FOR DISCORD VIA BOTS.  THINK ABOUT IT.
 - [PGP FAQ](http://www.pgp.net/pgpnet/pgp-faq/pgp-faq.html)
