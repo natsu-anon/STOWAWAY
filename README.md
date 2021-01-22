@@ -38,9 +38,9 @@ npm install discord.js // no voice support
 ```
 npm install blessed
 ```
-- [nexe](https://github.com/nexe/nexe) compile node.js app to a single executable file
+- [pkg](https://github.com/vercel/pkg) compile node.js app to a single executable file
 ```
-npm i nexe -g
+npm i pkg -g
 ```
 
 ### NOTA BENE
