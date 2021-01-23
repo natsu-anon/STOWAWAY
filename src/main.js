@@ -1,4 +1,5 @@
 const fs = require('fs');
+const process = require('process');
 const openpgp = require('openpgp');
 const blessed = require('blessed');
 
