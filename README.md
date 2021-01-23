@@ -35,6 +35,7 @@ npm install nedb --save
 npm install discord.js // no voice support
 ```
 - [blessed](https://github.com/chjj/blessed) curses-like library for node.js
+>NOTE: Currently there is no `mouse` or `resize` event support on Windows
 ```
 npm install blessed
 ```
