@@ -4,7 +4,7 @@ function login (fs, prepClient) {
 	return new Promise((resolve, reject) => {
 		fs.readFile(tokenFile, 'utf8', (readErr, data) => {
 			if (readErr == null) {
-				client_login(data, prepClient)
+				clientLogin(data, prepClient)
 					.then((client) => {
 						resolve(client);
 					})
@@ -17,7 +17,7 @@ function login (fs, prepClient) {
 				rl.question("No token found.  Enter discord bot token:\n>", (token) => {
 					fs.writeFile(tokenFile, token, 'utf8', (writeErr) => {
 						if (wErr == null) {
-							client_login(token)
+							clientLogin(token)
 								.then((client) => {
 									resolve(client);
 								})
@@ -39,7 +39,7 @@ function login (fs, prepClient) {
 	});
 }
 
-function client_login (token, prepClient) {
+function clientLogin (token, prepClient) {
 	const discord = require('discord.js');
 	return new Promise((resolve, reject) => {
 		// NOTE don't style on loodi
