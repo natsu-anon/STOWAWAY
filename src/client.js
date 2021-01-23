@@ -1,12 +1,12 @@
 const tokenFile = './token DO NOT SHARE';
 
-function login (fs, database, prepClient) {
+function login (fs, prepClient) {
 	return new Promise((resolve, reject) => {
-		fs.readFile(tokenFile, 'utf8', (rErr, data) => {
-			if (rErr == null) {
+		fs.readFile(tokenFile, 'utf8', (readErr, data) => {
+			if (readErr == null) {
 				client_login(data, prepClient)
 					.then((client) => {
-						resolve({ database: database, client: client })
+						resolve(client);
 					})
 					.catch((err) => {
 						badtoken();
@@ -15,11 +15,11 @@ function login (fs, database, prepClient) {
 			else if (rErr.code === 'ENOENT') {
 				const rl = require('readline').createInterface({ input: process.stdin, output: process.stdout });
 				rl.question("No token found.  Enter discord bot token:\n>", (token) => {
-					fs.writeFile(tokenFile, token, 'utf8', (wErr) => {
+					fs.writeFile(tokenFile, token, 'utf8', (writeErr) => {
 						if (wErr == null) {
 							client_login(token)
 								.then((client) => {
-									resolve({database: database, client: client })
+									resolve(client);
 								})
 								.catch((err) => {
 								console.log(`"${token}"`);
@@ -27,13 +27,13 @@ function login (fs, database, prepClient) {
 								});
 						}
 						else { // failed to write to file
-							reject(wErr);
+							reject(writeErr);
 						}
 					})
 				});
 			}
 			else { // unexpected error
-				reject(rErr);
+				reject(readErr);
 			}
 		});
 	});
@@ -42,6 +42,7 @@ function login (fs, database, prepClient) {
 function client_login (token, prepClient) {
 	const discord = require('discord.js');
 	return new Promise((resolve, reject) => {
+		// NOTE don't style on loodi
 		const client = prepClient(new discord.Client());
 		client.login(token)
 			.then(() => { resolve(client); })
@@ -54,7 +55,7 @@ function badtoken() {
 }
 
 module.exports = {
-	Login : (fs, database, prepClient) => {
-		return login(fs, database, prepClient);
+	Login : (fs, prepClient) => {
+		return login(fs, prepClient);
 	}
 }
