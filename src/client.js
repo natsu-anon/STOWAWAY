@@ -41,6 +41,7 @@ function login (fs, prepClient) {
 
 function clientLogin (token, prepClient) {
 	const discord = require('discord.js');
+	console.log("attempting to login to discord with supplied token");
 	return new Promise((resolve, reject) => {
 		// NOTE don't style on loodi
 		const client = prepClient(new discord.Client());
@@ -51,7 +52,7 @@ function clientLogin (token, prepClient) {
 }
 
 function badtoken() {
-	console.error(`\x1b[31mFailed to login with token.  Check file "${tokenFile}" to make sure your token is correct\x1b[0m`);
+	console.error(`\x1b[31mFailed to login with token.  Check file "${tokenFile}" to make sure your token is correct & that you are connected to the internet\x1b[0m`);
 }
 
 module.exports = {
