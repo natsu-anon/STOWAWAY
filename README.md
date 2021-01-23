@@ -1,13 +1,13 @@
 # STOWAWAY
 Thanks for the free network.
 
+### INSTALL NODE.JS
+[choose the LTS (current version 14.15.4 LTS)](https://nodejs.org/en/)
+
 how to run javascript in a console:
 1. open up a console in repository folder
 2. run `node .\path\to\source_file_you_want.js`
 3. simple as
-
-### INSTALL NODE.JS
-[choose the LTS (current version 14.15.4 LTS)](https://nodejs.org/en/)
 
 ### Discord Bot
 Make your own [discord bot](https://discord.com/developers/docs/intro#bots-and-apps), then save its token (NOT client secret) to a file named token (make sure its copy pasted properly)
