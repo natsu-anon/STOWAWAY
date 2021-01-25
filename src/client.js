@@ -1,10 +1,10 @@
 const tokenFile = './token DO NOT SHARE';
 
-function login (fs, prepClient) {
+function login (fs, Client, prepClient) {
 	return new Promise((resolve, reject) => {
 		fs.readFile(tokenFile, 'utf8', (readErr, data) => {
 			if (readErr == null) {
-				clientLogin(data, prepClient)
+				clientLogin(data, Client, prepClient)
 					.then((client) => {
 						resolve(client);
 					})
@@ -17,7 +17,7 @@ function login (fs, prepClient) {
 				rl.question("No token found.  Enter discord bot token:\n>", (token) => {
 					fs.writeFile(tokenFile, token, 'utf8', (writeErr) => {
 						if (wErr == null) {
-							clientLogin(token)
+							clientLogin(token, Client, prepClient)
 								.then((client) => {
 									resolve(client);
 								})
@@ -39,12 +39,11 @@ function login (fs, prepClient) {
 	});
 }
 
-function clientLogin (token, prepClient) {
-	const discord = require('discord.js');
+function clientLogin (token, Client, prepClient) {
 	console.log("attempting to login to discord with supplied token");
 	return new Promise((resolve, reject) => {
 		// NOTE don't style on loodi
-		const client = prepClient(new discord.Client());
+		const client = prepClient(new Client());
 		client.login(token)
 			.then(() => { resolve(client); })
 			.catch(reject);
@@ -56,7 +55,7 @@ function badtoken() {
 }
 
 module.exports = {
-	Login : (fs, prepClient) => {
-		return login(fs, prepClient);
+	Login : (fs, Client, prepClient) => {
+		return login(fs, Client, prepClient);
 	}
 }
