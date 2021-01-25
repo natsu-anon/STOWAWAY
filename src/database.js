@@ -9,7 +9,7 @@ function init (openpgp) {
 			else if (docs == null) {
 				console.log("No existing keys found. Generating new keys.");
 				const rl = require('readline').createInterface({ input: process.stdin, output: process.stdout });
-				rl.question("Enter a name to associate with your keys:\n>", (name) => {
+				rl.question("Enter a nickname to associate with your keys:\n>", (name) => {
 					openpgp.generateKey({ userIds: [{ name: name }], curve: 'curve25519' })
 					.then((key) => {
 						db.insert({
@@ -17,19 +17,19 @@ function init (openpgp) {
 							publicKey: `${key.publicKeyArmored}`,
 							revocationCert: `${key.revocationCertificate}`
 						});
-						console.log(`generated new keys associated with name: ${name}`);
+						console.log(`generated new keys associated with nickname: ${name}`);
 						warn();
-						resolve(db);
+						resolve({key: key, database:db});
 					})
 					.catch(reject);
 				});
 			}
 			else {
 				openpgp.key.readArmored(docs.privateKey)
-				.then(({ keys: [privateKey]}) => {
-					console.log(`Found keys associated with name: ${privateKey.getUserIds()}`);
+				.then(({ keys: [key]}) => {
+					console.log(`Found keys associated with nickname: ${key.getUserIds()}`);
 					warn();
-					resolve(db);
+					resolve({key: key, database: db});
 				})
 				.catch(reject);
 			}
