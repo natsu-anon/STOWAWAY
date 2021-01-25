@@ -4,12 +4,14 @@ const https = require('https');
 const process = require('process');
 const openpgp = require('openpgp');
 const blessed = require('blessed');
-const { MessageAttachment } = require('discord.js');
+const { Client, MessageAttachment } = require('discord.js');
 
 // just JUST my shit up fam
 const ABOUT = "--about";
-const HANDSHAKE_REQUEST = "#### HANDSHAKE_0 ####";
-const HANDSHAKE_RESPONSE = "#### HANDSHAKE_1 ####";
+const ABOUT_RESPONSE = `TODO`;
+const HANDSHAKE_REGEX = /#### HANDSHAKE_0 (?<id>\d*) ####/g; // use regex.exec() to get the captring group
+const HANDSHAKE_REQUEST = "#### HANDSHAKE_0 id ####"; // must also include id of shared guild
+const HANDSHAKE_RESPONSE = "#### HANDSHAKE_1 id ####"; // must also include id regex'd from request
 const ENCRYPTED_MESSAGE = "#### STOWAWAY ####"
 const KEYFILE = "pubkey.txt";
 const MSGFILE = "pgpmsg.txt";
@@ -18,13 +20,79 @@ const MSGFILE = "pgpmsg.txt";
 console.log(fs.readFileSync('./banner.txt', 'utf8'));
 console.log("Licensed via WTFPL\n");
 
-const events = new EventEmitter();
+const clientEvents = new EventEmitter();
+/* EVENTS:
+	bad handshake - user
+	good handshake - user
+	failed decryption - channel, user, timestamp
+	decrypted message - channel, user, timestamp, decrypted content
+	plaintext message - channel, user, timestamp, content, attachments
+*/
 // subscribe to events with event.on(eventName, callback);
 // raise events with event.emit(eventName, [...args]);
 
-function prepClient (db) {
+function userHandhsake (user, guildID) {
+}
+
+function handshakeRequest (user, handshake, attachments, db, key, channel) {
+	// if you fail to  get a key from the attachments emit a "bad handshake"
+	const guildID = HANDSHAKE_REGEX.exec(handshake).groupds.id; // the id of shared guild
+	// check to see if user id already exists in db
+	// if yes just add the guildID
+	// if no follow through with entire handshake protocol
+}
+
+function prepClient ({ database: db, key: key }) {
+	/* Client events to subscribe to:
+	*  N E C E S S A R Y
+	*    guildCreate -
+	*    guildDelete -
+	*    message -
+	*
+	*  Nice to have
+	*    error - for debugging & error logging
+	*    invalidated
+	*    channelCreate
+	*    channelDelete
+	*    channelUpdate
+	*    guildBanAdd
+	*    guildBanRemove
+	*    guildMemberAdd
+	*    guildMemberRemove
+	*    guildMemberUpdate
+	*    guildUnavailable
+	*    guildUpdate
+	*    messageUpdate
+	*    presenceUpdate
+	*    userUpdate
+	*/
 	return (client) => {
+		client.on('guildCreate', (gld) => {
+			// iterate over all users
+			// if the user is a bot (1) check database to see if user id already exists
+			// if exists add guild id to entry's list of guild ids
+			// if does not exist begin handshake protocol
+		});
+		client.on('guildDelete', (gld) => {
+		});
 		client.on('message', (msg) => {
+			if (msg.content === ABOUT) {
+				msg.channel.send(ABOUT_RESPONSE);
+			}
+			else if (msg.author.id != client.user.id && HANDSHAKE_REGEX.test(msg.content) && msg.attachments != null) {
+				// handshakeResponse(msg.author, msg.content, , db, key, msg.channel);
+			}
+			else if (msg.content === ENCRYPTED_MESSAGE && msg.attachments != null) {
+				// if successful decryption
+				clientEvents.emit('decrypted message', msg.channel, msg.author, msg.createdTimestamp, decryptedContent);
+				// else
+				clientEvents.emit('failed decryption', msg.channel, msg.author, msg.createdTimestamp);
+				// initiate handshake protocol with author
+			}
+			else {
+				clientEvents.emit('plaintext message', msg.channel, msg.author, msg.createdTimestamp, msg.content, msg.attachments);
+			}
+
 			// console.log(msg.attachments);
 			console.log(msg.author.id);
 			if (msg.author.id != client.user.id) { // don't respond to yourself
@@ -80,22 +148,19 @@ function prepClient (db) {
 }
 
 require('./database.js').Init(openpgp)
-	.then((db) => {
+	.then((data) => {
 		return new Promise((resolve, reject) => {
-			require('./client.js').Login(fs, prepClient(db))
-			.then((cli) => {
-				resolve({
-					database: db,
-					client: cli
-				});
+			require('./client.js').Login(fs, Client, prepClient(data))
+			.then((client) => {
+				data.client = client
+				resolve(data);
 			})
 			.catch(reject);
 		});
 	})
-	.then(({database: db, client: cli}) =>  {
-		console.log(`logged in as: ${cli.user.tag}`);
-		console.log("LAUNCH BLESSED");
-		console.log(ENCRYPTED_MESSAGE);
+	.then(({key: key, database: db, client: client}) =>  {
+		console.log(`logged in as ${client.user.tag}`);
+		console.log(`id ${client.user.id}`);
 	})
 	.catch((err) => { console.error(err); });
 
