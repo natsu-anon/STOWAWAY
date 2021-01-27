@@ -24,10 +24,10 @@ function empty () {}
 const clientEvents = new EventEmitter();
 /* EVENTS:
 	error
-	bad handshake - user
 	handshake - user
-	no message - user, channel
-	failed decrypt - channel, user, timestamp
+	bad handshake - user
+	bad stowaway - channel, user, timestamp
+	bad decrypt - channel, user, timestamp
 	encrypted - channel, user, timestamp, decrypted content
 	plaintext - channel, user, timestamp, content, attachments
 */
@@ -41,7 +41,7 @@ function attachText (text, name) {
 function readAttached (url) {
 	return new Promise((resolve, reject) => {
 		https.get(url, (response) => {
-			response.on('data', (d) => { resolve(d.toString(); });
+			response.on('data', (d) => { resolve(d.toString()); });
 			response.on('error', (e) => { reject(e); });
 		});
 	});
@@ -92,6 +92,7 @@ function receiveHandshake (user, keyURL, db, key) {
 								handshake(channel, key, HANDSHAKE_RESPONSE);
 							});
 						}
+						clientEvents.emit('handshake', user);
 					}
 					else {
 						clientEvents.emit('bad handshake', user);
@@ -103,11 +104,24 @@ function receiveHandshake (user, keyURL, db, key) {
 	});
 }
 
+function decrypt (channel, user, timestamp, messageURL, key) {
+	readAttached(messageURL)
+	.then((message) => {
+		openpgp.message.readAmmored(message)
+		.then((res) => {
+			clientEvents.emit('encrypted', channel, user, timestamp, res.data);
+		})
+		.catch((err) => {
+			clientEvents.emit('bad decrypt', channel, user, timestamp);
+		})
+	})
+	.catch((err) => { clientEvents.emit('bad stowaway', channel, user, timestamp); });
+}
+
 function prepClient ({ database: db, key: key }) {
 	/* Client events to subscribe to:
 	*  N E C E S S A R Y
 	*    guildCreate -
-	*    guildDelete -
 	*    message -
 	*
 	*  Nice to have
@@ -118,6 +132,7 @@ function prepClient ({ database: db, key: key }) {
 	*    channelUpdate
 	*    guildBanAdd
 	*    guildBanRemove
+	*    guildDelete -
 	*    guildMemberAdd
 	*    guildMemberRemove
 	*    guildMemberUpdate
@@ -138,8 +153,8 @@ function prepClient ({ database: db, key: key }) {
 					message.channel.send(ABOUT_RESPONSE);
 				}
 				else if (message.content === HANDSHAKE_REQUEST && message.attachments.size > 0) {
-					const keyfile = message.attachments.find(attachment => attachment.name === KEYFILE));
-					if (keyfile != null)
+					const keyfile = message.attachments.find(attachment => attachment.name === KEYFILE);
+					if (keyfile != null) {
 						receiveHandshake(message.author, keyfile.url, db, key);
 					}
 					else {
@@ -147,8 +162,8 @@ function prepClient ({ database: db, key: key }) {
 					}
 				}
 				else if (message.content === HANDSHAKE_RESPONSE && message.attachments.size > 0) {
-					const keyfile = message.attachments.find(attachment => attachment.name === KEYFILE));
-					if (keyfile != null)
+					const keyfile = message.attachments.find(attachment => attachment.name === KEYFILE);
+					if (keyfile != null) {
 						receiveHandshake(message.author, keyfile.url, db);
 					}
 					else {
@@ -158,12 +173,12 @@ function prepClient ({ database: db, key: key }) {
 			}
 			else if (message.content === ENCRYPTED_MESSAGE && message.attachments.size > 0) {
 				// if it's an encrypted message attempt todecrypt then display
-				const msgfile = message.attachments.find(attachment => attachment.name === MSGFILE));
+				const msgfile = message.attachments.find(attachment => attachment.name === MSGFILE);
 				if (msgfile != null) {
-					// attempt to decrypt
+					decrypt(message.channel, message.author, message.createdAt, msgfile.url, key);
 				}
 				else {
-					clientEvents.emit('no message', message.channel, message.author);
+					clientEvents.emit('bad stowaway', message.channel, message.author, message.createdAt);
 				}
 			}
 			else if (message.attachments.size > 0) {
