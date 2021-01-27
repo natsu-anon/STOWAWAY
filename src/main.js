@@ -26,19 +26,29 @@ const clientEvents = new EventEmitter();
 	error
 	bad handshake - user
 	handshake - user
-	bad decrypt - channel, user, timestamp
+	no message - user, channel
+	failed decrypt - channel, user, timestamp
 	encrypted - channel, user, timestamp, decrypted content
 	plaintext - channel, user, timestamp, content, attachments
 */
 // subscribe to events with event.on(eventName, callback);
 // raise events with event.emit(eventName, [...args]);
 
-function textAttachment (str, name) {
-	return new MessageAttachment(Buffer.from(str, 'utf8'), name);
+function attachText (text, name) {
+	return new MessageAttachment(Buffer.from(text, 'utf8'), name);
+}
+
+function readAttached (url) {
+	return new Promise((resolve, reject) => {
+		https.get(url, (response) => {
+			response.on('data', (d) => { resolve(d.toString(); });
+			response.on('error', (e) => { reject(e); });
+		});
+	});
 }
 
 function handshake (channel, key, id, str) {
-	const attachment = textAttachment(key.toPublic().armor(), KEYFILE);
+	const attachment = attachText(key.toPublic().armor(), KEYFILE);
 	channel.send(str, attachment);
 }
 
@@ -63,31 +73,32 @@ function handshakeGuild (guild, db, key) {
 	.catch((err) => { clientEvents.emit('error', err) });
 }
 
+// NOTE key is an optional argument
 function receiveHandshake (user, keyURL, db, key) {
 	db.findOne({ id: user.id }, (err, doc) => {
 		if (err) {
 			clientEvents.emit('error', err);
 		}
 		else if (doc == null) {
-			https.get(keyURL, (res) => {
-				res.on('data', (data) => {
-					openpgp.key.readArmored(data.toString())
-					.then(({ keys, err }) => {
-						if (err != null) {
-							db.insert({ id: user.id, key: keys[0] });
-							if (key != null) {
-								user.createDM()
-								.then((channel) => {
-									handshake(channel, key, HANDSHAKE_RESPONSE);
-								});
-							}
+			readAttached(keyURL)
+			.then((keyStr) => {
+				openpgp.key.readArmored(keyStr)
+				.then(({ key, err }) => {
+					if (err != null) {
+						db.insert({ id: user.id, key: keys[0] });
+						if (key != null) {
+							user.createDM()
+							.then((channel) => {
+								handshake(channel, key, HANDSHAKE_RESPONSE);
+							});
 						}
-						else {
-							clientEvents.emit('bad handshake', user);
-						}
-					});
-				});
-			});
+					}
+					else {
+						clientEvents.emit('bad handshake', user);
+					}
+				})
+			})
+			.catch((err) => { clientEvents.emit('bad handshake', user); })
 		}
 	});
 }
@@ -152,7 +163,7 @@ function prepClient ({ database: db, key: key }) {
 					// attempt to decrypt
 				}
 				else {
-					// emit bad stowaway
+					clientEvents.emit('no message', message.channel, message.author);
 				}
 			}
 			else if (message.attachments.size > 0) {
