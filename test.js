@@ -1,17 +1,20 @@
-const fs = require("fs");
-const process = require("process");
-const discord = require("discord.js");
+const openpgp = require('openpgp');
 
-const token = fs.readFileSync("./token DO NOT SHARE", 'utf8');
-
-const client = new discord.Client();
-client.on("ready", () => {
-	console.log(client.user.username);
-	process.exit()
-});
-
-client.login("foo")
-	.then(() => { console.log("logged in!"); })
-	.catch((err) => {
-		console.error(`failed to login with token: ${token}`);
+openpgp.generateKey({
+	userIds: [{ name: 'Foo'}],
+	curve: 'curve25519'
+})
+.then(({key, publicKeyArmored, privateKeyArmored, revocationCertificate }) => {
+	// openpgp.key.readArmored(publicKeyArmored)
+	openpgp.key.readArmored("foo")
+	.then(({ keys, err }) => {
+		console.log(keys);
+		if (err != null) {
+			console.log("FUG");
+		}
+		else {
+			console.log("NO ERRORS");
+		}
 	});
+	// .catch(console.log);
+})
