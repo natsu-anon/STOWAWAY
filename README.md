@@ -12,6 +12,8 @@ how to run javascript in a console:
 ### Discord Bot
 Make your own [discord bot](https://discord.com/developers/docs/intro#bots-and-apps), then save its token (NOT client secret) to a file named token (make sure its copy pasted properly)
 
+**NOTE** ENABLE PRIVILEGED GATEWAY INTENTS (presence & Server member intent).  [See section "Data Privacy and Protection"](https://blog.discord.com/the-future-of-bots-on-discord-4e6e050ab52e).
+
 ## REFERENCES
 - [Regular Expressions in javasvcript](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions)
 - [discord.js docs](https://discord.js.org/#/docs/main/stable/general/welcome)
@@ -66,4 +68,4 @@ __javascript__
 - backticks \` format variables using `${varName}`
 
 __inviting non-public bots__
-- go to `https://discord.com/oauth2/authorize?client_id=APPLICATION_CLIENT_ID&scope=bot&permissions=3072`, add to the server desired
+- go to `https://discord.com/api/oauth2/authorize?client_id=CLIENT_ID&permissions=117824&scope=bot`, add to the server desired
