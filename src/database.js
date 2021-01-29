@@ -1,4 +1,4 @@
-function init (openpgp) {
+function init (rl, openpgp) {
 	const Datastore = require('nedb');
 	const db = new Datastore({ filename: './data.db', autoload: true });
 	return new Promise((resolve, reject) => {
@@ -8,7 +8,7 @@ function init (openpgp) {
 			}
 			else if (docs == null) {
 				console.log("No existing keys found. Generating new keys.");
-				const rl = require('readline').createInterface({ input: process.stdin, output: process.stdout });
+				// const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 				rl.question("Enter a nickname to associate with your keys:\n>", (name) => {
 					openpgp.generateKey({ userIds: [{ name: name }], curve: 'curve25519' })
 					.then((key) => {
@@ -48,7 +48,7 @@ function warn () {
 }
 
 module.exports = {
-	Init: (openpgp) => {
-		return init(openpgp)
+	Init: (rl, openpgp) => {
+		return init(rl, openpgp)
 	}
 }

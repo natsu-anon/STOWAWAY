@@ -1,4 +1,5 @@
 const fs = require('fs');
+const readline = require('readline');
 const EventEmitter = require('events');
 const https = require('https');
 const process = require('process');
@@ -20,6 +21,14 @@ console.log(fs.readFileSync('./banner.txt', 'utf8'));
 console.log("This software is licensed under the WTFPL\n");
 
 function empty () {}
+
+const messages = [];
+
+// create an console interface
+const rl = readline.createInterface({
+	input: process.stdin,
+	output: process.stdout
+});
 
 const clientEvents = new EventEmitter();
 /* EVENTS:
@@ -107,15 +116,26 @@ function receiveHandshake (user, keyURL, db, key) {
 function decrypt (channel, user, timestamp, messageURL, key) {
 	readAttached(messageURL)
 	.then((message) => {
-		openpgp.message.readAmmored(message)
-		.then((res) => {
-			clientEvents.emit('encrypted', channel, user, timestamp, res.data);
-		})
-		.catch((err) => {
-			clientEvents.emit('bad decrypt', channel, user, timestamp);
-		})
+		console.log('plaintext downloaded');
+		return openpgp.message.readArmored(message);
 	})
-	.catch((err) => { clientEvents.emit('bad stowaway', channel, user, timestamp); });
+	.then((message) => {
+		console.log('decrypting');
+		return openpgp.decrypt({
+			message: message,
+			privateKeys: key
+		});
+	})
+	.then((res) => {
+		clientEvents.emit('encrypted', channel, user, timestamp, res.data);
+	})
+	.catch((err) => {
+		console.error(err);
+		clientEvents.emit('bad decrypt', channel, user, timestamp);
+	})
+	.finally(() => { console.log('DECYPTION COMPLETE'); });
+	// })
+	// .catch((err) => { clientEvents.emit('bad stowaway', channel, user, timestamp); });
 }
 
 function prepClient ({ database: db, key: key }) {
@@ -147,8 +167,8 @@ function prepClient ({ database: db, key: key }) {
 			handshakeGuild(guild, db, key);
 		});
 		client.on('message', (message) => {
+			// console.log('message!');
 			if (message.author.id != client.user.id) {
-				console.log("MESSAGE!");
 				if (message.content === ABOUT) {
 					message.channel.send(ABOUT_RESPONSE);
 				}
@@ -171,10 +191,12 @@ function prepClient ({ database: db, key: key }) {
 					}
 				}
 			}
-			else if (message.content === ENCRYPTED_MESSAGE && message.attachments.size > 0) {
+			if (message.content === ENCRYPTED_MESSAGE && message.attachments.size > 0) {
 				// if it's an encrypted message attempt todecrypt then display
+				console.log('encrypted message!');
 				const msgfile = message.attachments.find(attachment => attachment.name === MSGFILE);
 				if (msgfile != null) {
+					console.log('decrypting!');
 					decrypt(message.channel, message.author, message.createdAt, msgfile.url, key);
 				}
 				else {
@@ -182,17 +204,18 @@ function prepClient ({ database: db, key: key }) {
 				}
 			}
 			else if (message.attachments.size > 0) {
-				clientEvents.emit('plaintext', message.channel, message.author, message.createdAt, message.cleanContent);
+				clientEvents.emit('plaintext', message.channel, message.author, message.createdAt, message.cleanContent, message.attachments);
 			}
 			else {
-				clientEvents.emit('plaintext', message.channel, message.author, message.createdAt, message.cleanContent. message.attachments);
+				// console.log(`${channel.name}(\x1b[32m${channel.id}\x1b[0m)\n${user.tag} - ${content}`);
+				clientEvents.emit('plaintext', message.channel, message.author, message.createdAt, message.cleanContent);
 			}
 		});
 		return client;
 	};
 }
 
-require('./database.js').Init(openpgp)
+require('./database.js').Init(rl, openpgp)
 .then((data) => {
 	return new Promise((resolve, reject) => {
 		require('./client.js').Login(fs, Client, prepClient(data))
@@ -205,7 +228,14 @@ require('./database.js').Init(openpgp)
 })
 .then(({key: key, database: db, client: client}) =>  {
 	console.log(`logged in as ${client.user.tag}\tid: ${client.user.id}`);
-	console.log(client.guilds);
+	clientEvents.on('encrypted', (channel, author, timestamp, content) => {
+		messages.push({ encrypted: true, channel: channel, author: author, timestamp: timestamp, content: content});
+	});
+	clientEvents.on('plaintext', (channel, author, timestamp, content, attachments) => {
+		messages.push({ encrypted: false, channel: channel, author: author, timestamp: timestamp, content: content, attachments: attachments });
+	});
+	main(key, db, client);
+	// console.log(client.guilds);
 	// console.log(client.users);
 	// console.log(client.guilds);
 	// console.log(client.channels);
@@ -217,6 +247,7 @@ require('./database.js').Init(openpgp)
 	// console.log(client.channels);
 	// console.log("\n#### CACHE");
 	// console.log(client.channels.cache);
+	/*
 	client.guilds.cache.each((guild) => {
 		// console.log("\n### GUILD");
 		// console.log(guild);
@@ -240,6 +271,7 @@ require('./database.js').Init(openpgp)
 			.catch(console.error)
 			.finally(() => { console.log("\n### FETCHED "); });
 	});
+	*/
 	// console.log(client.users);
 	// client.channels.each(channel => { console.log(channel); });
 		// .filter(channel => channel.istText())
@@ -266,6 +298,98 @@ require('./database.js').Init(openpgp)
 .catch((err) => { console.error(err); });
 
 
-function main (db, cli) {
-	// TODO
+/* STOWAWAY VERSION 0.0.1 */
+
+const ENCRYPTED = /encrypted\s+(?<channel>\d+)\s+(?<message>.+)/;
+const PLAINTEXT = /plaintext\s+(?<channel>\d+)\s+(?<message>.+)/;
+
+function main (key, db, client) {
+	rl.question(messages.length > 0 ? `${messages.length} new messages!, enter 'messages' to read them!\n>` : '>', (input) => {
+		if (input === 'list') {
+			client.guilds.cache.each((guild) => {
+				console.log(`${guild.name}`);
+				guild.channels.cache.filter(channel => channel.isText())
+				.each(channel => console.log(`- \x1b[32m${channel.id}\x1b[0m ${channel.name}`));
+			});
+			main(key, db, client);
+			// list all the text channels
+		}
+		else if (input === 'messages') {
+			// list all recieved messages
+			let message;
+			while (messages.length > 0) {
+				message = messages.pop();
+				if (message.encrypted) {
+					console.log(`\x1b[42m\x1b[30mENCRYPTED\x1b[0m ${message.channel.name}(\x1b[32m${message.channel.id}\x1b[0m) ${message.author.tag}\n\t${message.content}`);
+				}
+				else {
+					console.log(`PLAINTEXT ${message.channel.name}(\x1b[32m${message.channel.id}\x1b[0m) ${message.author.tag}\n\t${message.content}`);
+				}
+			}
+			main(key, db, client);
+		}
+		// else if (input == 'help') {
+		// lmao get fucked
+		// 	// show the help string
+		// 	main(key, db, client);
+		// }
+		else if (input === 'handshake') {
+			console.log('handhsake every bot user of every guild fuggit');
+			main(key, db, client);
+		}
+		else if (input === 'quit') {
+			process.exit();
+			main(key, db, client);
+		}
+		else if (PLAINTEXT.test(input)) {
+			const res = PLAINTEXT.exec(input);
+			new Promise((resolve, reject) => {
+				client.channels.fetch(res.groups.channel)
+				.then((channel) => {
+					channel.send(res.groups.message)
+					.catch((err) => {
+						console.log(`\x1b[31munexpected failure sending plaintext message to ${channel.name}\x1b[0m`);
+					})
+					.finally(resolve);
+				})
+				.catch((err) => {
+					console.log(`\x1b[31mcould not find channel with supplied id: \x1b[4m${res.groups.channel}\x1b[0m`);
+					resolve();
+				})
+			})
+			.finally(() => { main(key, db, client); });
+		}
+		else if (ENCRYPTED.test(input)) {
+			const res = ENCRYPTED.exec(input);
+			// console.log(`encrypted message to: ${res.groups.channel}\n${res.groups.message}`);
+			new Promise((resolve, reject) => {
+				client.channels.fetch(res.groups.channel)
+				.then((channel) => {
+					// console.log(channel.name);
+					// GET ALL THE KEYS PLS
+					openpgp.encrypt({
+						message: openpgp.message.fromText(res.groups.message),
+						publicKeys: [ key ]
+					})
+					.then((encrypted) => {
+						const attachment = attachText(encrypted.data, MSGFILE);
+						return channel.send(ENCRYPTED_MESSAGE, attachment);
+					})
+					.catch((err) => {
+						console.log(`\x1b[31munexpected failure sending encrypted message to ${channel.name}\x1b[0m`);
+					})
+					.finally(resolve)
+				})
+				.catch((err) => {
+					console.log(`\x1b[31mcould not find channel with supplied id: \x1b[4m${res.groups.channel}\x1b[0m`);
+				})
+				.finally(resolve);
+			})
+			.finally(() => { main(key, db, client); });
+		}
+		else {
+			console.log(`failed to recognize input '${input}', enter 'help' to list commands`);
+			main(key, db, client);
+		}
+	});
 }
