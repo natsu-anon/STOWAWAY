@@ -132,13 +132,18 @@ const channelBox = blessed.box({
 	content: lorem,
 })
 
-const inputBox = blessed.box({
+const inputBox = blessed.textarea({
 	parent: screen,
 	left: 40,
 	top: '100%-3',
-	label: "ENCRYPTED/PLAINTEXT",
+	label: {
+		text: "ENCRYPTED/PLAINTEXT",
+		fg: 'green',
+		style: { fg: 'red' },
+	},
 	width: '100%-40',
 	height: 3,
+	inputOnFocus: true,
 	content: "your message here",
 	border: {
 		type: 'line',
@@ -149,6 +154,27 @@ const inputBox = blessed.box({
 		bottom: 0,
 		left: 1,
 	},
+});
+
+inputBox.key(['enter'], (ch, key) => {
+	inputBox.submit();
+	inputBox.clearValue();
+	setTimeout(popup("submitted input"), 1000);
+	screen.render();
+});
+
+inputBox.key(['escape'], (ch, key) => {
+	inputBox.submit();
+	setTimeout(popup("escaped input"), 1000);
+	screen.render();
+});
+
+screen.key(['enter'], (ch, key) => {
+	if (!inputBox.focused) {
+		setTimeout(popup("input mode"), 1000);
+		screen.render();
+		inputBox.focus();
+	}
 });
 
 const popupBox = blessed.box({
@@ -263,6 +289,7 @@ screen.key(['escape', 'q', 'C-c'], function(ch, key) {
 screen.render()
 
 
+/*
 setTimeout(() => {
 	notify("ENCRYPTED MESSAGE", 'green')
 	.then(() => {
@@ -284,6 +311,6 @@ setTimeout(() => {
 		return notify("ERROR MESSAGE", 'red');
 	})
 }, 500);
+*/
 
-let hideFunc = popup("fetching messages...");
-setTimeout(hideFunc, 2000);
+// setTimeout(popup("fetching messages..."), 3000);
