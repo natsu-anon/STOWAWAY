@@ -19,19 +19,19 @@ const topbox = blessed.box({
 	// border: { type: 'line' },
 });
 
-const box = blessed.textarea({
-	parent: topbox,
-	label: '[Enter] to enter text',
-	// name: 'textbox',
-	inputOnFocus: true,
-	top: 'center',
-	left: 'center',
-	width: '90%',
-	height: '50%',
-	border: { type: 'line' },
-	focus: { bg: 'white', fg: 'black' },
-	// focus: { bg: 'yellow', fg: 'black' },
-});
+// const box = blessed.textarea({
+// 	parent: topbox,
+// 	label: '[Enter] to enter text',
+// 	// name: 'textbox',
+// 	inputOnFocus: true,
+// 	top: 'center',
+// 	left: 'center',
+// 	width: '90%',
+// 	height: '50%',
+// 	border: { type: 'line' },
+// 	focus: { bg: 'white', fg: 'black' },
+// 	// focus: { bg: 'yellow', fg: 'black' },
+// });
 // const submit = blessed.button({
 // 	parent: form,
 // 	content: 'submit',
@@ -75,28 +75,28 @@ const box = blessed.textarea({
 
 // NOTE it _HAS_ to be this way
 // I think that while box has focus it stops events bubbling up to screen
-box.key(['enter'], function (ch, key) {
-	box.submit();
-	box.clearValue();
-	box.setLabel('[Enter] to enter text');
-	screen.render();
-});
-
-box.key(['escape'], function (ch, key) {
-
-	box.submit();
-	// box.clearValue();
-	box.setLabel('[Enter] to enter text');
-	screen.render();
-});
-
-screen.key(['enter'], function (ch, key) {
-	if (!box.focused) {
-		box.setLabel('[Enter] to submit text, [Esc] to stop');
-		screen.render();
-		box.focus();
-	}
-});
+// box.key(['enter'], function (ch, key) {
+// 	box.submit();
+// 	box.clearValue();
+// 	box.setLabel('[Enter] to enter text');
+// 	screen.render();
+// });
+//
+// box.key(['escape'], function (ch, key) {
+//
+// 	box.submit();
+// 	// box.clearValue();
+// 	box.setLabel('[Enter] to enter text');
+// 	screen.render();
+// });
+//
+// screen.key(['enter'], function (ch, key) {
+// 	if (!box.focused) {
+// 		box.setLabel('[Enter] to submit text, [Esc] to stop');
+// 		screen.render();
+// 		box.focus();
+// 	}
+// });
 
 
 // Quit on Escape, q, or Control-C.
@@ -115,4 +115,18 @@ screen.key(['escape', 'q', 'C-c'], function (ch, key) {
 // });
 
 // screen.append(form);
+const loading = blessed.loading({
+	parent: screen,
+	align: 'center',
+	left: 'center',
+	top: 'center',
+	width: '10%',
+	height: 6,
+	padding: 1,
+	border: {
+		type: 'line',
+	},
+})
+loading.load("fetching messages");
 screen.render();
+setTimeout(loading.stop, 3000);

@@ -1,11 +1,11 @@
 const blessed = require('blessed');
 
 const screen = blessed.screen({
-	smartCSR: true,
-	autoPadding: true,
+	smartcsr: true,
+	autopadding: true,
 	debug: true,
-	dockBorders: true,
-	fullUnicode: true, // allows for meme double-wide characters
+	dockborders: true,
+	fullunicode: true, // allows for meme double-wide characters
 });
 
 const form = blessed.form({
