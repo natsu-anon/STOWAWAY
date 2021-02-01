@@ -328,7 +328,7 @@ function main (key, db, client) {
 			}
 			main(key, db, client);
 		}
-		// else if (input == 'help') {
+		// else if (input === 'help') {
 		// lmao get fucked
 		// 	// show the help string
 		// 	main(key, db, client);
