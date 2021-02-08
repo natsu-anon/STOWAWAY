@@ -211,7 +211,7 @@ class BlessedCLI {
 	}
 
 	focusNavigation () {
-		this.navigationBox.setLabel(`{green-fg}${this._navigationBox}{/}`);
+		this.navigationBox.setLabel(`{green-fg}${this._navigationLabel}{/}`);
 		this.navigationBox.border = {
 			type: 'line',
 			fg: 'green',
@@ -237,12 +237,15 @@ class BlessedCLI {
 	}
 
 	unfocusInput () {
-	}
 
 	unfocusChannel () {
+		this.channelBox.setLabel(this._channelLabel);
+		this.channelBox.border = { type: 'line' };
 	}
 
 	unfocusNavigation () {
+		this.navigationBox.setLabel(this._nagivationLabel);
+		this.navigationBox.border = { type: 'line' };
 	}
 
 	popup (label) {
