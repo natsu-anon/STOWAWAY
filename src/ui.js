@@ -236,8 +236,6 @@ class BlessedCLI {
 		this.screen.render();
 	}
 
-	unfocusInput () {
-
 	unfocusChannel () {
 		this.channelBox.setLabel(this._channelLabel);
 		this.channelBox.border = { type: 'line' };
@@ -358,10 +356,6 @@ class BlessedCLI {
 		this.screen.render();
 	}
 }
-
-
-
-
 
 function init (blessedCLI) {
 	// all the hookups
