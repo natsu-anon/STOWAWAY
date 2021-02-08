@@ -97,8 +97,8 @@ const navigationBox = blessed.box({
   {underline}channel 2{/}
 [+] server 2
 [-] server3
-  [+] super channel1
-  [-]super channel 2
+  [+] category channel1
+  [-] category channel 2
     channel A
     channel B`,
 	scrollable: true,
