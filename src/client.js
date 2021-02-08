@@ -5,12 +5,12 @@ function login (fs, Client, prepClient) {
 		fs.readFile(tokenFile, 'utf8', (readErr, data) => {
 			if (readErr == null) {
 				clientLogin(data, Client, prepClient)
-					.then((client) => {
-						resolve(client);
-					})
-					.catch((err) => {
-						badtoken();
-					});
+				.then((client) => {
+					resolve(client);
+				})
+				.catch((err) => {
+					badtoken();
+				});
 			}
 			else if (rErr.code === 'ENOENT') {
 				const rl = require('readline').createInterface({ input: process.stdin, output: process.stdout });
@@ -18,13 +18,13 @@ function login (fs, Client, prepClient) {
 					fs.writeFile(tokenFile, token, 'utf8', (writeErr) => {
 						if (wErr == null) {
 							clientLogin(token, Client, prepClient)
-								.then((client) => {
-									resolve(client);
-								})
-								.catch((err) => {
-								console.log(`"${token}"`);
-									badtoken();
-								});
+							.then((client) => {
+								resolve(client);
+							})
+							.catch((err) => {
+							console.log(`"${token}"`);
+								badtoken();
+							});
 						}
 						else { // failed to write to file
 							reject(writeErr);
@@ -44,9 +44,8 @@ function clientLogin (token, Client, prepClient) {
 	return new Promise((resolve, reject) => {
 		// NOTE don't style on loodi
 		const client = prepClient(new Client());
-		client.login(token)
-			.then(() => { resolve(client); })
-			.catch(reject);
+		client.once('ready', () => resolve(client));
+		client.login(token).catch(reject);
 	});
 }
 
