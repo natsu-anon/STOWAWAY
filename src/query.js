@@ -81,6 +81,5 @@ require('./database.js').Init(rl, openpgp)
 		}
 	});
 	client.destroy()
-	return 0;
 })
 .catch((err) => { console.error(err); });
