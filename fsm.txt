@@ -1,0 +1,48 @@
+4 states:
+	1. input
+	2. read
+	3. navigateServers (START)
+	4. navigateDirects
+
+all modes (except input):
+[Ctrl-C] quit
+[~] if most recent news is a message display it in messages box & enter read mode
+
+While in navigateServers state:
+[Esc] to return to previous message state (if any)
+[Tab] to enter navigateDirects
+[w] to highlight "above" a channel/server
+[s] to highlight "below" channel/server
+[a] highlight "previous" server/category (whichever is first)
+[d] highlight "next" server/category (again, whichstever is first)
+[space] if highlighting a text channel (aka regular channel):
+        - display text channel messages in message box & enter read mode
+        else if highlighting a server/category:
+        - expand/collapse server/category in navigation box
+
+While in navigateDirects state:
+[Esc] to return to previous message state (if any)
+[Tab] to enter navigateDirects (remember which is currently collapsed/expanded)
+[w] to highlight "above" dm channel
+[s] to highlight "below" dm channel
+[space] display highlit dm channel messages in message box & enter read mode
+
+While in read mode:
+[Tab] if navigation box is showing servers:
+      - nav box shows dm's
+	  else if navigation box is showing DMs:
+      - nav box shows servers (remember which is currently collapsed/expanded)
+[a] to jump all the way to the top (L O A D I N G)
+[w] to scroll up (& possibly load older messages)
+[s] to scroll down
+[d] to jump to the bottom
+[space] to enter input mode
+[Escape] if navigation box is showing servers:
+         - enter navigateServers state
+         else if navigation box is showing DMs:
+         - enter navigateDirects state
+
+while in input mode:
+[Enter] to send message & return to read mode
+[Escape] return to read mode WITHOUT clearing user input
+[Ctrl-C] clear user input & return to read mode
