@@ -57,4 +57,4 @@ module.exports = {
 	Login : (fs, Client, prepClient) => {
 		return login(fs, Client, prepClient);
 	}
-}
+};
