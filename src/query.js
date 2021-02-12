@@ -55,11 +55,11 @@ require('./database.js').Init(rl, openpgp)
 	console.log(`logged in as ${client.user.tag}\tid: ${client.user.id}`);
 	foo = {}
 	client.guilds.cache.each((guild) => {
-		console.log(`${guild.name}`);
+		console.log(`[-] ${guild.name}`);
 		guild.channels.cache.filter(channel => channel.isText())
 		.each((channel) => {
 			if (channel.parent == null) {
-				console.log(`> ${channel.name}`);
+				console.log(`  > ${channel.name}`);
 			}
 			else {
 				if (channel.parentID in foo) {
@@ -73,13 +73,14 @@ require('./database.js').Init(rl, openpgp)
 		let channel;
 		for (let id in foo) {
 			channel = guild.channels.cache.find(channel => channel.id == id)
-			console.log(`[-] \x1b[32m${channel.name}\x1b[0m`);
+			console.log(`  [-] \x1b[32m${channel.name}\x1b[0m`);
 			for (let i = 0; i < foo[id].length; i++) {
 			// for (let foo in categories[id]) {
-				console.log(`\t> ${foo[id][i]}`);
+				console.log(`    > ${foo[id][i]}`);
 			}
 		}
 	});
 	client.destroy()
+	process.exit(0)
 })
 .catch((err) => { console.error(err); });
