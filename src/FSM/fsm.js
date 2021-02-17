@@ -1,20 +1,25 @@
 const EventEmitter = require('events');
 const InputState = require('./input-state.js')
-const MessageState = require('./message-state.js')
-const DMState = require('./dm-state.js')
-const ServersState = require('./servers-state.js')
+const NavigateState = require('./navigate-state.js');
 
+// NO DRIVER
 class FSM () extends EventEmitter {
-	constructor (driver) {
-		this.driver = driver;
-		this._servers = new ServersState();
-		this._servers.on('enter', () => { this.emit('enter server'); });
-		this._servers.on('exit', () => { this.emit('exit server'); });
-		this._dm = new DMState();
-		this._dm.on('enter', () => { this.emit('enter dm'); });
-		this._dm.on('exit', () => { this.emit('exit dm'); });
-		this.current = this.servers;
+	constructor (subscriptions) {
+		this._navigate = new NavigateState({
+			enterServer: subscriptions.enterServer,
+			exitServer: subscriptions.exitServer,
+			enterDMs: subscriptions.enterDMs,
+			exitDMs: subscriptions.exitDMs
+		});
+		this._navigate.on('enter', subscriptions.enterNavigation)
+		this._navigate.on('exit', subscriptions.exitNavigation)
+		this.current = this._navigate;
+		this.current.enter();
 		this.prev = null;
+		this.enterInput = subscriptions.enterInput;
+		this.exitInput = subscriptions.exitInput;
+		this.enterMessage = subscriptions.enterMessage;
+		this.exitMessage = subscriptions.exitMessage;
 	}
 
 	// use once instead of on so that way these things remove themselves after happening ONCE
@@ -28,50 +33,29 @@ class FSM () extends EventEmitter {
 		this.current.enter();
 	}
 
-	_beforeRemoveAll (func) {
-		return () => {
-			func();
-			this.driver.removeAllListeners();
-		}
-	}
-
 	launch () {
 		this.current.enter();
 	}
 
 	input () {
-		_changeTo(new InputState(this.current),
-			() => { this.emit('enter input'); },
-			() => { this.emit('exit input'); }
-		);
+		_changeTo(new InputState(this.current), this.enterInput, this.exitInput);
 	}
 
 	messages () {
 		if (this._messages == null) {
-			_changeTo(new MessageState(this.current),
-				() => { this.emit('enter messages'); },
-				() => { this.emit('exit messages'); }
-			);
+			_changeTo(new MessageState(this.current), this.enterMessage, this.exitMessage);
 		}
 		else {
 			this._messages.prevState = this.current;
-			_changeTo(this._messages,
+			_changeTo(this._messages, this.enterMessage, this.exitMessage
 				() => { this.emit('enter messages'); },
 				() => { this.emit('exit messages'); }
 			);
 		}
 	}
 
-	servers () {
-		_changeTo(this._servers);
-		this.driver.once('to dm', _beforeRemoveAll(dm));
-		this.driver.once('to message', _beforeRemoveAll(messages));
-	}
-
-	dm () {
-		_changeTo(this._dm);
-		this.driver.once('to servers', servers); // HAHA DOESNT WORK -- think about it
-		this.driver.once('to message', messages); // HAHA DOESNT WORK -- think about it
+	swapNavigation () {
+		this._navigation.swap();
 	}
 
 }
