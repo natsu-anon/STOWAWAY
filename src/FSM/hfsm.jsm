@@ -3,7 +3,7 @@ const InputState = require('./input-state.js')
 const NavigateState = require('./navigate-state.js');
 
 // NO DRIVER
-class FSM () extends EventEmitter {
+class HFSM extends EventEmitter {
 	constructor (subscriptions) {
 		this._navigate = new NavigateState({
 			enterServer: subscriptions.enterServer,
@@ -22,6 +22,11 @@ class FSM () extends EventEmitter {
 		this.exitMessage = subscriptions.exitMessage;
 	}
 
+	// initial current is NavigateState -- which also needs launching
+	launch () {
+		this.current.launch();
+	}
+
 	// use once instead of on so that way these things remove themselves after happening ONCE
 	_changeTo (state, onEnter, onExit) {
 		this.current.exit();
@@ -30,10 +35,6 @@ class FSM () extends EventEmitter {
 			this.current.once('enter', onEnter);
 			this.current.once('exit', onExit);
 		}
-		this.current.enter();
-	}
-
-	launch () {
 		this.current.enter();
 	}
 
@@ -54,10 +55,45 @@ class FSM () extends EventEmitter {
 		}
 	}
 
-	swapNavigation () {
-		this._navigation.swap();
+	onCtrlC () {
+		this.current.onCtrlC();
 	}
 
+	onBacktick () {
+		this.current.onBacktick();
+	}
+
+	onSpace () {
+		this.current.onSpace();
+	}
+
+	onEnter () {
+		this.current.onEnter();
+	}
+
+	onEsc () {
+		this.current.onEsc();
+	}
+
+	onTab () {
+		this.current.onTab();
+	}
+
+	onW () {
+		this.current.onW();
+	}
+
+	onA () {
+		this.current.onA();
+	}
+
+	onS () {
+		this.current.onS();
+	}
+
+	onD () {
+		this.current.onD();
+	}
 }
 
-module.exports = FSM;
+module.exports = HFSM;

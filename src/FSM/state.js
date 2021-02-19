@@ -12,6 +12,30 @@ class State extends EventEmitter {
 			throw new TypeError('Subclasses of "State" must implement this.exit')
 		}
 	}
+
+	onCtrlC () {
+		// QUIT
+	}
+
+	onBacktick () {
+		// jump to news item
+	}
+
+	onSpace () {}
+
+	onEnter () {}
+
+	onEsc () {}
+
+	onTab () {}
+	
+	onW () {}
+
+	onA () {}
+
+	onS () {}
+
+	onD () {}
 }
 
 module.exports = State;

@@ -3,17 +3,26 @@ const ServerState = require('/.servers-state.js');
 const DMState = require('/.dm-state.js');
 
 class NavigateState extends State {
-	constructor (subscriptions) {
-		const server = new ServerState();
+	constructor (serverModel, dmModel, updateFunc, subscriptions, onEsc) {
+		const server = new ServerState(serverModel, updateFunc);
 		server.on('enter', subscriptions.enterServer);
 		server.on('exit', subscriptions.exitServer);
 		this.server = server;
-		const dms = new DMState();
-		dms.on('enter', subscriptions.enterDMs);
-		dms.on('exit', subscriptions.exitDMs);
-		this.dms = dms;
+		const dm = new DMState(dmModel, updateFunc);
+		dm.on('enter', subscriptions.enterDM);
+		dm.on('exit', subscriptions.exitDM);
+		this.dm = dm;
 		this.current = server;
 		this.serverFlag = true;
+		this.onTab = swap;
+		if (onEsc !== undefined) {
+			this.onEsc = onEsc
+		}
+	}
+
+	launch () {
+		this.current.enter();
+		enter();
 	}
 
 	enter () {
@@ -29,6 +38,26 @@ class NavigateState extends State {
 		this.current = this.serverFlag ? this.dm : this.server;
 		this.serverFlag = !this.serverFlag;
 		this.current.enter();
+	}
+
+	onW () {
+		this.current.onW();
+	}
+
+	onA () {
+		this.current.onA();
+	}
+
+	onS () {
+		this.current.onS();
+	}
+
+	onD () {
+		this.current.onD();
+	}
+
+	onSpace () {
+		this.current.onSpace();
 	}
 
 	/* Don't think I need these

@@ -6,7 +6,7 @@
 
 all modes (except input):
 [Ctrl-C] quit
-[~] if most recent news is a message display it in messages box & enter read mode
+[`] if most recent news is a message display it in messages box & enter read mode
 
 While in navigateServers state:
 [Esc] to return to previous message state (if any)

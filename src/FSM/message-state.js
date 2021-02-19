@@ -1,7 +1,8 @@
 const State = require('./state.js')
 
 class MessageState extends State {
-	constructor () {
+	constructor (id) {
+		this._id = id;
 	}
 
 	enter () {
