@@ -59,20 +59,6 @@ class NavigateState extends State {
 	onSpace () {
 		this.current.onSpace();
 	}
-
-	/* Don't think I need these
-	serverState () {
-		if (!this.serverFlag) {
-			swap();
-		}
-	}
-
-	dmState () {
-		if (this.serverFlag) {
-			swap();
-		}
-	}
-	*/
 }
 
 module.exports = NavigateState;
