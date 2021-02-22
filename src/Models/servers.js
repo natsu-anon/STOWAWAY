@@ -28,31 +28,31 @@ class Channel extends Node {
 class Servers extends Model {
 	constructor (client) {
 		this.servers = [];
-		client.guilds.cache.each(guild => cacheGuild(guidl));
+		client.guilds.cache.each(guild => guildCache(guild));
 		client.on('guildCreate', (g) => {
-			cacheGuild(g);
+			guildCache(g);
 			this.emit('update');
 		});
 		client.on('guildUpdate', (g0, g1) => {
-			updateGuild(g0, g1);
+			guildUpdate(g0, g1);
 			this.emit('update');
 		});
 		client.on('guildDeleted', (g) => {
-			clearGuild(g);
+			guildClear(g);
 			this.emit('update');
 		});
 		client.on('channelCreate', (ch) => {
-			if (cacheChannel(ch)) {
+			if (channelCache(ch)) {
 				this.emit('update');
 			}
 		});
 		client.on('channelDelete', (ch) => {
-			if (clearChanne(ch)) {
+			if (channelClear(ch)) {
 				this.emit('update');
 			}
 		});
 		client.on('channelUpdate', (ch) => {
-			if (updateChannel(ch)) {
+			if (channelUpdate(ch)) {
 				this.emit('update');
 			}
 		});
@@ -62,7 +62,7 @@ class Servers extends Model {
 		}
 	}
 
-	cacheGuild (guild) {
+	guildCache (guild) {
 		let current = new Server(guild.id, guild.name);
 		this.servers.AddChild(current);
 		let temp = {};
@@ -94,7 +94,7 @@ class Servers extends Model {
 		}
 	}
 
-	clearGuild (guild) {
+	guildClear (guild) {
 		for (let i = 0; i < this.servers.length; i++) {
 			if (this.servers[i].id == guild.id) {
 				this.servers.splice(i);
@@ -103,7 +103,7 @@ class Servers extends Model {
 		}
 	}
 
-	updateGuild (guild0, guild1) {
+	guildUpdate (guild0, guild1) {
 		for (let i = 0; i < this.servers.length; i++) {
 			if (this.servers[i].id == guild0.id) {
 				this.servers[i].id == guild1.id;
@@ -135,13 +135,13 @@ class Servers extends Model {
 		}
 	}
 
-	channelDelete (channel) {
+	channelClear (channel) {
 		if (channel.guild == null) {
 			return false;
 		}
 		else {
 			const server = this.server.find(s => s.id == channel.guild.id);
-			return server.remove(ch.id);
+			return server != null ? server.remove(ch.id) : false;
 		}
 	}
 
@@ -151,6 +151,9 @@ class Servers extends Model {
 		}
 		else {
 			const server = this.server.find(s => s.id == channel.guild.id);
+			if (server == null) {
+				return false;
+			}
 			const ch = server.find(channel0.id);
 			if (ch != null) {
 				ch.id = channel1.id;
