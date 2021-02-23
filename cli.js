@@ -119,12 +119,13 @@ const channelBox = blessed.box({
 	height:'100%-4',
 	width: '100%-40',
 	padding: 1,
+	tags: true,
 	scrollable: true,
 	scrollbar: {
 		bg: 'green',
 		// ch: '@',
 	},
-	label: 'server 1 #channel 2',
+	label: '{bold}server 1 #channel 2{/bold} topic',
 	border: {
 		type: 'line',
 		fg: 'green',
