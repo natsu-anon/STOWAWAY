@@ -106,7 +106,7 @@ class GuildChannel extends Channel {
 	}
 }
 
-class Channels extends Model {
+class Messages extends Model {
 	cosntructor (client, db, stowaway) {
 		this.channels = [];
 		client.guilds.cache.each(guild => guildCache(client, guild));
@@ -169,6 +169,7 @@ class Channels extends Model {
 		if (channel != null) {
 			if (this.focus != null) {
 				this.focus.removeAllListeners('update');
+				this.focus.clear();
 			}
 			this.focus = channel;
 			this.focus.on('update', () => {
@@ -179,4 +180,4 @@ class Channels extends Model {
 	}
 }
 
-module.exports = Channels;
+module.exports = Messages;
