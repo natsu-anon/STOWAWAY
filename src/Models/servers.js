@@ -18,15 +18,15 @@ class Category extends ParentNode {
 }
 
 class Channel extends Node {
-	constructor (id, name, topic) {
+	constructor (id, name) {
 		super(id);
 		this.name = name;
-		this.topic = topic;
 	}
 }
 
+// TODO handle focus
 class Servers extends Model {
-	constructor (client) {
+	constructor (client, db) {
 		this.servers = [];
 		client.guilds.cache.each(guild => guildCache(guild));
 		client.on('guildCreate', (g) => {
@@ -51,8 +51,8 @@ class Servers extends Model {
 				this.emit('update');
 			}
 		});
-		client.on('channelUpdate', (ch) => {
-			if (channelUpdate(ch)) {
+		client.on('channelUpdate', (ch0, ch1) => {
+			if (channelUpdate(ch0, ch1)) {
 				this.emit('update');
 			}
 		});
@@ -62,14 +62,13 @@ class Servers extends Model {
 		}
 	}
 
-	guildCache (guild) {
 		let current = new Server(guild.id, guild.name);
 		this.servers.AddChild(current);
 		let temp = {};
 		let node;
 		guild.channels.cache(channel => channel.isText())
 		.each((channel) => {
-			node = new Channel(channel.id, channel.name, channel.topic);
+			node = new Channel(channel.id, channel.name);
 			if (channel.parent == null) {
 				current.addChild(node);
 			}
@@ -158,9 +157,6 @@ class Servers extends Model {
 			if (ch != null) {
 				ch.id = channel1.id;
 				ch.name = channel1.name;
-				if (channel0.isText) {
-					ch.topic = channel1.topic;
-				}
 				if (channel0.parentID == channel1.parentID) {
 					return true;
 				}
@@ -214,7 +210,7 @@ class Servers extends Model {
 		}
 		temp = temp.padStart(temp.length + 2 * depth, ' ');
 		if (node.id == this.focus) {
-			temp = `{underline}${temp}{/}`;
+			temp = `{underline}${temp}{/underline}`;
 		}
 		if (node.expand != undefined && node.expand == true) {
 			let res = [ temp ];
