@@ -42,6 +42,32 @@ class DirectMessages extends Model {
 
 	}
 
+	focusNext () {
+		focusDelta(1);
+	}
+
+	focusPrev () {
+		focusDelta(-1);
+	}
+
+	focusDelta (delta) {
+		if (this.focus != null) {
+			let i = this.channels.findIndex(elem => elem.id == this.focus.id) + delta;
+			if (i > this.channels.length) {
+				i = i % this.channels.length;
+			}
+			else if (i < 0) {
+				i = this.channels.length - i;
+			}
+			this.focus = this.channels[i];
+			this.emit('update');
+		}
+		else if (this.channels.length > 0) {
+			this.focus = this.channels[0];
+			this.emit('update');
+		}
+	}
+
 	userCache (user) {
 		for (let i = 0; i < this.channels.length; i++) {
 			if (this.channels[i].id == user.id) {
@@ -70,4 +96,5 @@ class DirectMessages extends Model {
 			return 'no direct messages';
 		}
 	}
+
 }
