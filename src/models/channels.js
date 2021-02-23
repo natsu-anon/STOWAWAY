@@ -18,28 +18,36 @@ class Message {
 	}
 }
 
+// YA JUST CACHE ALL THE FUCKING MESSAGES -- WHAT COULD GO WRONG???
 class Channel extends Model {
 	constructor (client, channel, stowaway) {
 		this.id = channel.id;
 		this.name = channel.name;
-		this.messages = [];
-		const handleMessage = (message) => {
-			const res = stowaway.receieve(message);
-			if (res.cache) {
-				this.messages.push(new Message(res.timestamp, res.author, res.youFlag, res.content));
-			}
-		};
+		this.messageManager = channel.messages;
+		this.messages = null;
 		channel.messages.fetch({ cache: false }).each(handleMessage);
-		client.on('message', (message) => {
-			handleMessage(message);
-			this.emit('update');
-		});
 		client.on('channelUpdate', (ch0, ch1) => {
 			if (ch0.id == channel.id) {
 				update(ch1)
 				this.emit('update');
 			}
 		});
+		this.handleMessage = stowaway.handleMessage;
+	}
+
+	receive (timestamp, author, youFlag, content) {
+		if (this.messages != null) {
+			this.messages.push(new Message(timestamp, author, youFlag, content));
+			this.emit('update');
+		}
+	}
+
+	get name () {
+		return this.name;
+	}
+
+	clear () {
+		this.messages = null;
 	}
 
 	update (channel) {
@@ -48,10 +56,24 @@ class Channel extends Model {
 	}
 
 	display () {
-		return {
-			header: this.name,
-			body: this.messages.map(m => m.display()).join('\n'),
-		};
+		if (this.messages != null) {
+			return new Promise({
+				header: this.name(),
+				body: this.messages.map(m => m.display()).join('\n'),
+			});
+		}
+		else {
+			return this.messageManager.fetch({cache: false})
+			.then((messages) => {
+				this.messages = messages.map(m => this.handleMessage(m))
+				.filter(res => res.success)
+				.map(res => new Message(res.timestamp, res.author, res.youFlag, res.content));
+				return {
+					header: this.name(),
+					body: this.messages.map(m => m.display()).join('\n'),
+				};
+			});
+		}
 	}
 }
 
@@ -69,6 +91,10 @@ class GuildChannel extends Channel {
 		});
 	}
 
+	get name () {
+		return `{bold}${this.guildName} #${this.name}{/bold} ${this.topic}`;
+	}
+
 	update (channel) {
 		super.update(channel);
 		this.topic = channel.topic;
@@ -77,13 +103,6 @@ class GuildChannel extends Channel {
 	guildUpdate (guild) {
 		this.guildID = guild.id;
 		this.guildName = guild.name;
-	}
-
-	display () {
-		return {
-			header: `{bold}${this.guildName} #${this.name}{/bold} ${this.topic}`,
-			body: this.messages.map(m => m.display()).join('\n'),
-		}
 	}
 }
 
@@ -138,10 +157,10 @@ class Channels extends Model {
 			return this.focus.display();
 		}
 		else {
-			return {
+			return new Promise({
 				header: "Welcome!",
 				body: "landing message, basic controls, & begging for internet money",
-			};
+			});
 		}
 	}
 
