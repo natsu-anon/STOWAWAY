@@ -220,7 +220,6 @@ class PlaintextStowaway extends EventEmitter {
 		this.client = client;
 		this.db = db;
 		this.channel = channel;
-		this.selfTest = (user) => { return user.id == client.user.id };
 	}
 
 	launch (verbose=false) {
@@ -250,12 +249,9 @@ class PlaintextStowaway extends EventEmitter {
 	}
 
 	_handleMessage (message, chID) {
-		// console.log(`message: ${message.id}`);
-		// console.log(`channel: ${chID}`);
 		if (message.channel.id == chID) {
 			this.db.update({ channel_id: chID}, { $set: { last_seen: message.id }}, () => {
-				// console.log(`_handleMessage(): ${message.author.tag}`);
-				this.emit('message', message.createdTimestamp, message.createdAt, message.author.tag, this.selfTest(message.author), message.content);
+				this.emit('message', message.createdTimestamp, message.createdAt, message.author, message.content);
 			});
 		}
 	}

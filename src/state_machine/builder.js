@@ -83,21 +83,22 @@ class HFSMBuilder {
 */
 
 class FSMBuilder {
-	set enterRead (value) {
+	enterRead (value) {
 		this._enterRead = value;
 		return this;
 	}
 
-	set enterWrite (value) {
+	enterWrite (value) {
 		this._enterWrite = value;
 		return this;
 	}
 
-	set exitRead (value) {
+	exitRead (value) {
 		this._exitRead = value;
 		return this;
 	}
-	set exitWrite (value) {
+	
+	exitWrite (value) {
 		this._exitWrite = value;
 		return this;
 	}
