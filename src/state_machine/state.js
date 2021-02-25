@@ -2,6 +2,7 @@ const EventEmitter = require('events')
 
 class State extends EventEmitter {
 	constructor () {
+		super();
 		if (new.target === State) {
 			throw new TypeError('Abstract class "State" cannot be instantiated directly');
 		}
@@ -28,7 +29,7 @@ class State extends EventEmitter {
 	onEsc () {}
 
 	onTab () {}
-	
+
 	onW () {}
 
 	onA () {}

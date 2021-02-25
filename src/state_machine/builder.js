@@ -1,6 +1,8 @@
-const HFSM = require('./hfsm.js');
+// const HFSM = require('./hfsm.js');
+const SingleFSM = require('./fsm.js');
 
-class Builder {
+/*
+class HFSMBuilder {
 	set navigateUpdate (value) {
 		this._navigateUpdate = value;
 	}
@@ -78,5 +80,34 @@ class Builder {
 		reutrn hfsm;
 	}
 }
+*/
 
-module.exports = Builder;
+class FSMBuilder {
+	set enterRead (value) {
+		this._enterRead = value;
+		return this;
+	}
+
+	set enterWrite (value) {
+		this._enterWrite = value;
+		return this;
+	}
+
+	set exitRead (value) {
+		this._exitRead = value;
+		return this;
+	}
+	set exitWrite (value) {
+		this._exitWrite = value;
+		return this;
+	}
+
+	build () {
+		return new SingleFSM(this._enterRead, this._enterWrite, this._exitRead, this._exitWrite);
+	}
+}
+
+module.exports = {
+	// HFSM: HFSMBuilder,
+	FSMBuilder: FSMBuilder,
+};
