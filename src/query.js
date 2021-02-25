@@ -53,6 +53,7 @@ require('./database.js').Init(rl, openpgp)
 })
 .then(({key: key, database: db, client: client}) =>  {
 	console.log(`logged in as ${client.user.tag}\tid: ${client.user.id}`);
+	/*
 	foo = {}
 	client.guilds.cache.each((guild) => {
 		console.log(`[-] ${guild.name}`);
@@ -82,5 +83,18 @@ require('./database.js').Init(rl, openpgp)
 	});
 	client.destroy()
 	process.exit(0)
+	*/
+	client.channels.fetch('491749175499685891')
+	.then(channel => {
+		console.log(channel.name);
+		return channel.messages.fetch({ limit: 10 });
+	})
+	.then(messages => {
+		messages.sort((m0, m1) => m0.createdTimestamp - m1.createdTimestamp).each(m => console.log(m.createdAt));
+	})
+	.finally(() =>  {
+		client.destroy()
+		process.exit(0)
+	});
 })
 .catch((err) => { console.error(err); });
