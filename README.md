@@ -47,6 +47,7 @@ npm i pkg -g
 ```
 
 ### NOTA BENE
+- solid `pkg` [tutorial (includes thorough package.json usage)](https://thecodebarbarian.com/standalone-express-apis-binaries-with-pkg.html)
 - use `cmd` to run `pkg` -- powershell won't allow it & command prompt is simpler than powershell's changing execution policy.
 - lmao hash discord snowflakes -- don't use channel/user ids when querying about people via comms
 
