@@ -92,7 +92,6 @@ class SingleCLI {
 			label: this._channelLabel,
 			border: {
 				type: 'line',
-				fg: 'green',
 			},
 			content: "loading...",
 		})
@@ -145,14 +144,13 @@ class SingleCLI {
 
 	set loginNotice (text) {
 		this._loginNotice = text;
-		this.screen.render();
 	}
 
 	set channelLabel (text) {
 		this._channelLabel = text;
-		this.screen.render();
 	}
 
+	/*
 	submitInput () {
 		const text = this.inputBox.getValue();
 		this.inputBox.submit();
@@ -175,7 +173,6 @@ class SingleCLI {
 			type: 'line',
 			fg: 'green',
 		};
-		unfocusInput();
 		this.screen.render();
 	}
 
@@ -203,6 +200,11 @@ class SingleCLI {
 			type: 'line',
 		};
 	}
+	*/
+
+	focusInput () {
+		this.inputBox.focus();
+	}
 
 	popup (label) {
 		this.popupBox.show();
@@ -225,16 +227,16 @@ class SingleCLI {
 
 	notify (text, type) {
 		if (type === "handshake") {
-			_notify(text, 'cyan')
+			this._notify(text, 'cyan')
 		}
 		else if (type === 'encrypted') {
-			_notify(text, 'green');
+			this._notify(text, 'green');
 		}
 		else if (type === 'error') {
-			_notify(text, 'red');
+			this._notify(text, 'red');
 		}
 		else {
-			_notify(text, 'yellow');
+			this._notify(text, 'yellow');
 		}
 	}
 
@@ -245,7 +247,7 @@ class SingleCLI {
 			bg: color,
 		};
 		this.screen.render();
-		return new Promise((resolve) => {
+		new Promise((resolve) => {
 			setTimeout(() => {
 				this.notificationBox.style = {
 					fg: color,
@@ -291,23 +293,16 @@ class SingleCLI {
 				}, 100);
 			})
 		})
-		.then(() => {
-			return new Promise((resolve) => {
-				setTimeout(() => {
-					notificationBox.hide();
-					this.screen.render();
-					resolve();
-				}, 3000);
-			})
-		})
 		.finally(() => {
-			this.notificationBox.setContent(this._loginNotice);
-			this.notificationBox.style = {
-				fg: 'white',
-				bg: 'black'
-			};
-			screen.render();
-		});
+			setTimeout(() => {
+				this.notificationBox.setContent(this._loginNotice);
+				this.notificationBox.style = {
+					fg: 'white',
+					bg: 'black'
+				};
+				this.screen.render();
+			}, 3000);
+		})
 	}
 
 	scrollChannel (offset) {

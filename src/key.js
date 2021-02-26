@@ -1,6 +1,7 @@
 const openpgp = require('openpgp');
+const input = require('./blessed-input.js');
 
-function init (keyPath, fs, rl) {
+function init (keyPath, fs,) {
 	console.log("checking for existing key...");
 	return new Promise((resolve, reject) => {
 		fs.access(keyPath, fs.constants.R_OK, (error) => {
@@ -24,23 +25,24 @@ function init (keyPath, fs, rl) {
 			}
 			else {
 				console.log('No existing keys found!  Generating new keys...');
-				rl.question("Enter a nickname to associate with your keys:\n>", (name) => {
-					openpgp.generateKey({
+				input("Enter a nickname to associate with your keys")
+				.then(name => {
+					return openpgp.generateKey({
 						userIds: [{ name: name }],
 						curve: 'curve25519',
 					})
-					.then(({ key, privateKeyArmored }) => {
-						fs.writeFile(keyPath, privateKeyArmored, 'utf8' , (err) => {
-							if (err) {
-								reject(err);
-							}
-							else {
-								resolve(key);
-							}
-						});
-					})
-					.catch(reject);
-				});
+				})
+				.then({ key, privateKeyArmored }) => {
+					fs.writeFile(keyPath, privateKeyArmored, 'utf8', (err) => {
+						if (err) {
+							reject(err);
+						}
+						else {
+							resolve(key);
+						}
+					});
+				})
+				.catch(reject);
 			}
 		});
 	})

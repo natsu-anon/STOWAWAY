@@ -1,3 +1,25 @@
+const BInput = require('./src/blessed-input.js');
+
+BInput("enter bot API token, then press [Enter] to continue...", true)
+.then(console.log);
+
+
+/*
+const foo = new Promise((resolve, reject) => {
+	try {
+		const input = new BInput("send help");
+		input.textbox.once('submit', (val) => {
+			input.screen.destroy();
+			console.log(val.length);
+			resolve(val);
+		});
+	}
+	catch (err) {
+		reject(err);
+	}
+})
+*/
+/*
 const openpgp = require('openpgp');
 
 // openpgp.generateKey({
@@ -47,3 +69,4 @@ async function main () {
 }
 
 main();
+*/

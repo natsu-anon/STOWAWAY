@@ -1,9 +1,18 @@
 const State = require('./state.js');
 
 class ReadState extends State {
-	constructor (fsm) {
+	constructor (enter, exit) {
 		super();
-		this.fsm = fsm;
+		this._enter = enter;
+		this._exit = exit;
+	}
+
+	enter () {
+		this._enter();
+	}
+
+	exit () {
+		this._exit();
 	}
 
 	onCtrlC () {
@@ -11,7 +20,7 @@ class ReadState extends State {
 	}
 
 	onSpace () {
-		this.fsm._write();
+		this.emit('to write');
 	}
 
 	onW () {

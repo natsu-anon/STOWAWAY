@@ -12,7 +12,9 @@ function init (tokenPath, fs, rl, Client,) {
 				});
 			}
 			else {
+				rl.resume();
 				rl.question("No token found.  Enter discord bot token:\n>", token => {
+					rl.pause();
 					clientLogin(token, tokenPath, Client)
 					.then((client) => {
 						console.log("\x1b[1m\x1b[32mSupplied token accepted!\x1b[0m");

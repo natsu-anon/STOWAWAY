@@ -162,21 +162,23 @@ const inputBox = blessed.textarea({
 inputBox.key(['enter'], (ch, key) => {
 	inputBox.submit();
 	inputBox.clearValue();
-	setTimeout(popup("submitted input"), 1000);
+	// setTimeout(popup("submitted input"), 1000);
 	screen.render();
 });
 
 inputBox.key(['escape'], (ch, key) => {
 	inputBox.submit();
-	setTimeout(popup("escaped input"), 1000);
+	// setTimeout(popup("escaped input"), 1000);
+	notify("escaped input");
 	screen.render();
 });
 
 screen.key(['enter'], (ch, key) => {
 	if (!inputBox.focused) {
-		setTimeout(popup("input mode"), 1000);
-		screen.render();
+		notify("input mode", "encrypted");
+		// setTimeout(popup("input mode"), 1000);
 		inputBox.focus();
+		screen.render();
 	}
 });
 

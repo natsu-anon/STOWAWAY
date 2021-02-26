@@ -5,33 +5,41 @@ const WriteState = require('./write-state.js');
 class SingleFSM extends EventEmitter {
 	constructor (enterRead, enterWrite, exitRead, exitWrite) {
 		super();
-		this._enterRead = enterRead;
-		this._enterWrite = enterWrite;
-		this._exitRead = exitRead;
-		this._enterWrite = enterWrite;
-		const read = new ReadState(this);
+		const read = new ReadState(enterRead, exitRead);
+		this._readState = read;
+		const write = new WriteState(enterWrite, exitWrite);
+		this._writeState = write;
+		this._current = this._readState;
+		this._current.enter();
 		read.on('quit', () => this.emit('quit'));
+		write.on('quit', () => this.emit('quit')); // Comment this out?
 		read.on('scroll up', () => this.emit('scroll up'));
 		read.on('scroll down', () => this.emit('scroll down'));
-		this._readState = read;
-		const write = new WriteState(this);
-		write.on('clear', () => this.emit('clear input'));
-		write.on('pause', () => this.emit('pause input'));
-		write.on('send', () => this.emit('send input'));
-		this._writeState = write;
-		_read();
+		read.on('to write', () => this._write());
+		write.on('clear', () => {
+			this.emit('clear input');
+			this._read();
+		});
+		write.on('pause', () => {
+			this.emit('pause input');
+			this._read();
+		});
+		write.on('send', () => {
+			this.emit('send input');
+			this._read();
+		});
 	}
 
 	_write () {
-		this._exitRead();
+		this._current.exit();
 		this._current = this._writeState;
-		this._enterWrite();
+		this._current.enter();
 	}
 
 	_read () {
-		this._exitWrite();
+		this._current.exit();
 		this._current = this._readState;
-		this._enterRead();
+		this._current.enter();
 	}
 
 	onCtrlC () {
@@ -63,4 +71,4 @@ class SingleFSM extends EventEmitter {
 	}
 }
 
-module.export = SingleFSM;
+module.exports = SingleFSM;

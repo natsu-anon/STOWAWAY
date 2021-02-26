@@ -1,4 +1,4 @@
       _  __ __        __        __
  //  /_` / / / | | | /_/ | | | /_/ /_/  //
 //  ._/ / /_/  |/|/ / /  |/|/ / /  /   //  v 0.2.0
-This software is licensed under the WTFPL
+This software is licensed under the WTFPL         

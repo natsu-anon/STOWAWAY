@@ -1,24 +1,34 @@
 const State = require('./state.js');
 
 class WriteState extends State {
-	constructor (fsm) {
+	constructor (enter, exit) {
 		super();
-		this.fsm = fsm;
+		this._enter = enter;
+		this._exit = exit;
 	}
 
-	onEscape () {
+	enter () {
+		this._enter();
+	}
+
+	exit () {
+		this._exit();
+	}
+
+	onCtrlC () {
+		this.emit('quit');
+	}
+
+	onEsc () {
 		this.emit('clear');
-		this.fsm._read();
 	}
 
 	onTab () {
 		this.emit('pause');
-		this.fsm._read();
 	}
 
 	onEnter () {
 		this.emit('send');
-		this.fsm._read();
 	}
 
 }

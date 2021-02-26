@@ -21,10 +21,11 @@ const API_TOKEN = './token DO NOT SHARE';
 const rl = readline.createInterface({
 	input: process.stdin,
 	output: process.stdout,
+	prompt: '>',
 });
+rl.pause();
 
 console.log(fs.readFileSync('./banner.txt', 'utf8'));
-console.log("This software is licensed under the WTFPL\n");
 
 function warn () {
 	console.log(`\x1b[33m
@@ -80,45 +81,75 @@ keyInit(PRIVATE_KEY, fs, rl)
 	console.log(`channel: ${channel.name}`);
 	const stowaway = new PlaintextStowaway(client, db, channel);
 	const ch_model = new SingleChannel();
+	const log = [];
 	const cli = new SingleCLI(client.user.tag, channel.name);
-	cli.screen.key(['C-c'], () => {
-		client.destroy();
-		return process.exit(0);
-	});
-	// ch_model.on('update', console.log);
-	ch_model.on('update', () => {
-		cli.messages = ch_model.text;
-		// cli.channelContent(ch_model.text());
-		// cli.channelBox.setContent(ch_model.text());
-		// cli.render();
-	});
 	stowaway.on('message', ch_model.receive);
+	ch_model.on('update', () => {
+		cli.messages = ch_model.tex;
+		cli.render();
+	});
 	stowaway.launch();
-	cli.messages = ch_model.tex;
-	cli.render();
-	/*
-	const cli = new SingleCLI(client.user.tag, channel.name);
-	// other stowaway event handling
+	cli.messages = ch_model.text;
+	// cli.render();
+	// setTimeout(function (text, type){ cli.notify(text, type); }, 200, "HENLO", "encrypted");
 	const fsm = new FSMBuilder()
-	.enterRead(cli.focusChannel)
-	.enterWrite(cli.focusInput)
+	.enterRead(() => {
+		log.push("enter read");
+		cli.messages = log.join('\n');
+		cli.render();
+		/*
+		// cli.notify("READ STATE", "encrypted");
+		cli.channelBox.border = { type: 'line', fg: 'green' };
+		cli.render();
+		*/
+	})
+	.exitRead(() => {
+		log.push("exit read");
+		cli.messages = log.join('\n');
+		cli.render();
+		/*
+		cli.channelBox.border = { type: 'line' };
+		*/
+	})
+	.enterWrite(() => {
+		if (!cli.inputBox.focused) {
+			log.push("enter write");
+			cli.render();
+			// cli.notify("WRITE STATE", "handshake");
+			cli.inputBox.setLabel("{green-fg}writing...{/}")
+			cli.inputBox.border = { type: 'line', fg: 'green' };
+			// cli.focusInput();
+			// cli.screen.focusPush(cli.inputBox);
+			cli.screen.focused = null;
+			cli.screen.focused = cli.inputBox;
+			// log.push(cli.screen.focused);
+			cli.messages = log.join('\n');
+			// cli.inputBox.focus();
+			// cli.channelBox.focus();
+			cli.render();
+		}
+	})
+	.exitWrite(() => {
+		log.push("exit write");
+		cli.messages = log.join('\n');
+		cli.render();
+		cli.inputBox.setLabel("yadda yadda");
+		cli.inputBox.border = { type: 'line' };
+		cli.inputBox.submit();
+		cli.screen.focusPop();
+		// cli.channelBox.focus();
+	})
 	.build();
 	fsm.on('quit', () => {
 		client.destroy();
-		process.exit(0);
+		return process.exit(0);
 	});
-	fsm.on('scroll up', () => {
-		cli.scroll(1);
+	cli.screen.key(['space'], () => {
+		fsm.onSpace();
 	});
-	fsm.on('scroll down', () => {
-		cli.scroll(-1);
+	cli.screen.key(['C-c'], () => {
+		fsm.onCtrlC();
 	});
-	fsm.on('clear input', cli.cancelInput);
-	fsm.on('pause input', cli.pauseInput);
-	fsm.on('send input', () => {
-		stowaway.encrypt(cli.submitInput());
-	});
-	cli.screen.focus();
 	cli.screen.key(['enter'], () => {
 		fsm.onEnter();
 	});
@@ -128,14 +159,51 @@ keyInit(PRIVATE_KEY, fs, rl)
 	cli.screen.key(['tab'], () => {
 		fsm.onTab();
 	});
-	cli.screen.key(['space'], () => {
-		fsm.onSpace();
+	cli.inputBox.key(['C-c'], () => {
+		fsm.onCtrlC();
 	});
+	cli.inputBox.key(['enter'], () => {
+		fsm.onEnter();
+	});
+	cli.inputBox.key(['escape'], () => {
+		fsm.onEsc();
+	});
+	cli.inputBox.key(['tab'], () => {
+		fsm.onTab();
+	});
+	fsm.on('send input', () => {
+		cli.notify(cli.submitInput());
+	});
+	process.stdin.on('keypress', (c, k) => {
+		log.push(`KEYPRESS: c: ${c}, k:${k}`);
+		cli.messages = log.join('\n');
+		cli.render();
+	});
+	/*
+	fsm.on('scroll up', () => {
+		cli.scroll(1);
+	});
+	fsm.on('scroll down', () => {
+		cli.scroll(-1);
+	});
+	*/
+	// cli.screen.focus();
+	/*
 	cli.screen.key(['w'], () => {
 		fsm.onW();
 	});
 	cli.screen.key(['s'], () => {
 		fsm.onS();
+	});
+	*/
+	/*
+	const cli = new SingleCLI(client.user.tag, channel.name);
+	// other stowaway event handling
+	const fsm = new FSMBuilder()
+	fsm.on('clear input', cli.cancelInput);
+	fsm.on('pause input', cli.pauseInput);
+	fsm.on('send input', () => {
+		stowaway.encrypt(cli.submitInput());
 	});
 	cli.screen.key(['C-c'], () => {
 		client.destroy();
