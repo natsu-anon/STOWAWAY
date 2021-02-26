@@ -10,10 +10,10 @@ const KEYFILE = "pubkey.txt";
 const MSGFILE = "pgpmsg.txt";
 
 function readAttached (url) {
-	return new Promise((res, rej) => {
+	return new Promise((resolve, reject) => {
 		https.get(url, response => {
-			response.on('data', d => res(d.toString()));
-			response.on('error', d => rej(d));
+			response.on('data', data => { resolve(data.toString()); });
+			response.on('error', err => { reject(err); });
 		});
 	});
 }
@@ -35,7 +35,7 @@ function getAttachment (message, name) {
 /* EVENTS
 	channel delete
 	channel update: channel
-	message: timestamp. date string, user, bool (you flag), content
+	message: timestamp. date string, user, content
 	failed decrypt: user, date string
 	failed encrypt: error
 	handshake: user
@@ -43,111 +43,169 @@ function getAttachment (message, name) {
 	database error : error string
 */
 class SingleStowaway extends EventEmitter {
-	constructor (key, client, db, channel) {
+	constructor (key, channel, db) {
 		super();
 		this.key = key;
-		this.db = db;
 		this.channel = channel;
-		this.selfTest = user => user.id == client.user.id;
-		this.launch = (verbose=false) => {
-			if (verbose) {
-				console.log("Initializing STOWAWAY engine");
-			}
-			this._init(verbose).finally(() => {
-				client.on('message', this._handleMessage);
-				client.on('channelDelete', channel => {
-					if (channel.id == this.channel.id) {
-						this.emit('channel delete');
-					}
-				});
-				client.on('channelUpdate', (ch0, ch1) => {
-					if (ch0.id == this.channel.id) {
-						this.channel = ch1;
-						this.emit('channel update', this.channel);
-					}
-				});
-				if (verbose) {
-					console.log("Initialization complete!");
-				}
-				return this;
+		this.db = db;
+	}
+
+	launch (client) {
+		this.id = client.id;
+		this._init()
+		.catch((err) => { throw err; })
+		.finally(() => {
+			client.on('message', message => {
+				this._handleMessage(message);
 			});
-		};
+			client.on('channelDelete', channel => {
+				if (channel.id == this.channel.id) {
+					this.emit('channel delete');
+				}
+			});
+			client.on('channelUpdate', (ch0, ch1) => {
+				if (ch0.id == this.channel.id) {
+					this.channel = ch1;
+					this.emit('channel update', this.channel);
+				}
+			});
+		})
+		// .then(() => { this.emit('debug', 'INITIALIZATION COMPLETE'); });
 	}
 
 	_handleMessage (message) {
+		this.emit('timestamp', message.createdAt, message.id);
 		if (message.channel.id == this.channel.id) {
-			this.db.update({ channel_id: this.channel.id}, { $set: { last_seen: message.id }}, () => {
-				if (message.author.id != client.user.id && (message.content === HANDHSAKE_REQUEST || message.content === HANDHSAKE_RESPONSE) && message.attachments.size > 0) {
-					const keyFile = getAttachment(KEYFILE);
-					if (keyFile.exists) {
-						receiveHandshake(message.author, message.id, keyFile.url, message.content === HANDSHAKE_REQUEST);
-					}
-					else {
-						this.emit('bad handshake', message.author);
-					}
+			if (message.author.id != this.id && (message.content === HANDSHAKE_REQUEST || message.content === HANDSHAKE_RESPONSE) && message.attachments.size > 0) {
+				const keyFile = getAttachment(message, KEYFILE);
+				if (keyFile.exists) {
+					this.receiveHandshake(message.author, message.id, keyFile.url, message.content === HANDSHAKE_REQUEST)
+					.then(() => {
+						this.updateLatests(message.createdTimestamp, message.id);
+					})
+					.catch(err => { this.emit('bad handshake', message.author); });
 				}
-				else if (message.content === ENCRYPTED_MESSAGE && message.attachments.size > 0) {
-					const messageFile = getAttachment(MSGFILE);
-					if (messageFile.exists) {
-						decrypt(message.createdTimestamp, message.createdAt, message.author, messageFile.url);
-					}
-					else {
-						this.emit('no encrypted file', message);
-					}
+				else {
+					this.emit('bad handshake', message.author);
 				}
-			});
+			}
+			else if (message.content === ENCRYPTED_MESSAGE && message.attachments.size > 0) {
+				const messageFile = getAttachment(message, MSGFILE);
+				if (messageFile.exists) {
+					this.decrypt(messageFile.url)
+					.then((plaintext) => {
+						this.emit('message', message.createdTimestamp, message.createdAt, message.author, plaintext, message.id);
+						this.updateLatests(message.createdTimestamp, message.id);
+					})
+					.catch((err) => { this.emit('failed decrypt', message.createdTimestamp, message.createdAt, message.author); });
+				}
+				else {
+					this.emit('no encrypted file', message);
+				}
+			}
 		}
 	}
 
-	_init (verbose) {
+	_init () {
 		return new Promise((resolve, reject) => {
-			this.db.findOne({ channel_id: this.channel.id }, (err, doc) => {
-				if (doc == null) {
-					if (verbose) {
-						console.log("unrecognized channel: performing handshake request")
-					}
+			this.db.findOne({ channel_id: this.channel.id , handshake: { $exists: true } }, (err, doc) => {
+				if (err != null) {
+					reject(err);
+				}
+				else if (doc == null) {
 					this.handshake(HANDSHAKE_REQUEST)
-					.then((message) => {
-						this.db.insert({ channel_id: this.channel.id, handshake: message.id, last_seen: message.id }, () => {
+					.then(message => {
+						this.db.insert({
+							channel_id: this.channel.id,
+							handshake: message.id,
+							last_seen: message.id,
+							last_ts: message.createdAt,
+						}, () => {
 							resolve();
 						});
-					});
+					})
+					.catch(reject);
 				}
 				else {
-					if (verbose) {
-						console.log("recognized channeL: fetching unseen messages")
-					}
-					this.channel.messages.fetch({ after: doc.last_seen })
+					this.channel.messages.fetch({ around: doc.last_seen }, false, false)
 					.then(messages => {
-						messages.sort((m0, m1) => m0.createdTimestamp - m1.createdTimestamp).each(this._handleMessage);
+						messages.each(message => { this._handleMessage(message); });
+						resolve();
+						// return this.channel.messages.fetch({after: doc.last_seen}, false, false);
 					})
-					.finally(resolve);
+					// .then(messages => {
+					// 	// messages.each(message => { this._handleMessage(message); });
+					// 	resolve();
+					// })
+					.catch(reject);
 				}
 			});
 		});
 	}
 
-	decrypt (timestamp, date, author, messageURL) {
-		readAttached(messageURL)
-		.then(armoredText => {
-			return openpgp.message.readArmored(armoredText);
-		})
-		.then(message => {
-			return openpgp.decrypt({
-				message: messsage,
-				privateKeys: this.key
+	fetchOlder (id) {
+		return new Promise((resolve, reject) => {
+			this.db.findOne({ channel_id: this.channel.id, handshake: { $exists: true }}, (err, doc) => {
+				if (err != null) {
+					reject(err);
+				}
+				if (doc != null) {
+					this.channel.messages.fetch({ before: id }, false, false)
+					.then(messages => {
+						// this.emit('notify', `${Array.from(messages.values()).length} older messages fetched`);
+						messages.each(message => { this._handleMessage(message); });
+						this.db.persistence.compactDatafile();
+						resolve();
+					})
+					.catch(reject);
+				}
 			});
-		})
-		.then(res => {
-			this.emit('message', timestamp, date, author, this.selfTest(author), res.data);
-		})
-		.catch(err => { this.emit('failed decrypt', author, date); });
+		});
+	}
+
+	fetchNewer (id) {
+		return new Promise((resolve, reject) => {
+			this.db.findOne({ channel_id: this.channel.id, handshake: { $exists: true }}, (err, doc) => {
+				if (err != null) {
+					reject(err);
+				}
+				if (doc != null) {
+					this.channel.messages.fetch({ after: id }, false, false)
+					.then(messages => {
+						messages.each(message => { this._handleMessage(message); });
+						this.db.persistence.compactDatafile();
+						resolve();
+					})
+					.catch(reject);
+				}
+			});
+		});
+	}
+
+	// NOTE is ok
+	decrypt (messageURL) {
+		return new Promise((resolve, reject) => {
+			readAttached(messageURL)
+			.then(armoredText => {
+				return openpgp.message.readArmored(armoredText);
+			})
+			.then(res => {
+				return openpgp.decrypt({
+					message: res,
+					privateKeys: this.key,
+				});
+			})
+			.then(res => {
+				resolve(res.data);
+			})
+			.catch(reject);
+		});
 	}
 
 	encrypt (plainText)  {
-		Promise.allSettled(this.channel.members.keyArray().map(id => {
-			new Promise((resolve, reject) => {
-				this.db.findOne({ user_id: id }, (err, doc) => {
+		Promise.allSettled(this.channel.members.map(user => {
+			return new Promise((resolve, reject) => {
+				this.db.findOne({ user_id: user.id }, (err, doc) => {
 					if (err) {
 						this.emit('database error', `SingleStowaway.encrypt(), id argument: ${id}`);
 						reject();
@@ -155,9 +213,7 @@ class SingleStowaway extends EventEmitter {
 					else if (doc != null) {
 						resolve(doc.user_key);
 					}
-					else {
-						reject();
-					}
+					reject();
 				});
 			});
 		}))
@@ -178,7 +234,7 @@ class SingleStowaway extends EventEmitter {
 			const attachment = attachText(encrypted.data, MSGFILE);
 			return this.channel.send(ENCRYPTED_MESSAGE, attachment);
 		})
-		.catch(err => this.emit('failed encrypt', err));
+		.catch(err => { this.emit('error', err); })
 	}
 
 	handshake (str) {
@@ -186,57 +242,76 @@ class SingleStowaway extends EventEmitter {
 		return this.channel.send(str, attachment);
 	}
 
+	updateLatests (ts, id) {
+		this.db.findOne({ channel_id: this.channel.id , handshake: { $exists: true }, last_seen: { $exists: true }, last_ts: { $exists: true }}, (err, doc) => {
+			if (err != null) {
+				throw err;
+			}
+			else if (doc != null) {
+				if (ts > doc.last_ts) {
+					this.db.update({ channel_id: this.channel.id, handshake: { $exists: true }}, { $set: { last_seen: id, last_ts: ts }}, { multi: true });
+				}
+			}
+		});
+	}
+
 	receiveHandshake (user, messageID, keyURL, respond) {
-		this.db.findOne({ user_id: user.id }, (err, doc) => {
-			if (err) {
-				this.emit('database error', `SingleStowaway.receiveHandshake() id argument: ${user.id}`);
-			}
-			else if (doc == null) {
-				readAttached(keyURL)
-				.then(keyStr => {
-					return openpgp.key.readArmored(keyStr)
-				})
-				.then(({ keys, err }) => {
-					if (err == null) {
-						this.db.insert({  user_id: user.id, handshake_id: messageID, user_key: keys[0].armor() });
-						if (respond) {
-							this.handshake(HANDSHAKE_RESPONSE);
+		return new Promise((resolve, reject) => {
+			this.db.findOne({ user_id: user.id }, (err, doc) => {
+				if (err) {
+					this.emit('database error', `SingleStowaway.receiveHandshake() id argument: ${user.id}`);
+					reject();
+				}
+				else if (doc == null) {
+					readAttached(keyURL)
+					.then(keyStr => {
+						return openpgp.key.readArmored(keyStr)
+					})
+					.then(({ keys, err }) => {
+						if (err == null) {
+							this.db.insert({  user_id: user.id, handshake_id: messageID, user_key: keys[0].armor() });
+							if (respond) {
+								this.handshake(HANDSHAKE_RESPONSE);
+							}
+							this.emit('handshake', user);
+							resolve();
 						}
-						this.emit('handshake', user);
-					}
-					else {
-						this.emit('bad handshake', user);
-					}
-				})
-				.catch(err => this.emit('bad handshake', user));
-			}
+						else {
+							reject();
+						}
+					})
+					.catch(reject);
+				}
+				else {
+					resolve();
+				}
+			});
 		});
 	}
 }
 
+/*
 class PlaintextStowaway extends EventEmitter {
-	constructor (client, db, channel) {
+	constructor (channel, db) {
 		super();
-		this.client = client;
-		this.db = db;
 		this.channel = channel;
+		this.db = db;
 	}
 
-	launch (verbose=false) {
+	launch (client, verbose=false) {
 		if (verbose) {
 			console.log("Initializing STOWAWAY PLAINTEXT");
 		}
-		this._init(verbose)
+		this.init(verbose)
 		.then(() => {
-			// console.log(client);
-			this.client.on('message', m => { this._handleMessage(m, this.channel.id) });
-			this.client.on('channelDelete', channel => {
+			client.on('message', (m) => { this.handleMessage(m); });
+			client.on('channelDelete', channel => {
 				if (channel.id == this.channel.id) {
 					this.emit('channel delete');
 				}
 			});
-			this.client.on('channelUpdate', (ch0, ch1) => {
-				if (ch0.id == this.channel.id) {
+			client.on('channelUpdate', (ch0, ch1) => {
+				if (ch0.id == channel.id) {
 					this.channel = ch1;
 					this.emit('channel update', this.channel);
 				}
@@ -248,22 +323,27 @@ class PlaintextStowaway extends EventEmitter {
 		.catch(err => { throw err; });
 	}
 
-	_handleMessage (message, chID) {
-		if (message.channel.id == chID) {
-			this.db.update({ channel_id: chID}, { $set: { last_seen: message.id }}, () => {
+	send (text) {
+		this.channel.send(text);
+	}
+
+	handleMessage (message) {
+		if (message.channel.id == this.channel.id) {
+			this.db.update({ channel_id: this.channel.id}, { $set: { last_seen: message.id }}, () => {
 				this.emit('message', message.createdTimestamp, message.createdAt, message.author, message.content);
 			});
 		}
 	}
 
-	_init (verbose) {
+	init (verbose) {
 		return new Promise((resolve, reject) => {
+			console.log(this.channel.id);
 			this.db.findOne({ channel_id: this.channel.id }, (err, doc) => {
 				if (doc == null) {
 					if (verbose) {
-						console.log("unrecognized channel: performing initial cache")
+			}			cli.log("unrecognized channel: performing initial cache")
 					}
-					this.channels.messages.fetch({ limit: 1 })
+					this.channel.messages.fetch({ limit: 1 })
 					.then(message => {
 						this.db.insert({ channel_id: this.channel.id, last_seen: message.id }, () => {
 							resolve();
@@ -272,12 +352,12 @@ class PlaintextStowaway extends EventEmitter {
 				}
 				else {
 					if (verbose) {
-						console.log("recognized channel: fetching unseen messages")
+						cli.log("recognized channel: fetching unseen messages")
 					}
 					this.channel.messages.fetch({ after: doc.last_seen })
 					.then(messages => {
 						messages.sort((m0, m1) => m0.createdTimestamp - m1.createdTimestamp)
-						.each(m => { this._handleMessage(m, this.channel.id); });
+						.each((m) => { this.handleMessage(m); });
 						resolve();
 					})
 				}
@@ -286,8 +366,9 @@ class PlaintextStowaway extends EventEmitter {
 	}
 
 }
+*/
 
 module.exports = {
 	SingleStowaway: SingleStowaway,
-	PlaintextStowaway: PlaintextStowaway,
+	PlaintextStowaway: 0,
 };

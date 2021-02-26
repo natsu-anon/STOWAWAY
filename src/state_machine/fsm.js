@@ -13,8 +13,8 @@ class SingleFSM extends EventEmitter {
 		this._current.enter();
 		read.on('quit', () => this.emit('quit'));
 		write.on('quit', () => this.emit('quit')); // Comment this out?
-		read.on('scroll up', () => this.emit('scroll up'));
-		read.on('scroll down', () => this.emit('scroll down'));
+		read.on('scroll', offset => { this.emit('scroll', offset); });
+		read.on('fetch', flag => { this.emit('fetch', flag); });
 		read.on('to write', () => this._write());
 		write.on('clear', () => {
 			this.emit('clear input');
@@ -66,8 +66,16 @@ class SingleFSM extends EventEmitter {
 		this._current.onW();
 	}
 
+	onA () {
+		this._current.onA();
+	}
+
 	onS () {
 		this._current.onS();
+	}
+
+	onD () {
+		this._current.onD();
 	}
 }
 

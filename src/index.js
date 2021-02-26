@@ -1,5 +1,4 @@
 const fs = require('fs');
-const readline = require('readline');
 const process = require('process');
 const { Client } = require('discord.js');
 
@@ -9,52 +8,47 @@ const clientInit = require('./client.js');
 
 const SingleChannel = require('./models/single-channel.js');
 const { SingleStowaway, PlaintextStowaway } = require('./single-stowaway.js');
+const InitCLI = require('./init-cli.js');
 const SingleCLI = require('./single-cli.js');
 const { FSMBuilder } = require('./state_machine/builder.js');
 
+const SCREEN_TITLE = 'ＳＴＯＷＡＷＡＹ v0.2.0';
 const DATABASE = './stowaway.db';
 const PRIVATE_KEY = './stowaway.key';
 const API_TOKEN = './token DO NOT SHARE';
 // const REVOCATION_CERT = './stowaway.cert';
 
 
-const rl = readline.createInterface({
-	input: process.stdin,
-	output: process.stdout,
-	prompt: '>',
-});
-rl.pause();
-
-console.log(fs.readFileSync('./banner.txt', 'utf8'));
-
-function warn () {
-	console.log(`\x1b[33m
-#########################################################
-# DO NOT SHARE YOUR API TOKEN WITH ANYONE               #
-# DO NOT SHARE stowaway.db WITH ANYONE.                 #
-# DO NOT SHARE stowaway.key WITH ANYONE.                #
-#########################################################
-\x1b[0m`);
-}
+const warning = `
+ {black-fg}{yellow-bg} ################################################## {/}
+ {black-fg}{yellow-bg} #    DO NOT SHARE YOUR API TOKEN WITH ANYONE.    # {/}
+ {black-fg}{yellow-bg} #    DO NOT SHARE stowaway.db WITH ANYONE.       # {/}
+ {black-fg}{yellow-bg} #    DO NOT SHARE stowaway.key WITH ANYONE.      # {/}
+ {black-fg}{yellow-bg} ################################################## {/}
+\n`;
 
 if (process.argv.length != 3) {
-	console.log('\x1b[31mSTOWAWAYv0.2.0 requires 1 argument: target channel id\x1b[0m');
+	console.log('\x1b[31mSTOWAWAY v0.2.0 requires 1 argument: target channel id\x1b[0m');
 	process.exit(1);
 }
 
-warn();
 
-keyInit(PRIVATE_KEY, fs, rl)
+let cli = new InitCLI(SCREEN_TITLE);
+cli.log(warning);
+keyInit(PRIVATE_KEY, fs, cli)
 .then(k => {
 	return new Promise((resolve, reject) => {
 		dbInit(DATABASE)
-		.then(db => resolve({key: k, database: db }))
+		.then(db => {
+			cli.log('database initialized!');
+			resolve({key: k, database: db });
+		})
 		.catch(reject);
 	});
 })
 .then(data => {
 	return new Promise((resolve, reject) => {
-		clientInit(API_TOKEN, fs, rl, Client)
+		clientInit(API_TOKEN, fs, cli, Client)
 		.then(client => {
 			data.client = client;
 			resolve(data);
@@ -63,8 +57,7 @@ keyInit(PRIVATE_KEY, fs, rl)
 	});
 })
 .then(res => {
-	rl.close();
-	console.log(`logged in as ${res.client.user.tag}`);
+	cli.log(`logged in as ${res.client.user.tag}`);
 	return new Promise((resolve, reject) => {
 		res.client.channels.fetch(process.argv[2])
 		.then(channel => {
@@ -78,66 +71,64 @@ keyInit(PRIVATE_KEY, fs, rl)
 	});
 })
 .then(({ key: key, database: db, client: client, channel: channel }) => {
-	console.log(`channel: ${channel.name}`);
-	const stowaway = new PlaintextStowaway(client, db, channel);
-	const ch_model = new SingleChannel();
-	const log = [];
-	const cli = new SingleCLI(client.user.tag, channel.name);
-	stowaway.on('message', ch_model.receive);
-	ch_model.on('update', () => {
-		cli.messages = ch_model.tex;
+	cli.log(`channel: ${channel.name}`);
+	const stowaway = new SingleStowaway(key, channel, db);
+	/* ENCRYPT DEBUGGING
+	stowaway.on('message', (ts, date, author, content) => { cli.log(content); });
+	stowaway.on('debug', (text) => { cli.log(`{yellow-fg}${text}{/}`); });
+	stowaway.on('error', (text) => { cli.log(`{red-fg}${text}{/}`); });
+	stowaway.launch(client);
+	setTimeout(function(text){ stowaway.encrypt(text); }, 3000, 'GIB BIG BOOBA FUJO GF PLS');
+	*/
+	const model = new SingleChannel();
+	cli.destroy();
+	cli = new SingleCLI(SCREEN_TITLE, '{bold}[Ctrl-C] to quit{/bold}', channel.name, client.user.tag);
+	stowaway.on('message', model.message);
+	stowaway.on('error', (err) => { cli.error(err); });
+	stowaway.on('timestamp', (ts, id) => { model.timestamp(ts, id); });
+	stowaway.on('failed decrypt', model.decryptionFailure);
+	stowaway.on('notify', (message) => { cli.notify(message); });
+	stowaway.on('debug', (message) => { cli.warning(`DEBUG: ${message}`); });
+	stowaway.on('channel delete', () => { cli.error(`${channel.name} deleted!`); });
+	stowaway.on('channel update', (ch) => {
+		cli.notify("channel updated!")
+		cli.channelLabel = ch.name;
 		cli.render();
 	});
-	stowaway.launch();
-	cli.messages = ch_model.text;
-	// cli.render();
-	// setTimeout(function (text, type){ cli.notify(text, type); }, 200, "HENLO", "encrypted");
+	stowaway.on('bad handshake', (user) => {
+		cli.warning(`BAD HANDSHAKE from ${user.tag}`);
+	});
+	stowaway.on('handshake', (user) => {
+		cli.handshake(`HANDSHAKE from ${user.tag}`);
+	});
+	model.on('update', () => {
+		cli.messages = model.text;
+		cli.render();
+	});
+	stowaway.launch(client);
+	stowaway.on('message', (ts, date, author, content) => {
+		cli.encrypted(`new message from ${author.tag}`);
+	});
+	cli.messages = model.text;
 	const fsm = new FSMBuilder()
 	.enterRead(() => {
-		log.push("enter read");
-		cli.messages = log.join('\n');
+		cli.stateBG = 'magenta';
+		cli.stateText = 'READING -- [SPACE] begin writing; [W] scroll up; [A] fetch older messages; [S] scroll down; [D] fetch newer messages';
 		cli.render();
-		/*
-		// cli.notify("READ STATE", "encrypted");
-		cli.channelBox.border = { type: 'line', fg: 'green' };
-		cli.render();
-		*/
-	})
-	.exitRead(() => {
-		log.push("exit read");
-		cli.messages = log.join('\n');
-		cli.render();
-		/*
-		cli.channelBox.border = { type: 'line' };
-		*/
 	})
 	.enterWrite(() => {
 		if (!cli.inputBox.focused) {
-			log.push("enter write");
-			cli.render();
-			// cli.notify("WRITE STATE", "handshake");
-			cli.inputBox.setLabel("{green-fg}writing...{/}")
-			cli.inputBox.border = { type: 'line', fg: 'green' };
-			// cli.focusInput();
-			// cli.screen.focusPush(cli.inputBox);
-			cli.screen.focused = null;
-			cli.screen.focused = cli.inputBox;
-			// log.push(cli.screen.focused);
-			cli.messages = log.join('\n');
-			// cli.inputBox.focus();
-			// cli.channelBox.focus();
+			cli.screen.focusPush(cli.inputBox);
+			cli.stateBG = 'green';
+			cli.stateText = 'WRITING -- [ESCAPE] to stop writing; [ENTER] to send';
 			cli.render();
 		}
 	})
 	.exitWrite(() => {
-		log.push("exit write");
-		cli.messages = log.join('\n');
-		cli.render();
-		cli.inputBox.setLabel("yadda yadda");
-		cli.inputBox.border = { type: 'line' };
-		cli.inputBox.submit();
-		cli.screen.focusPop();
-		// cli.channelBox.focus();
+		if (cli.inputBox.focused) {
+			cli.screen.focusPop();
+			cli.render();
+		}
 	})
 	.build();
 	fsm.on('quit', () => {
@@ -156,8 +147,17 @@ keyInit(PRIVATE_KEY, fs, rl)
 	cli.screen.key(['escape'], () => {
 		fsm.onEsc();
 	});
-	cli.screen.key(['tab'], () => {
-		fsm.onTab();
+	cli.screen.key(['w'], () => {
+		fsm.onW();
+	});
+	cli.screen.key(['a'], () => {
+		fsm.onA();
+	});
+	cli.screen.key(['s'], () => {
+		fsm.onS();
+	});
+	cli.screen.key(['d'], () => {
+		fsm.onD();
 	});
 	cli.inputBox.key(['C-c'], () => {
 		fsm.onCtrlC();
@@ -168,57 +168,28 @@ keyInit(PRIVATE_KEY, fs, rl)
 	cli.inputBox.key(['escape'], () => {
 		fsm.onEsc();
 	});
-	cli.inputBox.key(['tab'], () => {
-		fsm.onTab();
-	});
-	fsm.on('send input', () => {
-		cli.notify(cli.submitInput());
-	});
-	process.stdin.on('keypress', (c, k) => {
-		log.push(`KEYPRESS: c: ${c}, k:${k}`);
-		cli.messages = log.join('\n');
-		cli.render();
-	});
-	/*
-	fsm.on('scroll up', () => {
-		cli.scroll(1);
-	});
-	fsm.on('scroll down', () => {
-		cli.scroll(-1);
-	});
-	*/
-	// cli.screen.focus();
-	/*
-	cli.screen.key(['w'], () => {
-		fsm.onW();
-	});
-	cli.screen.key(['s'], () => {
-		fsm.onS();
-	});
-	*/
-	/*
-	const cli = new SingleCLI(client.user.tag, channel.name);
-	// other stowaway event handling
-	const fsm = new FSMBuilder()
-	fsm.on('clear input', cli.cancelInput);
-	fsm.on('pause input', cli.pauseInput);
 	fsm.on('send input', () => {
 		stowaway.encrypt(cli.submitInput());
 	});
-	cli.screen.key(['C-c'], () => {
-		client.destroy();
-		return process.exit(0);
-		// fsm.onCtrlC();
+	fsm.on('clear input', () => {
+		cli.cancelInput();
 	});
-	cli.channelContent(ch_model.text());
-	ch_model.on('update', () => {
-		cli.channelContent(ch_model.text());
+	fsm.on('scroll', (offset) => {
+		cli.scrollChannel(offset);
 	});
-	*/
-	// client.destroy();
-	// process.exit(0);
+	fsm.on('fetch', (newerFlag) => {
+		if (newerFlag) {
+			stowaway.fetchNewer(model.newest)
+			.then(() => { cli.notify("fetched newer messages!"); })
+		}
+		else {
+			stowaway.fetchOlder(model.oldest)
+			.then(() => { cli.notify("fetched older messages!"); })
+		}
+	});
 })
 .catch(err => {
+	cli.destroy();
 	console.error(err);
-	// process.exit(1);
+	process.exit(1);
 });

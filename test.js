@@ -1,7 +1,18 @@
-const BInput = require('./src/blessed-input.js');
+const process = require('process');
+const InitCLI = require('./src/init-cli.js');
 
-BInput("enter bot API token, then press [Enter] to continue...", true)
-.then(console.log);
+let cli = new InitCLI("HENLO");
+cli.log("bruh");
+cli.log("B R U H");
+cli.question("DOKO MITEN DAIYO???")
+.then(res => { cli.log(res); })
+.finally(() => {
+	cli.log("lmao");
+	return cli.question("bruh")
+})
+.then(() => {
+	process.exit(0);
+});
 
 
 /*

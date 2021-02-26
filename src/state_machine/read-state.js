@@ -24,11 +24,19 @@ class ReadState extends State {
 	}
 
 	onW () {
-		this.emit('scroll up');
+		this.emit('scroll', -1);
+	}
+
+	onA () {
+		this.emit('fetch', false);
+	}
+
+	onS () {
+		this.emit('scroll', 1);
 	}
 
 	onD () {
-		this.emit('scroll up');
+		this.emit('fetch', true);
 	}
 }
 

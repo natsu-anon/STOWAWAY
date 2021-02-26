@@ -35,6 +35,7 @@ userIds: ${key.getUserIds()}
 	const { keys: [ priKey ] } = await openpgp.key.readArmored(readFileSync(priPath, 'utf8'));
 	// console.log({pubKey, priKey, });
 	const revCert = readFileSync(revPath, 'utf8');
+	*/
 
 	// ENCRYPTING & DECRYPTING
 
@@ -54,7 +55,8 @@ userIds: ${key.getUserIds()}
 		// publicKeys: pubKey, // if you pass in EVERY SINGLE public key you can check to see if this is a message from a known public key
 		privateKeys: priKey,
 	});
-	console.log(decrypted.data);
+	console.log(decrypted);
+	/*
 
 	// REVOKING
 
@@ -109,6 +111,7 @@ userIds: ${key.getUserIds()}
 
 	// KEY (USER) SIGNING
 
+	/*
 	const { keys: [ publicKey ] } = await openpgp.key.readArmored(publicKeyArmored);
 	const { keys: [ privateKey ] } = await openpgp.key.readArmored(privateKeyArmored);
 	// console.log(publicKey);
@@ -137,6 +140,7 @@ userIds: ${key.getUserIds()}
 	// console.log(await publicKey0.verifyAllUsers(k2.toPublic()));
 	// console.log(await publicKey0.verifyPrimaryUser());
 	// console.log(signedKey.getFingerprint());
+	*/
 
 
 }
