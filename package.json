@@ -3,8 +3,23 @@
 	"version": "0.2.0",
 	"description": "(^;",
 	"license": "WTFPL",
+	"author": "Klokov",
+	"bin": "./src/index.js",
+	"pkg": {
+		"assets": [
+			"node_modules/@discordjs/**/*",
+			"node_modules/blessed/**/*",
+			"node_modules/openpgp/**/*"
+		]
+	},
 	"dependencies": {
+		"blessed": "0.1.81",
+		"discord.js": "12.5.1",
+		"nedb": "1.8.0",
+		"openpgp": "4.10.9"
 	},
 	"scripts": {
-	},
+		"build-single": "pkg -t latest-win --public -o STOWAWAY_v0.2.0 .",
+		"start": "node ."
+	}
 }
