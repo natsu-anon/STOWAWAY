@@ -16,6 +16,7 @@ const SCREEN_TITLE = 'ＳＴＯＷＡＷＡＹ v0.2.0';
 const DATABASE = './stowaway.db';
 const PRIVATE_KEY = './stowaway.key';
 const API_TOKEN = './token DO NOT SHARE';
+const SC_TARGET = './channel_id.txt';
 // const REVOCATION_CERT = './stowaway.cert';
 
 
@@ -27,19 +28,32 @@ const warning = `
  {black-fg}{yellow-bg} ################################################## {/}
 \n`;
 
-if (process.argv.length != 3) {
-	console.log('\x1b[31mSTOWAWAY v0.2.0 requires 1 argument: target channel id\x1b[0m');
-	process.exit(1);
-}
 
 let cli = new InitCLI(SCREEN_TITLE);
+const channelPromise = new Promise((resolve, reject) => {
+	if (process.argv.length == 3) {
+		cli.log("channel id as command line argument");
+		resolve(process.argv[2]);
+	}
+	else {
+		fs.readFile(SC_TARGET, 'utf8', (err, data) => {
+			if (err) {
+				// console.log('\x1b[31mSTOWAWAY v0.2.0 requires 1 argument: target channel id -OR- channel_id.txt with target channel id\x1b[0m');
+				reject();
+			}
+			else {
+				cli.log("channel id from file");
+				resolve(data);
+			}
+		});
+	}
+});
 cli.log(warning);
 keyInit(PRIVATE_KEY, fs, cli)
 .then(k => {
 	return new Promise((resolve, reject) => {
 		dbInit(DATABASE)
 		.then(db => {
-			cli.log('database initialized!');
 			resolve({
 				key: k,
 				database: db
@@ -52,6 +66,7 @@ keyInit(PRIVATE_KEY, fs, cli)
 	return new Promise((resolve, reject) => {
 		clientInit(API_TOKEN, fs, cli, Client)
 		.then(client => {
+			cli.log(`logged in as ${client.user.tag}`);
 			resolve({
 				key: k,
 				database: db,
@@ -62,25 +77,31 @@ keyInit(PRIVATE_KEY, fs, cli)
 	});
 })
 .then(({key: k, database: db, client: client }) => {
-	cli.log(`logged in as ${client.user.tag}`);
 	return new Promise((resolve, reject) => {
-		client.channels.fetch(process.argv[2])
-		.then(channel => {
-			resolve({
-				key: k,
-				database: db,
-				client: client,
-				channel: channel
+		channelPromise
+		.then(channelID => {
+			client.channels.fetch(channelID)
+			.then(channel => {
+				cli.log(`channel: ${channel.name}`);
+				resolve({
+					key: k,
+					database: db,
+					client: client,
+					channel: channel
+				});
+			})
+			.catch(err => {
+				client.destroy();
+				reject(err);
 			});
 		})
 		.catch(err => {
-			res.client.destroy();
+			client.destroy();
 			reject(err);
-		})
+		});
 	});
 })
 .then(({ key: key, database: db, client: client, channel: channel }) => {
-	cli.log(`channel: ${channel.name}`);
 	const stowaway = new SingleStowaway(key, channel, db);
 	const model = new SingleChannel();
 	cli.destroy();
@@ -193,5 +214,5 @@ keyInit(PRIVATE_KEY, fs, cli)
 .catch(err => {
 	cli.destroy();
 	console.error(err);
-	process.exit(1);
+	process.exit(2);
 });

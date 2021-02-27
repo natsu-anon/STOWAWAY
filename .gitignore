@@ -7,6 +7,9 @@ stowaway.db
 # private key
 stowaway.key
 
+# target channel for single channel
+channel_id.txt
+
 # windows binaries
 *.exe
 

@@ -25,7 +25,7 @@ function init (keyPath, fs, cli) {
 			}
 			else {
 				cli.log('{bold}No existing keys found!{/}  Generating new keys...');
-				cli.question("Enter a nickname to associate with your keys")
+				cli.question("Enter a nickname to associate with your keys then press [ENTER] to continue")
 				.then(name => {
 					return openpgp.generateKey({
 						userIds: [{ name: name }],

@@ -32,7 +32,7 @@ function init (tokenPath, fs, cli, Client,) {
 				});
 			}
 			else {
-				cli.question("Enter a discord bot token", true)
+				cli.question("Enter a discord bot token then press [ENTER] to continue", true)
 				.then(token => {
 					return clientLogin(token);
 					// return clientLogin(token, tokenPath, Client);
