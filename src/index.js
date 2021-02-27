@@ -32,7 +32,6 @@ if (process.argv.length != 3) {
 	process.exit(1);
 }
 
-
 let cli = new InitCLI(SCREEN_TITLE);
 cli.log(warning);
 keyInit(PRIVATE_KEY, fs, cli)
@@ -41,28 +40,38 @@ keyInit(PRIVATE_KEY, fs, cli)
 		dbInit(DATABASE)
 		.then(db => {
 			cli.log('database initialized!');
-			resolve({key: k, database: db });
+			resolve({
+				key: k,
+				database: db
+			});
 		})
 		.catch(reject);
 	});
 })
-.then(data => {
+.then(({key: k, database: db }) => {
 	return new Promise((resolve, reject) => {
 		clientInit(API_TOKEN, fs, cli, Client)
 		.then(client => {
-			data.client = client;
-			resolve(data);
+			resolve({
+				key: k,
+				database: db,
+				client: client
+			});
 		})
 		.catch(reject);
 	});
 })
-.then(res => {
-	cli.log(`logged in as ${res.client.user.tag}`);
+.then(({key: k, database: db, client: client }) => {
+	cli.log(`logged in as ${client.user.tag}`);
 	return new Promise((resolve, reject) => {
-		res.client.channels.fetch(process.argv[2])
+		client.channels.fetch(process.argv[2])
 		.then(channel => {
-			res.channel = channel;
-			resolve(res);
+			resolve({
+				key: k,
+				database: db,
+				client: client,
+				channel: channel
+			});
 		})
 		.catch(err => {
 			res.client.destroy();
@@ -73,13 +82,6 @@ keyInit(PRIVATE_KEY, fs, cli)
 .then(({ key: key, database: db, client: client, channel: channel }) => {
 	cli.log(`channel: ${channel.name}`);
 	const stowaway = new SingleStowaway(key, channel, db);
-	/* ENCRYPT DEBUGGING
-	stowaway.on('message', (ts, date, author, content) => { cli.log(content); });
-	stowaway.on('debug', (text) => { cli.log(`{yellow-fg}${text}{/}`); });
-	stowaway.on('error', (text) => { cli.log(`{red-fg}${text}{/}`); });
-	stowaway.launch(client);
-	setTimeout(function(text){ stowaway.encrypt(text); }, 3000, 'GIB BIG BOOBA FUJO GF PLS');
-	*/
 	const model = new SingleChannel();
 	cli.destroy();
 	cli = new SingleCLI(SCREEN_TITLE, '{bold}[Ctrl-C] to quit{/bold}', channel.name, client.user.tag);
