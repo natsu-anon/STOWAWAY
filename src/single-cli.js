@@ -124,6 +124,7 @@ class SingleCLI {
 			width: '100%',
 			top: '100%-1',
 			content: 'state',
+			fg: 'black',
 			padding : {
 				top: 0,
 				right: 1,
@@ -131,7 +132,7 @@ class SingleCLI {
 				left: 1,
 			},
 		});
-		this.popupBox = blessed.box({
+		this.loadingBox = blessed.box({
 			parent: this.screen,
 			tags: true,
 			hidden: true,
@@ -152,6 +153,18 @@ class SingleCLI {
 		this.screen.render();
 	}
 
+	get channelScrollPerc () {
+		return this.channelBox.getScrollPerc();
+	}
+
+	get channelHeight () {
+		return this.channelBox.height;
+	}
+
+	get channelScrollHeight () {
+		return this.channelBox.getScrollHeight();
+	}
+
 	set messages (text) {
 		this.channelBox.setContent(text);
 		this.screen.render();
@@ -166,11 +179,11 @@ class SingleCLI {
 	}
 
 	set stateText (text) {
-		this.state.setContent(`{bold}${text}{/bold}`);
+		this.state.setContent(text);
 	}
 
 	set stateBG (color) {
-		this.state.style = { bg: color };
+		this.state.style = { fg: 'black', bg: color };
 	}
 
 	submitInput () {
@@ -235,12 +248,13 @@ class SingleCLI {
 		this.screen.render();
 	}
 
-	popup (label) {
-		this.popupBox.show();
-		this.popupBox.setLabel(`{yellow-fg}${label}{/}`);
+	loading (label) {
+		this.loadingBox.show();
+		this.loadingBox.setLabel(`{yellow-fg}${label}{/}`);
+		this.loadingBox.setFront();
 		let timeout;
 		const cycle = (i) => {
-			this.popupBox.setContent(spinner[i++]);
+			this.loadingBox.setContent(spinner[i++]);
 			this.screen.render();
 			timeout = setTimeout(() => {
 				cycle(i % spinner.length);
@@ -249,11 +263,75 @@ class SingleCLI {
 		cycle(0);
 		return () => {
 			clearTimeout(timeout);
-			this.popupBox.hide();
+			this.loadingBox.hide();
 			this.screen.render();
 		};
 	}
 
+	question (text, yCallback, nCallback) {
+		const box = blessed.box({
+			parent: this.screen,
+			tags: true,
+			label: "{green-fg}[Y]{yellow-fg}es or {red-fg}[N]{yellow-fg}o?{/}",
+			content: text,
+			left: 'center',
+			top: 'center',
+			height: 5,
+			width:30,
+			padding:1,
+			fg: 'yellow',
+			border : {
+				type: 'line',
+				fg: 'yellow'
+			},
+		});
+		cleanup = () => {
+			this.screen.focusPop();
+			box.destroy();
+			this.screen.render();
+		};
+		box.key(['y'], () => {
+			cleanup();
+			yCallback();
+		});
+		box.key(['n'], () => {
+			cleanup();
+			nCallback();
+		});
+		box.setFront();
+		this.screen.focusPush(box);
+		this.screen.render();
+	}
+
+	popup (text, callback=undefined) {
+		const box = blessed.box({
+			parent: this.screen,
+			tags: true,
+			label: "{cyan-fg}[Enter]{yellow-fg} to continue{/}",
+			content: text,
+			left: 'center',
+			top: 'center',
+			height: 5,
+			width:30,
+			padding:1,
+			fg: 'yellow',
+			border : {
+				type: 'line',
+				fg: 'yellow'
+			},
+		});
+		box.key(['enter'], () => {
+			this.screen.focusPop();
+			box.destroy();
+			this.screen.render();
+			if (callback != undefined) {
+				callback();
+			}
+		});
+		box.setFront();
+		this.screen.focusPush(box);
+		this.screen.render();
+	}
 
 	handshake (text) {
 		this._notify(text, "cyan");
