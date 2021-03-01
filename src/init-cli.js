@@ -122,6 +122,28 @@ class BlessedInit {
 		this.screen.render();
 	}
 
+	crlog (text) {
+		if (this.content.length > 0) {
+			this.content[this.content.length - 1] = text;
+			this.background.setContent(this.content.join('\n'));
+			this.screen.render();
+		}
+		else {
+			log(text);
+		}
+	}
+
+	catlog (text) {
+		if (this.content.length > 0) {
+			this.content[this.content.length - 1] += text;
+			this.background.setContent(this.content.join('\n'));
+			this.screen.render();
+		}
+		else {
+			log(text);
+		}
+	}
+
 	spin (label) {
 		this.popup.show();
 		this.popup.setLabel(label);
