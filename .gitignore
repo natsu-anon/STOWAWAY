@@ -13,6 +13,10 @@ channel_id.txt
 # windows binaries
 *.exe
 
+# other binaries
+STOWAWAY_v*-linux
+STOWAWAY_v*-macos
+
 # Logs
 logs
 *.log
