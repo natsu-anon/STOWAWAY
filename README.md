@@ -44,11 +44,10 @@ HOLUP
 ### Adding your bot to the server
 1. Go to your application's "General Information" page
 2. Copy your client id
-3. go to
+3. go to the following link, but replace `CLIENT_ID` with your client id
 ```
 https://discord.com/api/oauth2/authorize?client_id=CLIENT_ID&permissions=117824&scope=bot
 ```
-but replace `CLIENT_ID` with your client id
 4. add to the desired server (note: you need permission to add bots to servers)
 
 ## Usage
