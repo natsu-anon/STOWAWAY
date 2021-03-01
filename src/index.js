@@ -21,18 +21,17 @@ const SC_TARGET = './channel_id.txt';
 
 
 const warning = `
- {black-fg}{yellow-bg} ################################################## {/}
- {black-fg}{yellow-bg} #    DO NOT SHARE YOUR API TOKEN WITH ANYONE.    # {/}
- {black-fg}{yellow-bg} #    DO NOT SHARE stowaway.db WITH ANYONE.       # {/}
- {black-fg}{yellow-bg} #    DO NOT SHARE stowaway.key WITH ANYONE.      # {/}
- {black-fg}{yellow-bg} ################################################## {/}
+{black-fg}{yellow-bg} ################################################## {/}
+{black-fg}{yellow-bg} #    DO NOT SHARE YOUR API TOKEN WITH ANYONE.    # {/}
+{black-fg}{yellow-bg} #    DO NOT SHARE stowaway.db WITH ANYONE.       # {/}
+{black-fg}{yellow-bg} #    DO NOT SHARE stowaway.key WITH ANYONE.      # {/}
+{black-fg}{yellow-bg} ################################################## {/}
 \n`;
 
 
 let cli = new InitCLI(SCREEN_TITLE);
 const channelPromise = new Promise((resolve, reject) => {
 	if (process.argv.length == 3) {
-		cli.log("channel id as command line argument");
 		resolve(process.argv[2]);
 	}
 	else {
@@ -41,18 +40,21 @@ const channelPromise = new Promise((resolve, reject) => {
 				reject(Error("STOWAWAY v0.2.0 requires either target channel id to be passed as a command line argument -OR- channel_id.txt with target channel id"));
 			}
 			else {
-				cli.log("channel id from file");
 				resolve(data);
 			}
 		});
 	}
 });
 cli.log(warning);
+cli.log(">intiliazing pgp keys... ");
 keyInit(PRIVATE_KEY, fs, cli)
 .then(k => {
+	cli.cat("{green-fg}DONE!{/}");
+	cli.log(">initialiazing nedb database... ")
 	return new Promise((resolve, reject) => {
 		dbInit(DATABASE)
 		.then(db => {
+			cli.cat("{green-fg}DONE!{/}");
 			resolve({
 				key: k,
 				database: db
@@ -62,10 +64,12 @@ keyInit(PRIVATE_KEY, fs, cli)
 	});
 })
 .then(({key: k, database: db }) => {
+	cli.log(">initializing discord client...");
 	return new Promise((resolve, reject) => {
 		clientInit(API_TOKEN, fs, cli, Client)
 		.then(client => {
-			cli.log(`logged in as ${client.user.tag}`);
+			cli.cat(`{green-fg}DONE!{/}`);
+			cli.log(`>{black-fg}{green-bg}Logged in as ${client.user.tag}{/}`);
 			resolve({
 				key: k,
 				database: db,
@@ -76,12 +80,14 @@ keyInit(PRIVATE_KEY, fs, cli)
 	});
 })
 .then(({key: k, database: db, client: client }) => {
+	cli.log(">attempting to connect to target channel... ");
 	return new Promise((resolve, reject) => {
 		channelPromise
 		.then(channelID => {
 			client.channels.fetch(channelID)
 			.then(channel => {
-				cli.log(`channel: ${channel.name}`);
+				cli.cat(`{green-fg}DONE!{/}`);
+				cli.log(`>{black-fg}{green-bg}Channel: ${channel.name}{/}`);
 				resolve({
 					key: k,
 					database: db,
@@ -135,7 +141,7 @@ keyInit(PRIVATE_KEY, fs, cli)
 	const fsm = new FSMBuilder()
 	.enterRead(() => {
 		cli.stateBG = 'magenta';
-		cli.stateText = 'READING -- [SPACE] begin writing; [W] scroll up; [A] fetch older messages; [S] scroll down; [D] fetch newer messages';
+		cli.stateText = 'READING -- [SPACE] begin writing; [W] scroll up/fetch older messages; [S] scroll down/fetch newer messages';
 		cli.render();
 	})
 	.enterWrite(() => {
@@ -172,15 +178,19 @@ keyInit(PRIVATE_KEY, fs, cli)
 	cli.screen.key(['w'], () => {
 		fsm.onW();
 	});
+	/*
 	cli.screen.key(['a'], () => {
 		fsm.onA();
 	});
+	*/
 	cli.screen.key(['s'], () => {
 		fsm.onS();
 	});
+	/*
 	cli.screen.key(['d'], () => {
 		fsm.onD();
 	});
+	*/
 	cli.inputBox.key(['C-c'], () => {
 		fsm.onCtrlC();
 	});
@@ -196,9 +206,42 @@ keyInit(PRIVATE_KEY, fs, cli)
 	fsm.on('clear input', () => {
 		cli.cancelInput();
 	});
+	const fetchOlder = function () {
+		stowaway.fetchOlder(model.oldest)
+		.then(() => { cli.notify("fetched older messages!"); })
+	}
+	const fetchNewer = function () {
+		stowaway.fetchNewer(model.newest)
+		.then(() => { cli.notify("fetched newer messages!"); })
+	}
 	fsm.on('scroll', (offset) => {
 		cli.scrollChannel(offset);
+		if (cli.channelHeight >= cli.channelScrollHeight) {
+			if (offset > 0) {
+				fetchNewer();
+			}
+			else if (offset < 0) {
+				fetchOlder();
+			}
+		}
+		else {
+			if (cli.channelScrollPerc === 0) {
+				fetchOlder();
+			}
+			else if (cli.channelScrollPerc === 100) {
+				fetchNewer();
+			}
+		}
+		// cli.popup(`Scroll: 0? ${cli.scrolPerc == 0}\t100? ${cli.scrollPerc == 100}`);
+		// cli.popup(`Scroll: ? ${cli.channelBox.childBase}\t100? ${cli.scrollPerc == 100}`);
+		// if (cli.scrollPerc === 0 && offset < 0) {
+		// 	stowaway.fetchOlder(model.oldest)
+		// 	.then(() => { cli.notify("fetched older messages!"); })
+		// }
+		// else if (cli.scrollPerc === 100 && offset > 0) {
+		// }
 	});
+	/*
 	fsm.on('fetch', (newerFlag) => {
 		if (newerFlag) {
 			stowaway.fetchNewer(model.newest)
@@ -209,6 +252,7 @@ keyInit(PRIVATE_KEY, fs, cli)
 			.then(() => { cli.notify("fetched older messages!"); })
 		}
 	});
+	*/
 })
 .catch(err => {
 	cli.destroy();
