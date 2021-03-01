@@ -1,5 +1,9 @@
 const blessed = require('blessed');
 const fs = require('fs');
+const banner = `      _  __ __        __        __
+ //  /_\` / / / | | | /_/ | | | /_/ /_/  //
+//  ._/ / /_/  |/|/ / /  |/|/ / /  /   //  v 0.2.1
+This software is licensed under the WTFPL`
 
 const spinner = [
 	"[@               ]",
@@ -43,7 +47,7 @@ class BlessedInit {
 			fullunicode: true,
 		});
 		screen.title = title;
-		this.content = [ `{cyan-fg}${fs.readFileSync('./banner.txt', 'utf8')}{/}` ];
+		this.content = [ `{cyan-fg}${banner}{/}` ];
 		this.background = blessed.box({
 			parent: screen,
 			width: '100%',
