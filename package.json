@@ -20,7 +20,7 @@
 		"openpgp": "4.10.9"
 	},
 	"scripts": {
-		"build": "pkg -t latest-win,latest-linuix,latest-macos latest- --public -o STOWAWAY_v0.2.1 .",
+		"build": "pkg -t latest-win,latest-linux,latest-macos --public -o STOWAWAY_v0.2.1 .",
 		"start": "node src/index.js"
 	}
 }
