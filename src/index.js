@@ -38,8 +38,7 @@ const channelPromise = new Promise((resolve, reject) => {
 	else {
 		fs.readFile(SC_TARGET, 'utf8', (err, data) => {
 			if (err) {
-				// console.log('\x1b[31mSTOWAWAY v0.2.0 requires 1 argument: target channel id -OR- channel_id.txt with target channel id\x1b[0m');
-				reject();
+				reject(Error("STOWAWAY v0.2.0 requires either target channel id to be passed as a command line argument -OR- channel_id.txt with target channel id"));
 			}
 			else {
 				cli.log("channel id from file");
@@ -214,5 +213,5 @@ keyInit(PRIVATE_KEY, fs, cli)
 .catch(err => {
 	cli.destroy();
 	console.error(err);
-	process.exit(2);
+	process.exit(1);
 });
