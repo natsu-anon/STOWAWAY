@@ -43,7 +43,7 @@ class BlessedInit {
 			fullunicode: true,
 		});
 		screen.title = title;
-		this.content = [ fs.readFileSync('./banner.txt', 'utf8') ];
+		this.content = [ `{cyan-fg}${fs.readFileSync('./banner.txt', 'utf8')}{/}` ];
 		this.background = blessed.box({
 			parent: screen,
 			width: '100%',
@@ -122,7 +122,7 @@ class BlessedInit {
 		this.screen.render();
 	}
 
-	crlog (text) {
+	cr (text) {
 		if (this.content.length > 0) {
 			this.content[this.content.length - 1] = text;
 			this.background.setContent(this.content.join('\n'));
@@ -133,7 +133,7 @@ class BlessedInit {
 		}
 	}
 
-	catlog (text) {
+	cat (text) {
 		if (this.content.length > 0) {
 			this.content[this.content.length - 1] += text;
 			this.background.setContent(this.content.join('\n'));
