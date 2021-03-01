@@ -232,27 +232,7 @@ keyInit(PRIVATE_KEY, fs, cli)
 				fetchNewer();
 			}
 		}
-		// cli.popup(`Scroll: 0? ${cli.scrolPerc == 0}\t100? ${cli.scrollPerc == 100}`);
-		// cli.popup(`Scroll: ? ${cli.channelBox.childBase}\t100? ${cli.scrollPerc == 100}`);
-		// if (cli.scrollPerc === 0 && offset < 0) {
-		// 	stowaway.fetchOlder(model.oldest)
-		// 	.then(() => { cli.notify("fetched older messages!"); })
-		// }
-		// else if (cli.scrollPerc === 100 && offset > 0) {
-		// }
 	});
-	/*
-	fsm.on('fetch', (newerFlag) => {
-		if (newerFlag) {
-			stowaway.fetchNewer(model.newest)
-			.then(() => { cli.notify("fetched newer messages!"); })
-		}
-		else {
-			stowaway.fetchOlder(model.oldest)
-			.then(() => { cli.notify("fetched older messages!"); })
-		}
-	});
-	*/
 })
 .catch(err => {
 	cli.destroy();
