@@ -1,72 +1,63 @@
-# STOWAWAY
-Thanks for the free network.
-
-### INSTALL NODE.JS
-[choose the LTS (current version 14.15.4 LTS)](https://nodejs.org/en/)
-
-how to run javascript in a console:
-1. open up a console in repository folder
-2. run `node .\path\to\source_file_you_want.js`
-3. simple as
-
-### Discord Bot
-Make your own [discord bot](https://discord.com/developers/docs/intro#bots-and-apps), then save its token (NOT client secret) to a file named token (make sure its copy pasted properly)
-
-**NOTE** ENABLE PRIVILEGED GATEWAY INTENTS (presence & Server member intent).  [See section "Data Privacy and Protection"](https://blog.discord.com/the-future-of-bots-on-discord-4e6e050ab52e).
-
-## REFERENCES
-- [Regular Expressions in javasvcript](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions)
-- [discord.js docs](https://discord.js.org/#/docs/main/stable/general/welcome)
-- [OpenPGP.js documentations](https://openpgpjs.org/openpgpjs/doc/)
-- [nedb api](https://github.com/louischatriot/nedb/#api)
-- [blessed api](https://github.com/chjj/blessed#documentation)
-
-## END-TO-END ENCRYPTION LAYER FOR DISCORD VIA BOTS.  THINK ABOUT IT.
-- [PGP FAQ](http://www.pgp.net/pgpnet/pgp-faq/pgp-faq.html)
-- use node to run filthy javascript -- sorry, Terry.
-- [OpenPGP.js](https://github.com/openpgpjs/openpgpjs) for encryption
 ```
-npm install --save openpgp
+      _  __ __        __        __
+ //  /_` / / / | | | /_/ | | | /_/ /_/  //
+//  ._/ / /_/  |/|/ / /  |/|/ / /  /   //
+This software is licensed under the WTFPL
 ```
-- [NeDB](https://github.com/louischatriot/nedb/) for database
-```
-npm install nedb --save
-```
-- [discord.js](https://github.com/discordjs/discord.js) for dat dere discord api
-```
-npm install discord.js // no voice support
-```
-- [blessed](https://github.com/chjj/blessed) curses-like library for node.js
->NOTE: Currently there is no `mouse` or `resize` event support on Windows
-```
-npm install blessed
-```
-- [pkg](https://github.com/vercel/pkg) compile node.js app to a single executable file
-```
-npm i pkg -g
-```
+An End-to-End PGP encryption layer for discord focused on ease-of-use via bots.
+This means that the keys used to encrypt & decrypt messages are different--the keys to encrypt are *public*, the keys to decrypt are *private* and should __NEVER__ be shared.
 
-### NOTA BENE
-- solid `pkg` [tutorial (includes thorough package.json usage)](https://thecodebarbarian.com/standalone-express-apis-binaries-with-pkg.html)
-- use `cmd` to run `pkg` -- powershell won't allow it & command prompt is simpler than powershell's changing execution policy.
-- lmao hash discord snowflakes -- don't use channel/user ids when querying about people via comms
+SCREENSHOTS SOON :tm:
 
-__vim development__
-- use `! your-command` to run commands from within vim
-- use `! start your-command` to do it ASYNCHRONOUSLY (opens up a new terminal)
+[//]: # (TODO: screenshots)
 
-__javascript__
-- [oh hey this video is pretty nice, javascript sure changed a lot.](https://www.youtube.com/watch?v=Mus_vwhTCq0)
-- use `myVariable == null` to test if a variable is undefined OR null.
-- javascript does not overload functions :C
-- javascript variables
-	- `var` is globally scoped & initialized to undefined.  GROCE.
-	- `let` is scope blocked.  Not initialized.
-	- `const` is _also_ scope blocked.  Cannot be updated/redecalred.
-		- __MUST__ be initialized at time of declaration.
-- ~~[Promises](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise)~~
-[`async` & `await`](https://youtu.be/Mus_vwhTCq0?t=619) instead.
-- backticks \` format variables using `${varName}`
+**Topics**
+- [Setup](#setup)
+- [Usage](#usage)
+- [PGP Encryption](#pgp-encryption)
+- [License](#license)
 
-__inviting non-public bots__
-- go to `https://discord.com/api/oauth2/authorize?client_id=CLIENT_ID&permissions=117824&scope=bot`, add to the server desired
+
+## Setup
+
+### Installation
+you can either run ＳＴＯＷＡＷＡＹ from source with [Node.js](https://nodejs.org/en/) or download a binary and run it that way.
+
+#### Download a binary
+Just [download the latest appropriate ＳＴＯＷＡＷＡＹ](https://github.com/natsu-anon/STOWAWAY/releases/tag/version-0.2.0) and extract the zip file. **NOTE** I've only tested the windows binary.
+
+
+#### Running from source
+you can run ＳＴＯＷＡＷＡＹ from source with [Node.js](https://nodejs.org/en/)(version 14.15.4) and the following packages:
+- [OpenPGP.js](https://github.com/openpgpjs/openpgpjs) version 4.10.8
+- [discord.js](https://github.com/discordjs/discord.js) version 12.5.1
+- [blessed](https://github.com/chjj/blessed) version 0.1.81
+- [NeDB](https://github.com/louischatriot/nedb/) version 1.8.0
+
+[//]: # (TODO: include npm run start [channel_id])
+
+### Creating a Bot
+HOLUP
+
+[//]: # (TODO: write this up with screenshots)
+
+### Adding your bot to the server
+1. Go to your application's "General Information" page
+2. Copy your client id
+3. go to
+```
+https://discord.com/api/oauth2/authorize?client_id=CLIENT_ID&permissions=117824&scope=bot
+```
+but replace `CLIENT_ID` with your client id
+4. add to the desired server (note: you need permission to add bots to servers)
+
+## Usage
+H O L U P
+[//]: # (TODO: write this up with command line args/file explained)
+
+## PGP Encryption
+[I suggest checking out the excellent comp.security.pgp general questions & introduction](http://www.pgp.net/pgpnet/pgp-faq/pgp-faq-general-questions.html).  For the specifics of how ＳＴＯＷＡＷＡＹ encrypts and decrypts messages Wikipedia's entry on [Pretty Good Privacy](https://en.wikipedia.org/wiki/Pretty_Good_Privacy) and [Public-key Cryptography](https://en.wikipedia.org/wiki/Public-key_cryptography) are solid launching off points.
+
+
+## License
+[Do What the Fuck You Want to Public License](http://www.wtfpl.net/)(version 2 or any later version).  Please take a look at the [LICENSE](LICENSE) file for more information.
