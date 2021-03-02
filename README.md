@@ -51,32 +51,32 @@ If you know how to do this go ahead and skip to parts 8 and 9.
 1. Go to your [developer portal](https://discord.com/developers/applications).
 *Note*: if you don't have a developer account login with your discord account to automatically set up one.
 
-![login](./screenshots/bot1.png)
+![login](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/single-channel/screenshots/bot1.PNG)
 
-![developer portal](./screenshots/bot2.png)
+![developer portal](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/single-channel/screenshots/bot2.PNG)
 Once you login you or if you already are you should see something like this.
 
 2. Click the 'New Application' button in the top right.
 3. Enter a name for your new bot.  Don't worry--this won't be its username.  Next go ahead a click 'Create'.
 
-![create application](./screenshots/bot3.png)
+![create application](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/single-channel/screenshots/bot3.PNG)
 
 4. Next, click on the 'Bot' button in the sidebar.  You should end up at a page that looks like the following image.
 
-![bot sidebar](./screenshots/bot4.png)
+![bot sidebar](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/single-channel/screenshots/bot4.PNG)
 
 5. Click 'Add Bot'. When the warning says "this action is irrevocable!" it means that you can _never_ remove the bot from this app.  You can always delete this app which also deletes the bot.
 
-![add a bot](./screenshots/bot5.png)
+![add a bot](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/single-channel/screenshots/bot5.PNG)
 
 6. _'Yes, do it!'_
 7. Feel free to change your bot's username and icon.  You can always change both later.
 
-![bot created](./screenshots/bot6.png)
+![bot created](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/single-channel/screenshots/bot6.PNG)
 
 8. Disable 'PUBLIC BOT'
 9. Enable 'PRESENCE INTENT', and 'SERVER MEMBERS INTENT'
-![bot settings](./screenshots/bot7.png)
+![bot settings](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/single-channel/screenshots/bot7.PNG)
 
 10. Make sure you save your changes!
 
@@ -84,8 +84,8 @@ When you launch ＳＴＯＷＡＷＡＹ, you must provide your bot's token to u
 
 ** NEVER SHARE YOUR BOT TOKEN WITH ANYONE **
 
-![token copy](./screenshots/bot8.png)
-![token paste](./screenshots/bot9.png)
+![token copy](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/single-channel/screenshots/bot8.PNG)
+![token paste](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/single-channel/screenshots/bot9.PNG)
 
 
 [//]: # (TODO: write this up with screenshots)
