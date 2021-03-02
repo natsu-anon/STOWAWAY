@@ -93,11 +93,18 @@ When you launch ＳＴＯＷＡＷＡＹ, you must provide your bot's token to u
 ### Adding your bot to the server
 1. Go to your application's "General Information" page
 2. Copy your client id
-3. go to the following link, but replace `CLIENT_ID` with your client id
+
+![get client id](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/single-channel/screenshots/server1.PNG)
+
+3. Go to the following link, but replace `CLIENT_ID` with your client id
 ```
 https://discord.com/api/oauth2/authorize?client_id=CLIENT_ID&permissions=117824&scope=bot
 ```
-4. add to the desired server (note: you need permission to add bots to servers)
+
+![get client id](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/single-channel/screenshots/server1.PNG)
+
+4. Add to the desired server.  Note that you need to have the *Manage Server* permission in whatever server you want to add your bot to.
+![add to server](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/single-channel/screenshots/server2.PNG)
 
 ## Usage
 >When you say, "I have nothing to hide," you’re saying, "I don’t care about this right." You’re saying, "I don’t have this right, because I’ve got to the point where I have to justify it." **The way rights work is, the government has to justify its intrusion into your rights.**
