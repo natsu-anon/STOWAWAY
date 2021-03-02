@@ -5,7 +5,7 @@
 This software is licensed under the WTFPL
 ```
 
->Arguing that you don't care about the right to privacy because you have nothing to hide is no different than saying **you don't care about free speech because you have nothing to say.**
+>Arguing that **you don't care about the right to privacy because you have nothing to hide is no different than saying you don't care about free speech because you have nothing to say.**
 >
 > -Edward Snowden
 
@@ -115,7 +115,7 @@ https://discord.com/api/oauth2/authorize?client_id=CLIENT_ID&permissions=117824&
 > -Edward Snowden
 
 ### Launching from application
-Inside of the folder your ＳＴＯＷＡＷＡＹ binary is you should create a text file named `channel_id.txt` that contains the id of the channel you want to connect to.
+Inside of the folder your ＳＴＯＷＡＷＡＹ binary is you must create a text file named `channel_id.txt` that contains the id of the channel you want to connect to.
 ![channel id text file](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/single-channel/screenshots/launch1.PNG)
 
 ### Launching from command line
@@ -126,24 +126,37 @@ If you are launching from source:
 npm run start channel_id
 ```
 
-If you are launching from binary:
+Furthermore, you can use `npm run channels` to print out all channels with ids available to your bot.
+
+If you are launching from binary you can connect to your desired channel with:
 ```
-.\STOWAWAY_v0.2.0.exe channel_id
+.\STOWAWAY.exe channel_id
 ```
 
+And to print out all available channels with ids run `.\STOWAWAY.exe -c` or `,\STOWAWAY.exe --channels`
+
+And pass `-h` or `--help` to see usage information (needs improvement).
+
 ## PGP Encryption
->There is no killer answer yet. Jacob Appelbaum (@ioerror) has a clever response, asking people who say this to then hand him their phone unlocked and pull down their pants. My version of that is to say, 'well, if you're so boring then we shouldn't be talking to you, and neither should anyone else', but philosophically, the real answer is this: *Mass surveillance is a mass structural change. **When society goes bad, it's going to take you with it, even if you are the blandest person on earth.**
+>There is no killer answer yet. Jacob Appelbaum (@ioerror) has a clever response, asking people who say this to then hand him their phone unlocked and pull down their pants. My version of that is to say, 'well, if you're so boring then we shouldn't be talking to you, and neither should anyone else', but philosophically, the real answer is this: [M]ass surveillance is a mass structural change. **When society goes bad, it's going to take you with it, even if you are the blandest person on earth.**
 >
 > -Julian Assange
 
-[I suggest checking out the excellent comp.security.pgp general questions & introduction](http://www.pgp.net/pgpnet/pgp-faq/pgp-faq-general-questions.html).  For the specifics of how ＳＴＯＷＡＷＡＹ encrypts and decrypts messages Wikipedia's entry on [Pretty Good Privacy](https://en.wikipedia.org/wiki/Pretty_Good_Privacy) and [Public-key Cryptography](https://en.wikipedia.org/wiki/Public-key_cryptography) are solid launching off points.
+[I suggest checking out the excellent comp.security.pgp general questions & introduction](http://www.pgp.net/pgpnet/pgp-faq/pgp-faq-general-questions.html).  For the specifics of how ＳＴＯＷＡＷＡＹ encrypts and decrypts messages Wikipedia's entries on [Pretty Good Privacy](https://en.wikipedia.org/wiki/Pretty_Good_Privacy) and [Public-key Cryptography](https://en.wikipedia.org/wiki/Public-key_cryptography) are solid launching off points.
 
 ## Future Development
 >Not merely was my own mail opened, but the mail of all my relatives and friends — people residing in places as far apart as California and Florida. I recall the bland smile of a government official to whom I complained about this matter: **"If you have nothing to hide you have nothing to fear."** My answer was that a study of many labor cases had taught me the methods of the agent provocateur. **He is quite willing to take real evidence if he can find it; but if not, he has familiarized himself with the affairs of his victim, and can make evidence which will be convincing when exploited by the yellow press.**
 >
 > -Upton Sinclar in **The Profits of Religion**
 
-OH JEEZE BUD
+1. Navigate through all servers & channels available to the bot
+2. `--about`
+3. Handshake protocol performed through DM's (can bots DM each other?)
+4. More PGP features (key + message signing & key revoking)
+5. See who's signed whose keys for a "web of trust".
+6. Humans dm the bot `about` to find out more w/ link to repo
+
+And in general I need to check out v8 options to see what'd I should bake into the executables
 
 ## License
 [Do What the Fuck You Want to Public License](http://www.wtfpl.net/)(version 2 or any later version).  Please take a look at the [LICENSE](LICENSE) file for more information.
