@@ -24,7 +24,7 @@ function init (tokenPath, fs, cli, Client,) {
 		cli.log("\t- checking for existing discord bot token... ");
 		fs.access(tokenPath, fs.constants.R_OK, (err) => {
 			if (err == null) {
-				cli.cat("{green-fg}Found a token file{/}")
+				cli.cat("{green-fg}Found a token file!{/}")
 				fs.readFile(tokenPath, 'utf8', (err, data) => {
 					if (err) {
 						reject(err);
