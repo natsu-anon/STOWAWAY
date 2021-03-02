@@ -17,6 +17,9 @@ channel_id.txt
 STOWAWAY-linux
 STOWAWAY-macos
 
+# Releases dir
+releases/
+
 # Logs
 logs
 *.log
