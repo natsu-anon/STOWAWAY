@@ -13,12 +13,17 @@ This software is licensed under the WTFPL
 An End-to-End PGP encryption layer for discord focused on ease-of-use via bots.
 This means that the keys used to encrypt & decrypt messages are different.  The keys to encrypt are *public*, the keys to decrypt are *private* and should __NEVER__ be shared.
 
+**NOTE ＳＴＯＷＡＷＡＹ v0.2.x currently only supports connecting to a _single server channel_ at a time, I will add support to navigate between multiple servers, channels, and direct messages SOON:tm:**
+
 SCREENSHOTS SOON :tm:
 
 [//]: # (TODO: screenshots)
 
-**Topics**
+**Sections**
 - [Setup](#setup)
+	- [Installation](#installation)
+	- [Create a bot](#create-a-bot)
+	- [Add your bot to a server](#add-your-bot-to-a-server)
 - [Usage](#usage)
 - [PGP Encryption](#pgp-encryption)
 - [Future Development](#future-development)
@@ -44,9 +49,9 @@ you can run ＳＴＯＷＡＷＡＹ from source with [Node.js](https://nodejs.o
 - [blessed](https://github.com/chjj/blessed) version 0.1.81
 - [NeDB](https://github.com/louischatriot/nedb/) version 1.8.0
 
-[//]: # (TODO: include `npm run start [channel_id]`)
+Once all the packages are installed you can launch ＳＴＯＷＡＷＡＹ with `npm run start [channel_id]`[(see usage for command line launch)](#usage)
 
-### Creating a Bot
+### Create a Bot
 If you know how to do this go ahead and skip to parts 8 and 9.
 1. Go to your [developer portal](https://discord.com/developers/applications).
 *Note*: if you don't have a developer account login with your discord account to automatically set up one.
@@ -90,7 +95,7 @@ When you launch ＳＴＯＷＡＷＡＹ, you must provide your bot's token to u
 
 [//]: # (TODO: write this up with screenshots)
 
-### Adding your bot to the server
+### Add your bot to a server
 1. Go to your application's "General Information" page
 2. Copy your client id
 
@@ -101,8 +106,6 @@ When you launch ＳＴＯＷＡＷＡＹ, you must provide your bot's token to u
 https://discord.com/api/oauth2/authorize?client_id=CLIENT_ID&permissions=117824&scope=bot
 ```
 
-![get client id](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/single-channel/screenshots/server1.PNG)
-
 4. Add to the desired server.  Note that you need to have the *Manage Server* permission in whatever server you want to add your bot to.
 ![add to server](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/single-channel/screenshots/server2.PNG)
 
@@ -111,8 +114,13 @@ https://discord.com/api/oauth2/authorize?client_id=CLIENT_ID&permissions=117824&
 >
 > -Edward Snowden
 
-H O L U P
-[//]: # (TODO: write this up with command line args/file explained)
+### Launching from application
+Inside of the folder your ＳＴＯＷＡＷＡＹ binary is you should create a text file named `channel_id.txt` that contains the id of the channel you want to connect to.
+![channel id text file](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/single-channel/screenshots/launch1.PNG)
+
+### Launching from command line
+You can always pass a channel id as command line argument to ＳＴＯＷＡＷＡＹ, even if you have a `channel_id.txt` file.
+
 
 ## PGP Encryption
 >There is no killer answer yet. Jacob Appelbaum (@ioerror) has a clever response, asking people who say this to then hand him their phone unlocked and pull down their pants. My version of that is to say, 'well, if you're so boring then we shouldn't be talking to you, and neither should anyone else', but philosophically, the real answer is this: *Mass surveillance is a mass structural change. **When society goes bad, it's going to take you with it, even if you are the blandest person on earth.**
