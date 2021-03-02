@@ -121,6 +121,15 @@ Inside of the folder your ＳＴＯＷＡＷＡＹ binary is you should create a
 ### Launching from command line
 You can always pass a channel id as command line argument to ＳＴＯＷＡＷＡＹ, even if you have a `channel_id.txt` file.
 
+If you are launching from source:
+```
+npm run start channel_id
+```
+
+If you are launching from binary:
+```
+.\STOWAWAY_v0.2.0.exe channel_id
+```
 
 ## PGP Encryption
 >There is no killer answer yet. Jacob Appelbaum (@ioerror) has a clever response, asking people who say this to then hand him their phone unlocked and pull down their pants. My version of that is to say, 'well, if you're so boring then we shouldn't be talking to you, and neither should anyone else', but philosophically, the real answer is this: *Mass surveillance is a mass structural change. **When society goes bad, it's going to take you with it, even if you are the blandest person on earth.**
