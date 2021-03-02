@@ -154,7 +154,7 @@ class SingleStowaway extends EventEmitter {
 					.then(messages => {
 						// this.emit('notify', `${Array.from(messages.values()).length} older messages fetched`);
 						messages.each(message => { this._handleMessage(message); });
-						this.db.persistence.compactDatafile();
+						// this.db.persistence.compactDatafile();
 						resolve();
 					})
 					.catch(reject);
@@ -173,7 +173,7 @@ class SingleStowaway extends EventEmitter {
 					this.channel.messages.fetch({ after: id }, false, false)
 					.then(messages => {
 						messages.each(message => { this._handleMessage(message); });
-						this.db.persistence.compactDatafile();
+						// this.db.persistence.compactDatafile();
 						resolve();
 					})
 					.catch(reject);
