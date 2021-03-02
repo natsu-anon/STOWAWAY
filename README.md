@@ -17,7 +17,7 @@ This means that the keys used to encrypt & decrypt messages are different.  The 
 
 SCREENSHOTS SOON :tm:
 
-[//]: # (TODO: screenshots)
+If you're on Windows you can use [ColorTool](https://github.com/microsoft/terminal/tree/main/src/tools/ColorTool) to change your terminal's color scheme.
 
 **Sections**
 - [Setup](#setup)
