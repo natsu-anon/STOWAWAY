@@ -1,9 +1,5 @@
 const blessed = require('blessed');
 const fs = require('fs');
-const banner = `      _  __ __        __        __
- //  /_\` / / / | | | /_/ | | | /_/ /_/  //
-//  ._/ / /_/  |/|/ / /  |/|/ / /  /   //  v 0.2.1
-This software is licensed under the WTFPL`
 
 const spinner = [
 	"[@               ]",
@@ -39,7 +35,7 @@ const spinner = [
 ];
 
 class BlessedInit {
-	constructor (title) {
+	constructor (banner,  title, process) {
 		let screen = blessed.screen({
 			smartcsr: true,
 			autopadding: true,
@@ -70,8 +66,9 @@ class BlessedInit {
 				type: 'line',
 			},
 		})
-		// console.log(banner);
-		this.textbox;
+		screen.key(['C-c'], () => {
+			return process.exit(0);
+		});
 		screen.render();
 		this.screen = screen;
 	}
