@@ -14,8 +14,8 @@ channel_id.txt
 *.exe
 
 # other binaries
-STOWAWAY_v*-linux
-STOWAWAY_v*-macos
+STOWAWAY-linux
+STOWAWAY-macos
 
 # Logs
 logs
