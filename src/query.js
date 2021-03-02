@@ -84,17 +84,5 @@ require('./database.js').Init(rl, openpgp)
 	client.destroy()
 	process.exit(0)
 	*/
-	client.channels.fetch('491749175499685891')
-	.then(channel => {
-		console.log(channel.name);
-		return channel.messages.fetch({ limit: 10 });
-	})
-	.then(messages => {
-		messages.sort((m0, m1) => m0.createdTimestamp - m1.createdTimestamp).each(m => console.log(m.createdAt));
-	})
-	.finally(() =>  {
-		client.destroy()
-		process.exit(0)
-	});
 })
 .catch((err) => { console.error(err); });
