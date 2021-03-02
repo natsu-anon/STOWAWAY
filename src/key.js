@@ -2,7 +2,7 @@ const openpgp = require('openpgp');
 const input = require('./blessed-input.js');
 
 function init (keyPath, fs, cli) {
-	cli.log("checking for existing key...");
+	cli.log("\t- checking for existing key...");
 	return new Promise((resolve, reject) => {
 		fs.access(keyPath, fs.constants.R_OK, (error) => {
 			if (error == null) {
