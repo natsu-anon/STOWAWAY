@@ -1,5 +1,3 @@
-const input = require('./blessed-input.js');
-
 function badtoken (tokenPath) {
 	return Error(`Failed to login with token.  Check file "${tokenPath}" to make sure your token is correct & that you are connected to the internet`);
 }
