@@ -1,7 +1,7 @@
 function channelSelect (cli, db, client) {
 	return function (box, scroll, scrollIndex, scrollHeight)  {
 		box.setContent("loading available channels...");
-		box.setLabel(" Choose a channel to connect to; [W] and [S] to navigate, [ENTER] to continue ");
+		box.setLabel(" Choose a channel; [W] and [S] to navigate, [ENTER] to connect ");
 		return new Promise((resolve, reject) => {
 			db.findOne({ last_channel: { $exists: true }}, (err, doc) => {
 				if (err != null) {
@@ -22,7 +22,11 @@ function channelSelect (cli, db, client) {
 				}
 				p.then(() => {
 					client.guilds.cache.each(guild => {
-						guild.channels.cache.filter(channel => channel.isText())
+						guild.channels.cache
+						.filter(channel => channel.isText())
+						.filter(channel => channel.permissionsFor(client.user).has('VIEW_CHANNEL'))
+						.filter(channel => channel.permissionsFor(client.user).has('SEND_MESSAGES'))
+						.filter(channel => channel.permissionsFor(client.user).has('READ_MESSAGE_HISTORY'))
 						.each(channel => {
 							content.push(`${guild.name} {green-fg}#${channel.name}{/}`);
 							ids.push(channel.id);
