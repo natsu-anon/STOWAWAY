@@ -7,7 +7,8 @@ const keyInit = require('./key.js');
 const clientInit = require('./client.js');
 
 const SingleChannel = require('./models/single-channel.js');
-const { SingleStowaway, PlaintextStowaway } = require('./single-stowaway.js');
+const { SingleStowaway } = require('./single-stowaway.js');
+const ChannelSelect = require('./channel-select.js');
 const InitCLI = require('./init-cli.js');
 const SingleCLI = require('./single-cli.js');
 const { FSMBuilder } = require('./state_machine/builder.js');
@@ -21,7 +22,7 @@ const SC_TARGET = './channel_id.txt';
 
 const banner = `      _  __ __        __        __
  //  /_\` / / / | | | /_/ | | | /_/ /_/  //
-//  ._/ / /_/  |/|/ / /  |/|/ / /  /   //  v 0.2.1
+//  ._/ / /_/  |/|/ / /  |/|/ / /  /   //  v 0.3.0
 This software is licensed under the WTFPL`
 
 
@@ -70,21 +71,6 @@ else if (process.argv.length > 2 && (process.argv[2] == '--help' || process.argv
 	console.log("\t-c, --channels\t\t print all available channels with id");
 }
 else {
-	const channelPromise = new Promise((resolve, reject) => {
-		if (process.argv.length > 2) {
-			resolve(process.argv[2]);
-		}
-		else {
-			fs.readFile(SC_TARGET, 'utf8', (err, data) => {
-				if (err) {
-					reject(Error("STOWAWAY v0.2.X requires either target channel id to be passed as a command line argument\n-OR-\nchannel_id.txt with target channel id in the STOWAWAY directory"));
-				}
-				else {
-					resolve(data);
-				}
-			});
-		}
-	});
 	let cli = new InitCLI(banner, SCREEN_TITLE, process);
 	cli.log(warning);
 	cli.log(">intiliazing pgp keys... ");
@@ -121,6 +107,26 @@ else {
 		});
 	})
 	.then(({key: k, database: db, client: client }) => {
+		return new Promise((resolve, reject) => {
+			cli.select(ChannelSelect(cli, db, client))
+			.then((channel_id) => {
+				cli.log(">attempting to connect to target channel... ");
+				client.channels.fetch(channel_id)
+				.then(channel => {
+					cli.cat(`{green-fg}DONE!{/}`);
+					cli.log(`>Channel: {black-fg}{green-bg}${channel.name}{/}`);
+					resolve({
+						key: k,
+						database: db,
+						client: client,
+						channel: channel
+					});
+				})
+				.catch(reject);
+			})
+			.catch(reject);
+		});
+		/*
 		cli.log(">attempting to connect to target channel... ");
 		return new Promise((resolve, reject) => {
 			channelPromise
@@ -146,6 +152,7 @@ else {
 				reject(err);
 			});
 		});
+		*/
 	})
 	.then(({ key: key, database: db, client: client, channel: channel }) => {
 		const stowaway = new SingleStowaway(key, channel, db);

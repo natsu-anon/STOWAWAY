@@ -1,5 +1,4 @@
 const blessed = require('blessed');
-const fs = require('fs');
 
 const spinner = [
 	"[@               ]",
@@ -107,6 +106,7 @@ class BlessedInit {
 			});
 		}
 		textbox.focus();
+		textbox.setFront();
 		this.screen.render();
 		return new Promise((resolve, reject) => {
 			textbox.once('submit', (val) => {
@@ -115,6 +115,44 @@ class BlessedInit {
 				resolve(val);
 			});
 		});
+	}
+
+	select (setup) {
+		let box = blessed.textbox({
+			parent: this.screen,
+			tags: true,
+			height: '80%',
+			width: '80%',
+			top: 'center',
+			left: 'center',
+			content: "loading...",
+			padding: 1,
+			/* NOT WORKING ???
+			scrollable: true,
+			alwaysScroll: true,
+			draggable: true,
+			scrollbar: {
+				ch: '#',
+				fg: 'black',
+				bg: 'cyan',
+			},
+			*/
+			border: {
+				type: 'line'
+			}
+		});
+		Object.defineProperty(box, 'actualHeight', {
+			get: function () { return this.height - 4; }
+		});
+		const selected = setup(box);
+		box.setFront();
+		box.focus();
+		this.screen.render();
+		selected.finally(() => {
+			box.destroy();
+			this.screen.render();
+		});
+		return selected;
 	}
 
 	log (text) {
@@ -162,6 +200,10 @@ class BlessedInit {
 			this.popup.hide();
 			this.screen.render();
 		};
+	}
+
+	render () {
+		this.screen.render();
 	}
 }
 
