@@ -114,7 +114,7 @@ https://discord.com/api/oauth2/authorize?client_id=CLIENT_ID&permissions=117760&
 >
 > -Edward Snowden
 
-### Launching from binary
+### Launching executable
 Just run it!
 
 ### Launching from command line
@@ -124,7 +124,7 @@ However, you can also pass `-c` or `--channels` to print out all the channels av
 ![add to server](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/single-channel/screenshots/permissions.PNG)
 
 Additionally,  pass `-h` or `--help` for help.  Pass `-v` or `--version` for the version number.  Pass `-a` or `--about` for some basic information about ＳＴＯＷＡＷＡＹ.
-And if you're running ＳＴＯＷＡＷＡＹ from source you can use `npm run channels`, `npm run help`, `npm run version`, and `npm run about` respectively.
+And if you're running ＳＴＯＷＡＷＡＹ from source you can use `npm run start` to launch ＳＴＯＷＡＷＡＹ, and `npm run channels`, `npm run help`, `npm run version`, and `npm run about` for their respective flags.
 
 ## PGP Encryption
 >There is no killer answer yet. Jacob Appelbaum (@ioerror) has a clever response, asking people who say this to then hand him their phone unlocked and pull down their pants. My version of that is to say, 'well, if you're so boring then we shouldn't be talking to you, and neither should anyone else', but philosophically, the real answer is this: [M]ass surveillance is a mass structural change. **When society goes bad, it's going to take you with it, even if you are the blandest person on earth.**
