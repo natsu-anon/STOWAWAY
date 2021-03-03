@@ -40,7 +40,7 @@ If you're on Windows you can use [ColorTool](https://github.com/microsoft/termin
 ### Installation
 
 #### Download a binary
-Just [download the latest appropriate ＳＴＯＷＡＷＡＹ](https://github.com/natsu-anon/STOWAWAY/releases/tag/version-0.2.1) and extract the zip file. **NOTE** I've only tested the windows binary.
+Just [download the latest appropriate ＳＴＯＷＡＷＡＹ](https://github.com/natsu-anon/STOWAWAY/releases/) and extract the zip file. **NOTE** I've only tested the windows binary.
 
 #### Running from source
 you can run ＳＴＯＷＡＷＡＹ from source with [Node.js](https://nodejs.org/en/)(version 14.15.4) and the following packages:
