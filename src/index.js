@@ -41,6 +41,7 @@ const warning = `
 
 
 if (process.argv.length > 2 && (process.argv[2] == '--channels' || process.argv[2] == '-c')) {
+	// run list-channels.js
 	const cli = new InitCLI(banner, SCREEN_TITLE, process);
 	cli.log(`{green-fg}#### STOWAWAY passed {underline}${process.argv[2]}{/underline}.  Commencing channel scan!{/}`);
 	cli.log("{underline}{yellow-fg}THIS FEATURE WILL BE REMOVED ONCE SERVER NAVIGATION IS IMPLEMENTED{/}");
@@ -64,13 +65,16 @@ if (process.argv.length > 2 && (process.argv[2] == '--channels' || process.argv[
 		process.exit(1);
 	});
 }
-else if (process.argv.length > 2 && (process.argv[2] == '--help' || process.argv[2] == '-h')) {
+else if (process.argv.length > 2 && (process.argv[2] == '--help' || process.argv[2] == '-h')) { // IMPROVE THIS
+	// run help.js
 	console.log("STOWAWAY [options] <target channel id>");
 	console.log("Options:")
 	console.log("\t-h, --help\t\t output usage information");
 	console.log("\t-c, --channels\t\t print all available channels with id");
 }
 else {
+	// run main.js
+	// move all the requires into there
 	let cli = new InitCLI(banner, SCREEN_TITLE, process);
 	cli.log(warning);
 	cli.log(">intiliazing pgp keys... ");
@@ -126,33 +130,6 @@ else {
 			})
 			.catch(reject);
 		});
-		/*
-		cli.log(">attempting to connect to target channel... ");
-		return new Promise((resolve, reject) => {
-			channelPromise
-			.then(channelID => {
-				client.channels.fetch(channelID)
-				.then(channel => {
-					cli.cat(`{green-fg}DONE!{/}`);
-					cli.log(`>Channel: {black-fg}{green-bg}${channel.name}{/}`);
-					resolve({
-						key: k,
-						database: db,
-						client: client,
-						channel: channel
-					});
-				})
-				.catch(err => {
-					client.destroy();
-					reject(err);
-				});
-			})
-			.catch(err => {
-				client.destroy();
-				reject(err);
-			});
-		});
-		*/
 	})
 	.then(({ key: key, database: db, client: client, channel: channel }) => {
 		const stowaway = new SingleStowaway(key, channel, db);
