@@ -51,7 +51,7 @@ class SingleStowaway extends EventEmitter {
 	}
 
 	launch (client) {
-		this.id = client.id;
+		this.id = client.user.id;
 		this._init()
 		.catch((err) => { throw err; })
 		.finally(() => {
