@@ -122,7 +122,7 @@ class BlessedInit {
 			parent: this.screen,
 			tags: true,
 			height: '80%',
-			width: '80%',
+			width: 80,
 			top: 'center',
 			left: 'center',
 			content: "loading...",
