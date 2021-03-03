@@ -35,17 +35,18 @@ const spinner = [
 
 class SingleCLI {
 
-	constructor (title, notice, channelName, userTag) {
+	constructor (title, notice, channelLabel, userTag) {
 		this.screen = blessed.screen({
 			smartcsr: true,
 			autopadding: true,
+			tabSize: 2,
 			// debug: true,
 			dockborders: true,
 			fullunicode: true, // allows for meme double-wide characters
 		});
 		this.screen.title = title;
 		this._notice = notice;
-		this._channelLabel = ` #${channelName} `;
+		this._channelLabel = ` ${channelLabel} `;
 		this._inputLabel = ` Logged in as: ${userTag} `;
 		blessed.box({
 			parent: this.screen,
