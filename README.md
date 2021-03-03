@@ -13,7 +13,7 @@ This software is licensed under the WTFPL
 An End-to-End PGP encryption layer for Discord focused on making privacy easy & accesible via bots [(instructions included)](#create-a-bot).
 This means that the keys used to encrypt & decrypt messages are different.  The keys to encrypt are *public*, the keys to decrypt are *private* and should __NEVER__ be shared.
 
-**NOTE ＳＴＯＷＡＷＡＹ v0.2.x currently only supports connecting to a _single server channel_ at a time, I will add support to navigate between multiple servers, channels, and direct messages SOON:tm:**
+**NOTE ＳＴＯＷＡＷＡＹ v0.2.x & v0.3.0  currently only supports connecting to a _single server channel_ at a time, I will add support to navigate between multiple servers, channels, and direct messages SOON:tm:**
 
 SCREENSHOTS SOON :tm:
 
