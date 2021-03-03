@@ -38,6 +38,7 @@ class BlessedInit {
 		let screen = blessed.screen({
 			smartcsr: true,
 			autopadding: true,
+			tabSize: 2,
 			dockborders:true,
 			fullunicode: true,
 		});
