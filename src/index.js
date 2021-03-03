@@ -25,23 +25,23 @@ const banner = `      _  __ __        __        __
 //  ._/ / /_/  |/|/ / /  |/|/ / /  /   //  v 0.3.0
 This software is licensed under the WTFPL`
 
-
 const warning = `
-{black-fg}{yellow-bg}## {underline}WARNING{/underline} #####################################{/}
-{black-fg}{yellow-bg}#                                              #{/}
-{black-fg}{yellow-bg}#  ENSURE YOUR BINARY/SOURCE CODE IS FROM:     #{/}
-{black-fg}{yellow-bg}#  {underline}github.com/natsu-anon/STOWAWAY{/underline}              #{/}
-{black-fg}{yellow-bg}#  DO NOT SHARE YOUR API TOKEN WITH ANYONE.    #{/}
-{black-fg}{yellow-bg}#  DO NOT SHARE stowaway.db WITH ANYONE.       #{/}
-{black-fg}{yellow-bg}#  DO NOT SHARE stowaway.key WITH ANYONE.      #{/}
-{black-fg}{yellow-bg}#  DO NOT TRUST ANYONE.  {underline}ESPECIALLY GROOMERS{/underline}.  #{/}
-{black-fg}{yellow-bg}#                                              #{/}
-{black-fg}{yellow-bg}################################################{/}
+{black-fg}{yellow-bg}## {underline}WARNING{/underline} ###################################{/}
+{black-fg}{yellow-bg}#                                            #{/}
+{black-fg}{yellow-bg}#  ENSURE YOUR BINARY/SOURCE CODE IS FROM:   #{/}
+{black-fg}{yellow-bg}#  {underline}github.com/natsu-anon/STOWAWAY{/underline}            #{/}
+{black-fg}{yellow-bg}#  DO NOT SHARE YOUR API TOKEN WITH ANYONE.  #{/}
+{black-fg}{yellow-bg}#  DO NOT SHARE stowaway.db WITH ANYONE.     #{/}
+{black-fg}{yellow-bg}#  DO NOT SHARE stowaway.key WITH ANYONE.    #{/}
+{black-fg}{yellow-bg}#  DO NOT TRUST THE GOVERNMENT.              #{/}
+{black-fg}{yellow-bg}#  {underline}DO NOT TRUST CORPORATIONS.{/underline}                #{/}
+{black-fg}{yellow-bg}#                                            #{/}
+{black-fg}{yellow-bg}##############################################{/}
 \n`;
 
-
 if (process.argv.length > 2 && (process.argv[2] == '--channels' || process.argv[2] == '-c')) {
-	// run list-channels.js
+	require('./list-channels.js')(API_TOKEN, Client);
+	/*
 	const cli = new InitCLI(banner, SCREEN_TITLE, process);
 	cli.log(`{green-fg}#### STOWAWAY passed {underline}${process.argv[2]}{/underline}.  Commencing channel scan!{/}`);
 	cli.log("{underline}{yellow-fg}THIS FEATURE WILL BE REMOVED ONCE SERVER NAVIGATION IS IMPLEMENTED{/}");
@@ -64,17 +64,25 @@ if (process.argv.length > 2 && (process.argv[2] == '--channels' || process.argv[
 		console.error(err);
 		process.exit(1);
 	});
+	*/
 }
-else if (process.argv.length > 2 && (process.argv[2] == '--help' || process.argv[2] == '-h')) { // IMPROVE THIS
-	// run help.js
+else if (process.argv.length > 2 && (process.argv[2] == '--version' || process.argv[2] == '-v')) {
+	console.log("0.3.0");
+}
+else if (process.argv.length > 2 && (process.argv[2] == '--about' || process.argv[2] == '-a')) {
+	require('./about.js')(banner);
+}
+else if (process.argv.length > 2 && (process.argv[2] == '--help' || process.argv[2] == '-h')) {
+	require('./help.js')();
+	/*
 	console.log("STOWAWAY [options] <target channel id>");
 	console.log("Options:")
 	console.log("\t-h, --help\t\t output usage information");
 	console.log("\t-c, --channels\t\t print all available channels with id");
+	*/
 }
 else {
-	// run main.js
-	// move all the requires into there
+	// TODO get this all in its own script because MY GOODNESS
 	let cli = new InitCLI(banner, SCREEN_TITLE, process);
 	cli.log(warning);
 	cli.log(">intiliazing pgp keys... ");
@@ -100,7 +108,7 @@ else {
 			clientInit(API_TOKEN, fs, cli, Client)
 			.then(client => {
 				cli.cat(`{green-fg}DONE!{/}`);
-				cli.log(`>Logged in as {black-fg}{green-bg}${client.user.tag}{/}`);
+				cli.log(`>logged in as {black-fg}{green-bg}${client.user.tag}{/}`);
 				resolve({
 					key: k,
 					database: db,
@@ -118,7 +126,7 @@ else {
 				client.channels.fetch(channel_id)
 				.then(channel => {
 					cli.cat(`{green-fg}DONE!{/}`);
-					cli.log(`>Channel: {black-fg}{green-bg}${channel.name}{/}`);
+					cli.log(`>channel: ${channel.guild.name} {black-fg}{green-bg}#${channel.name}{/}`);
 					resolve({
 						key: k,
 						database: db,
@@ -135,7 +143,7 @@ else {
 		const stowaway = new SingleStowaway(key, channel, db);
 		const model = new SingleChannel();
 		cli.destroy();
-		cli = new SingleCLI(SCREEN_TITLE, '{bold}[Ctrl-C] to quit{/bold}', channel.name, client.user.tag);
+		cli = new SingleCLI(SCREEN_TITLE, '{bold}[Ctrl-C] to quit{/bold}', `${channel.guild.name} {green-fg}#${channel.name}{/}`, client.user.tag);
 		stowaway.on('message', model.message);
 		stowaway.on('error', (err) => { cli.error(err); });
 		stowaway.on('timestamp', (ts, id) => { model.timestamp(ts, id); });
