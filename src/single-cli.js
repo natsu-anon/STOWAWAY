@@ -45,8 +45,8 @@ class SingleCLI {
 		});
 		this.screen.title = title;
 		this._notice = notice;
-		this._channelLabel = `#${channelName}`;
-		this._inputLabel = `logged in as: ${userTag}`;
+		this._channelLabel = ` #${channelName} `;
+		this._inputLabel = ` Logged in as: ${userTag} `;
 		blessed.box({
 			parent: this.screen,
 			tags: true,
