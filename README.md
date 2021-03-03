@@ -10,7 +10,7 @@ This software is licensed under the WTFPL
 > -Edward Snowden
 
 
-An End-to-End PGP encryption layer for discord focused on ease-of-use via bots.
+An End-to-End PGP encryption layer for Discord focused on making privacy easy & accesible via bots [(instructions included)](#create-a-bot).
 This means that the keys used to encrypt & decrypt messages are different.  The keys to encrypt are *public*, the keys to decrypt are *private* and should __NEVER__ be shared.
 
 **NOTE ＳＴＯＷＡＷＡＹ v0.2.x currently only supports connecting to a _single server channel_ at a time, I will add support to navigate between multiple servers, channels, and direct messages SOON:tm:**
@@ -114,28 +114,17 @@ https://discord.com/api/oauth2/authorize?client_id=CLIENT_ID&permissions=117760&
 >
 > -Edward Snowden
 
-### Launching from application
-Inside of the folder your ＳＴＯＷＡＷＡＹ binary is you must create a text file named `channel_id.txt` that contains the id of the channel you want to connect to.
-![channel id text file](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/single-channel/screenshots/launch1.PNG)
+### Launching from binary
+Just run it!
 
 ### Launching from command line
-You can always pass a channel id as command line argument to ＳＴＯＷＡＷＡＹ, even if you have a `channel_id.txt` file.
+If you don't pass any optional flags ＳＴＯＷＡＷＡＹ will launch regularly.
+However, you can also pass `-c` or `--channels` to print out all the channels available/inavailable to your bot with reasons why.
 
-If you are launching from source:
-```
-npm run start channel_id
-```
+![add to server](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/single-channel/screenshots/permissions.PNG)
 
-Furthermore, you can use `npm run channels` to print out all channels with ids available to your bot.
-
-If you are launching from binary you can connect to your desired channel with:
-```
-.\STOWAWAY.exe channel_id
-```
-
-And to print out all available channels with ids run `.\STOWAWAY.exe -c` or `,\STOWAWAY.exe --channels`
-
-And pass `-h` or `--help` to see usage information (needs improvement).
+Additionally,  pass `-h` or `--help` for help.  Pass `-v` or `--version` for the version number.  Pass `-a` or `--about` for some basic information about ＳＴＯＷＡＷＡＹ.
+And if you're running ＳＴＯＷＡＷＡＹ from source you can use `npm run channels`, `npm run help`, `npm run version`, and `npm run about` respectively.
 
 ## PGP Encryption
 >There is no killer answer yet. Jacob Appelbaum (@ioerror) has a clever response, asking people who say this to then hand him their phone unlocked and pull down their pants. My version of that is to say, 'well, if you're so boring then we shouldn't be talking to you, and neither should anyone else', but philosophically, the real answer is this: [M]ass surveillance is a mass structural change. **When society goes bad, it's going to take you with it, even if you are the blandest person on earth.**
