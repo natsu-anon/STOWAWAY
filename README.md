@@ -103,7 +103,7 @@ When you launch ＳＴＯＷＡＷＡＹ, you must provide your bot's token to u
 
 3. Go to the following link, but replace `CLIENT_ID` with your client id
 ```
-https://discord.com/api/oauth2/authorize?client_id=CLIENT_ID&permissions=117824&scope=bot
+https://discord.com/api/oauth2/authorize?client_id=CLIENT_ID&permissions=117760&scope=bot
 ```
 
 4. Add to the desired server.  Note that you need to have the *Manage Server* permission in whatever server you want to add your bot to.
