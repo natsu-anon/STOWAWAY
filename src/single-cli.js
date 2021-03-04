@@ -159,7 +159,7 @@ class SingleCLI {
 	}
 
 	get channelHeight () {
-		return this.channelBox.height;
+		return this.channelBox.height - 4; // account for padding & label
 	}
 
 	get channelScrollHeight () {
@@ -421,6 +421,11 @@ class SingleCLI {
 
 	scrollChannel (offset) {
 		this.channelBox.scroll(offset);
+		this.screen.render();
+	}
+
+	scrollChannelPerc (percentage) {
+		this.channelBox.setScrollPerc(percentage);
 		this.screen.render();
 	}
 
