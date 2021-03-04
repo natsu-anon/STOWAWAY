@@ -22,21 +22,24 @@ const SC_TARGET = './channel_id.txt';
 
 const banner = `      _  __ __        __        __
  //  /_\` / / / | | | /_/ | | | /_/ /_/  //
-//  ._/ / /_/  |/|/ / /  |/|/ / /  /   //  v 0.3.0
+//  ._/ / /_/  |/|/ / /  |/|/ / /  /   //  v 0.3.1
 This software is licensed under the WTFPL`
 
 const warning = `
-{black-fg}{yellow-bg}## {underline}WARNING{/underline} ###################################{/}
-{black-fg}{yellow-bg}#                                            #{/}
-{black-fg}{yellow-bg}#  ENSURE YOUR BINARY/SOURCE CODE IS FROM:   #{/}
-{black-fg}{yellow-bg}#  {underline}github.com/natsu-anon/STOWAWAY{/underline}            #{/}
-{black-fg}{yellow-bg}#  DO NOT SHARE YOUR API TOKEN WITH ANYONE.  #{/}
-{black-fg}{yellow-bg}#  DO NOT SHARE stowaway.db WITH ANYONE.     #{/}
-{black-fg}{yellow-bg}#  DO NOT SHARE stowaway.key WITH ANYONE.    #{/}
-{black-fg}{yellow-bg}#  DO NOT TRUST THE GOVERNMENT.              #{/}
-{black-fg}{yellow-bg}#  {underline}DO NOT TRUST CORPORATIONS.{/underline}                #{/}
-{black-fg}{yellow-bg}#                                            #{/}
-{black-fg}{yellow-bg}##############################################{/}
+{black-fg}{yellow-bg}## {underline}WARNING{/underline} ##########################################{/}
+{black-fg}{yellow-bg}#                                                   #{/}
+{black-fg}{yellow-bg}#  ENSURE YOUR BINARY/SOURCE CODE IS FROM:          #{/}
+{black-fg}{yellow-bg}#  {underline}github.com/natsu-anon/STOWAWAY{/underline}                   #{/}
+{black-fg}{yellow-bg}#  DO NOT SHARE YOUR API TOKEN WITH ANYONE.         #{/}
+{black-fg}{yellow-bg}#  DO NOT SHARE stowaway.db WITH ANYONE.            #{/}
+{black-fg}{yellow-bg}#  DO NOT SHARE stowaway.key WITH ANYONE.           #{/}
+{black-fg}{yellow-bg}#  TRUST NO ONE.  {underline}NOT EVEN YOURSELF.{/underline}                #{/}
+{black-fg}{yellow-bg}#                                                   #{/}
+{black-fg}{yellow-bg}#  THIS SOFTWARE DOES NOT WORK AGAINST KEYLOGGERS.  #{/}
+{black-fg}{yellow-bg}#  - OR -                                           #{/}
+{black-fg}{yellow-bg}#  {underline}PEOPLE STANDING BEHIND YOU.{/underline}                      #{/}
+{black-fg}{yellow-bg}#                                                   #{/}
+{black-fg}{yellow-bg}#####################################################{/}
 \n`;
 
 if (process.argv.length > 2 && (process.argv[2] == '--channels' || process.argv[2] == '-c')) {
@@ -67,7 +70,7 @@ if (process.argv.length > 2 && (process.argv[2] == '--channels' || process.argv[
 	*/
 }
 else if (process.argv.length > 2 && (process.argv[2] == '--version' || process.argv[2] == '-v')) {
-	console.log("0.3.0");
+	console.log("0.3.1");
 }
 else if (process.argv.length > 2 && (process.argv[2] == '--about' || process.argv[2] == '-a')) {
 	require('./about.js')(banner);
@@ -148,23 +151,30 @@ else {
 		stowaway.on('error', (err) => { cli.error(err); });
 		stowaway.on('timestamp', (ts, id) => { model.timestamp(ts, id); });
 		stowaway.on('failed decrypt', model.decryptionFailure);
+		stowaway.on('handshake', model.handshake);
 		stowaway.on('notify', (message) => { cli.notify(message); });
 		stowaway.on('debug', (message) => { cli.warning(`DEBUG: ${message}`); });
 		stowaway.on('channel delete', () => { cli.error(`${channel.name} deleted!`); });
 		stowaway.on('channel update', (ch) => {
 			cli.notify("channel updated!")
-			cli.channelLabel = ch.name;
+			cli.channelLabel = `${ch.guild.name} {green-fg}#${ch.name}{/}`;
 			cli.render();
 		});
 		stowaway.on('bad handshake', (user) => {
 			cli.warning(`BAD HANDSHAKE from ${user.tag}`);
 		});
-		stowaway.on('handshake', (user) => {
+		stowaway.on('handshake', (ts, date, user) => {
 			cli.handshake(`HANDSHAKE from ${user.tag}`);
 		});
 		model.on('update', () => {
+			const flag = cli.channelScrollPerc == 100 || cli.channelHeight >= cli.channelScrollHeight;
 			cli.messages = model.text;
-			cli.render();
+			if (flag) {
+				cli.scrollChannelPerc(100);
+			}
+			else {
+				cli.render();
+			}
 		});
 		stowaway.launch(client);
 		stowaway.on('message', (ts, date, author, content) => {
@@ -174,7 +184,7 @@ else {
 		const fsm = new FSMBuilder()
 		.enterRead(() => {
 			cli.stateBG = 'magenta';
-			cli.stateText = 'READING -- [SPACE] begin writing; [W] scroll up/fetch older messages; [S] scroll down/fetch newer messages';
+			cli.stateText = 'READING -- [SPACE] begin writing; [W] scroll up/fetch older messages; [S] scroll down/fetch newer messages; [1] to jump to bottom';
 			cli.render();
 		})
 		.enterWrite(() => {
@@ -223,6 +233,9 @@ else {
 		cli.inputBox.key(['escape'], () => {
 			fsm.onEsc();
 		});
+		cli.screen.key(['1'], () => {
+			cli.scrollChannelPerc(100);
+		});
 		fsm.on('send input', () => {
 			stowaway.encrypt(cli.submitInput());
 		});
@@ -232,13 +245,12 @@ else {
 		const fetchOlder = function () {
 			stowaway.fetchOlder(model.oldest)
 			.then(() => { cli.notify("fetched older messages!"); })
-		}
+		};
 		const fetchNewer = function () {
 			stowaway.fetchNewer(model.newest)
 			.then(() => { cli.notify("fetched newer messages!"); })
-		}
+		};
 		fsm.on('scroll', (offset) => {
-			cli.scrollChannel(offset);
 			if (cli.channelHeight >= cli.channelScrollHeight) {
 				if (offset > 0) {
 					fetchNewer();
@@ -248,11 +260,14 @@ else {
 				}
 			}
 			else {
-				if (cli.channelScrollPerc === 0) {
+				if (cli.channelScrollPerc == 0 && offset < 0) {
 					fetchOlder();
 				}
-				else if (cli.channelScrollPerc === 100) {
+				else if (cli.channelScrollPerc == 100 && offset > 0) {
 					fetchNewer();
+				}
+				else {
+					cli.scrollChannel(offset);
 				}
 			}
 		});
