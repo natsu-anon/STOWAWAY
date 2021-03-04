@@ -73,6 +73,7 @@ class SingleStowaway extends EventEmitter {
 		// .then(() => { this.emit('debug', 'INITIALIZATION COMPLETE'); });
 	}
 
+
 	_handleMessage (message) {
 		if (message.createdAt >= this.oldest) {
 			this.emit('timestamp', message.createdAt, message.id);
@@ -109,6 +110,63 @@ class SingleStowaway extends EventEmitter {
 		}
 	}
 
+	// NOTE this doesn't work as well as regular _handleMessage
+	// batch assumed to all be from current channel
+	_handleBatch (messages) {
+		this._handshakes(messages).then(() => {
+			messages.each(message => {
+				if (message.createdAt > this.oldest && message.content === ENCRYPTED_MESSAGE && message.attachments.size > 0) {
+					const messageFile = getAttachment(message, MSGFILE);
+					if (messageFile.exists) {
+						this.decrypt(messageFile.url)
+						.then((plaintext) => {
+							this.emit('message', message.createdTimestamp, message.createdAt, message.author, plaintext, message.id);
+							this.updateLatests(message.createdTimestamp, message.id);
+						})
+						.catch((err) => { this.emit('failed decrypt', message.createdTimestamp, message.createdAt, message.author); });
+					}
+					else {
+						this.emit('no encrypted file', message);
+					}
+				}
+			});
+		});
+	}
+
+	_handshakes (messages) {
+		return Promise.all(messages.map(message => {
+			if (message.createdAt <= this.oldest) {
+				return Promise.resolve();
+			}
+			else {
+				return new Promise(resolve => {
+					if (message.author.id != this.id && (message.content === HANDSHAKE_REQUEST || message.content === HANDSHAKE_RESPONSE) && message.attachments.size > 0) {
+						const keyFile = getAttachment(message, KEYFILE);
+						if (keyFile.exists) {
+							this.receiveHandshake(message.author, message.id, keyFile.url, message.content === HANDSHAKE_REQUEST)
+							.then(() => {
+								this.emit('handshake', message.createdTimestamp, message.createdAt, message.author);
+								this.updateLatests(message.createdTimestamp, message.id);
+								resolve();
+							})
+							.catch(err => {
+								this.emit('bad handshake', message.author);
+								resolve();
+							});
+						}
+						else {
+							this.emit('bad handshake', message.author);
+							resolve();
+						}
+					}
+					else {
+						resolve();
+					}
+				});
+			}
+		}));
+	}
+
 	_init () {
 		return new Promise((resolve, reject) => {
 			this.db.findOne({ channel_id: this.channel.id , handshake: { $exists: true } }, (err, doc) => {
@@ -139,6 +197,7 @@ class SingleStowaway extends EventEmitter {
 						return this.channel.messages.fetch({ around: doc.last_seen }, false, false)
 					})
 					.then(messages => {
+						// this._handleBatch(messages);
 						messages.each(message => { this._handleMessage(message); });
 						resolve();
 						// return this.channel.messages.fetch({after: doc.last_seen}, false, false);
@@ -162,8 +221,9 @@ class SingleStowaway extends EventEmitter {
 				if (doc != null) {
 					this.channel.messages.fetch({ before: id }, false, false)
 					.then(messages => {
-						// this.emit('notify', `${Array.from(messages.values()).length} older messages fetched`);
+						// this._handleBatch(messages);
 						messages.each(message => { this._handleMessage(message); });
+						// this.emit('notify', `${Array.from(messages.values()).length} older messages fetched`);
 						// this.db.persistence.compactDatafile();
 						resolve();
 					})
@@ -182,6 +242,7 @@ class SingleStowaway extends EventEmitter {
 				if (doc != null) {
 					this.channel.messages.fetch({ after: id }, false, false)
 					.then(messages => {
+						// this._handleBatch(messages);
 						messages.each(message => { this._handleMessage(message); });
 						// this.db.persistence.compactDatafile();
 						resolve();
