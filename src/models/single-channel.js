@@ -1,19 +1,25 @@
 const Model = require('./model.js');
 
+class Handshake {
+	constructor (date, author) {
+		this.date = date;
+		this.author = author;
+	}
+
+	get text () {
+		return `{green-bg}{black-fg}>${this.author.tag} initiated the handshake protocol at ${this.date.toLocaleDateString()} ${this.date.toLocaleTimeString()}{/}`;
+	}
+}
+
 class Message {
 	constructor (date, author, content, id) {
 		this.date = date;
 		this.author = author;
 		this.content = content;
-		this._id = id;
-	}
-
-	get id () {
-		return this._id;
 	}
 
 	get text () {
-		return `{blue-fg}[${this.date.toLocaleDateString()} ${this.date.toLocaleTimeString()}] <{/}${this.author.username}{blue-fg}>{/} ${this.content}`;
+		return `{blue-fg}[${this.date.toLocaleDateString()} ${this.date.toLocaleTimeString()}] <{/}${this.author.username}{blue-fg}>{/} ${this.content}{/}`;
 	}
 }
 
@@ -24,7 +30,7 @@ class DecryptionFailure {
 	}
 
 	get text () {
-		return `{red-fg}${this.date.toLocaleDateString()} ${this.date.toLocaleTimeString()}: FAILED TO DECRYPT MESSAGE FROM {underline}${this.author.tag}{/}`;
+		return `{red-fg}[${this.date.toLocaleDateString()} ${this.date.toLocaleTimeString()}] <{underline}${this.author.username}{/underline}> Failed to decrypt message from {underline}${this.author.tag}{/}`;
 	}
 }
 
@@ -38,7 +44,7 @@ class SingleChannel extends Model {
 		this.message = (ts, date, author, content, id) => {
 			// console.log(`receive(): ${author}`);
 			if (this.content[ts] === undefined) {
-				const res = new Message(date, author, content, id);
+				const res = new Message(date, author, content);
 				this.content[ts] = res;
 				this.emit('update', res.text);
 			}
@@ -46,6 +52,13 @@ class SingleChannel extends Model {
 		this.decryptionFailure = (ts, date, author) => {
 			if (this.content[ts] === undefined) {
 				const res = new DecryptionFailure(date, author);
+				this.content[ts] = res;
+				this.emit('update', res.text);
+			}
+		}
+		this.handshake = (ts, date, author) => {
+			if (this.content[ts] === undefined) {
+				const res = new Handshake(date, author);
 				this.content[ts] = res;
 				this.emit('update', res.text);
 			}
