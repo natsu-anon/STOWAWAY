@@ -7,7 +7,7 @@ class Handshake {
 	}
 
 	get text () {
-		return `{green-bg}{black-fg}>${this.author.tag} initiated the handshake protocol at ${this.date.toLocaleDateString()} ${this.date.toLocaleTimeString()}{/}`;
+		return `\t{green-bg}{black-fg}${this.author.tag} handshake at ${this.date.toLocaleDateString()} ${this.date.toLocaleTimeString()}{/}`;
 	}
 }
 
