@@ -33,8 +33,8 @@ If you're on Windows you can use [ColorTool](https://github.com/microsoft/termin
 - [Usage](#usage)
 - [PGP Encryption](#pgp-encryption)
 - [Future Development](#future-development)
+- [Donations](#donations)
 - [License](#license)
-
 
 ## Setup
 >**"If you give me six lines written by the hand of the most honest of men, I will find something in them which will hang him."**
@@ -146,6 +146,7 @@ And if you're running ＳＴＯＷＡＷＡＹ from source you can use `npm run 
 
 1. Navigate through all servers & channels available to the bot
 2. nicknames
+3. **UPDATE REMINDERS**
 3. option to display nickname associated w/ key
 4. password encrypted private key?
 5. Handshake protocol performed through DM's (can bots DM each other?)
@@ -154,6 +155,14 @@ And if you're running ＳＴＯＷＡＷＡＹ from source you can use `npm run 
 8. Humans dm the bot `about` to find out more w/ link to repo
 
 And in general I need to check out v8 options to see what'd I should bake into the executables
+
+## Donations
+ＳＴＯＷＡＷＡＹ is [FLOSS](https://www.gnu.org/philosophy/floss-and-foss.en.html) (Free/Libre, and Open Source Software) because I wouldn't trust any encryption service that requires payment and doesn't allow me to view the source code, so why would I make others? So, if you like what's going on here and have some money burning a hole in your pocket, here's how you can donate.
+- BTC wallet: bc1q9c4cy76wpe84tcxftjw9k7wmshdndf32npkgg3
+- ETH wallet: 0x6C5e469C3df5aB4A9c147E79c3a7a1356fa250A5
+- DOGE wallet: DS87ZXf2vXoUQmy3Wr5nNNNSiSGM55uGJs
+
+If you want to donate via PayPal, click the Sponsor button up top (yes, the [Ko-fi](https://ko-fi.com/natsusoft) button)!
 
 ## License
 [Do What the Fuck You Want to Public License](http://www.wtfpl.net/)(version 2 or any later version).  Please take a look at the [LICENSE](LICENSE) file for more information.
