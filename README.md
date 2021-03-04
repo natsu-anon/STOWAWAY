@@ -16,6 +16,10 @@ This means that the keys used to encrypt & decrypt messages are different.  The 
 **NOTE ＳＴＯＷＡＷＡＹ v0.2.x & v0.3.0  currently only supports connecting to a _single server channel_ at a time, I will add support to navigate between multiple servers, channels, and direct messages SOON:tm:**
 
 ![spurdo](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/main/screenshots/spurdo.PNG)
+_what you see_
+
+![discord](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/main/screenshots/discord_view.PNG)
+_what the everyone else sees_
 
 If you're on Windows you can use [ColorTool](https://github.com/microsoft/terminal/tree/main/src/tools/ColorTool) to change your terminal's color scheme.
 
