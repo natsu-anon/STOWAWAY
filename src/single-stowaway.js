@@ -74,33 +74,36 @@ class SingleStowaway extends EventEmitter {
 	}
 
 	_handleMessage (message) {
-		this.emit('timestamp', message.createdAt, message.id);
-		if (message.channel.id == this.channel.id) {
-			if (message.author.id != this.id && (message.content === HANDSHAKE_REQUEST || message.content === HANDSHAKE_RESPONSE) && message.attachments.size > 0) {
-				const keyFile = getAttachment(message, KEYFILE);
-				if (keyFile.exists) {
-					this.receiveHandshake(message.author, message.id, keyFile.url, message.content === HANDSHAKE_REQUEST)
-					.then(() => {
-						this.updateLatests(message.createdTimestamp, message.id);
-					})
-					.catch(err => { this.emit('bad handshake', message.author); });
+		if (message.createdAt >= this.oldest) {
+			this.emit('timestamp', message.createdAt, message.id);
+			if (message.channel.id == this.channel.id) {
+				if (message.author.id != this.id && (message.content === HANDSHAKE_REQUEST || message.content === HANDSHAKE_RESPONSE) && message.attachments.size > 0) {
+					const keyFile = getAttachment(message, KEYFILE);
+					if (keyFile.exists) {
+						this.receiveHandshake(message.author, message.id, keyFile.url, message.content === HANDSHAKE_REQUEST)
+						.then(() => {
+							this.emit('handshake', message.createdTimestamp, message.createdAt, message.author);
+							this.updateLatests(message.createdTimestamp, message.id);
+						})
+						.catch(err => { this.emit('bad handshake', message.author); });
+					}
+					else {
+						this.emit('bad handshake', message.author);
+					}
 				}
-				else {
-					this.emit('bad handshake', message.author);
-				}
-			}
-			else if (message.content === ENCRYPTED_MESSAGE && message.attachments.size > 0) {
-				const messageFile = getAttachment(message, MSGFILE);
-				if (messageFile.exists) {
-					this.decrypt(messageFile.url)
-					.then((plaintext) => {
-						this.emit('message', message.createdTimestamp, message.createdAt, message.author, plaintext, message.id);
-						this.updateLatests(message.createdTimestamp, message.id);
-					})
-					.catch((err) => { this.emit('failed decrypt', message.createdTimestamp, message.createdAt, message.author); });
-				}
-				else {
-					this.emit('no encrypted file', message);
+				else if (message.content === ENCRYPTED_MESSAGE && message.attachments.size > 0) {
+					const messageFile = getAttachment(message, MSGFILE);
+					if (messageFile.exists) {
+						this.decrypt(messageFile.url)
+						.then((plaintext) => {
+							this.emit('message', message.createdTimestamp, message.createdAt, message.author, plaintext, message.id);
+							this.updateLatests(message.createdTimestamp, message.id);
+						})
+						.catch((err) => { this.emit('failed decrypt', message.createdTimestamp, message.createdAt, message.author); });
+					}
+					else {
+						this.emit('no encrypted file', message);
+					}
 				}
 			}
 		}
@@ -115,11 +118,13 @@ class SingleStowaway extends EventEmitter {
 				else if (doc == null) {
 					this.handshake(HANDSHAKE_REQUEST)
 					.then(message => {
+						this.oldest = message.createdTimestamp;
+						this.emit('handshake', message.createdTimestamp, message.createdAt, message.author);
 						this.db.insert({
 							channel_id: this.channel.id,
 							handshake: message.id,
 							last_seen: message.id,
-							last_ts: message.createdAt,
+							last_ts: message.createdTimestamp,
 						}, () => {
 							resolve();
 						});
@@ -127,7 +132,12 @@ class SingleStowaway extends EventEmitter {
 					.catch(reject);
 				}
 				else {
-					this.channel.messages.fetch({ around: doc.last_seen }, false, false)
+					this.channel.messages.fetch(doc.handshake)
+					.then(message => {
+						this.oldest = message.createdTimestamp;
+						this.emit('handshake', message.createdTimestamp, message.createdAt, message.author);
+						return this.channel.messages.fetch({ around: doc.last_seen }, false, false)
+					})
 					.then(messages => {
 						messages.each(message => { this._handleMessage(message); });
 						resolve();
@@ -135,7 +145,7 @@ class SingleStowaway extends EventEmitter {
 					})
 					// .then(messages => {
 					// 	// messages.each(message => { this._handleMessage(message); });
-					// 	resolve();
+					// 	resolve();this.db.update
 					// })
 					.catch(reject);
 				}
@@ -273,7 +283,7 @@ class SingleStowaway extends EventEmitter {
 							if (respond) {
 								this.handshake(HANDSHAKE_RESPONSE);
 							}
-							this.emit('handshake', user);
+							// this.emit('handshake', user);
 							resolve();
 						}
 						else {
