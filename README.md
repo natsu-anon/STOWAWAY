@@ -15,7 +15,7 @@ This means that the keys used to encrypt & decrypt messages are different.  The 
 
 **NOTE ＳＴＯＷＡＷＡＹ v0.2.x & v0.3.0  currently only supports connecting to a _single server channel_ at a time, I will add support to navigate between multiple servers, channels, and direct messages SOON:tm:**
 
-![spurdo](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/single-channel/screenshots/spurdo.PNG)
+![spurdo](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/main/screenshots/spurdo.PNG)
 
 If you're on Windows you can use [ColorTool](https://github.com/microsoft/terminal/tree/main/src/tools/ColorTool) to change your terminal's color scheme.
 
@@ -56,32 +56,32 @@ If you know how to do this go ahead and skip to parts 8 and 9.
 1. Go to your [developer portal](https://discord.com/developers/applications).
 *Note*: if you don't have a developer account login with your discord account to automatically set up one.
 
-![login](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/single-channel/screenshots/bot1.PNG)
+![login](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/main/screenshots/bot1.PNG)
 
-![developer portal](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/single-channel/screenshots/bot2.PNG)
+![developer portal](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/main/screenshots/bot2.PNG)
 Once you login you or if you already are you should see something like this.
 
 2. Click the 'New Application' button in the top right.
 3. Enter a name for your new bot.  Don't worry--this won't be its username.  Next go ahead a click 'Create'.
 
-![create application](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/single-channel/screenshots/bot3.PNG)
+![create application](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/main/screenshots/bot3.PNG)
 
 4. Next, click on the 'Bot' button in the sidebar.  You should end up at a page that looks like the following image.
 
-![bot sidebar](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/single-channel/screenshots/bot4.PNG)
+![bot sidebar](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/main/screenshots/bot4.PNG)
 
 5. Click 'Add Bot'. When the warning says "this action is irrevocable!" it means that you can _never_ remove the bot from this app.  You can always delete this app which also deletes the bot.
 
-![add a bot](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/single-channel/screenshots/bot5.PNG)
+![add a bot](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/main/screenshots/bot5.PNG)
 
 6. _'Yes, do it!'_
 7. Feel free to change your bot's username and icon.  You can always change both later.
 
-![bot created](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/single-channel/screenshots/bot6.PNG)
+![bot created](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/main/screenshots/bot6.PNG)
 
 8. Disable 'PUBLIC BOT'
 9. Enable 'PRESENCE INTENT', and 'SERVER MEMBERS INTENT'
-![bot settings](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/single-channel/screenshots/bot7.PNG)
+![bot settings](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/main/screenshots/bot7.PNG)
 
 10. Make sure you save your changes!
 
@@ -89,8 +89,8 @@ When you launch ＳＴＯＷＡＷＡＹ, you must provide your bot's token to u
 
 ** NEVER SHARE YOUR BOT TOKEN WITH ANYONE **
 
-![token copy](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/single-channel/screenshots/bot8.PNG)
-![token paste](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/single-channel/screenshots/bot9.PNG)
+![token copy](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/main/screenshots/bot8.PNG)
+![token paste](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/main/screenshots/bot9.PNG)
 
 
 [//]: # (TODO: write this up with screenshots)
@@ -99,7 +99,7 @@ When you launch ＳＴＯＷＡＷＡＹ, you must provide your bot's token to u
 1. Go to your application's "General Information" page
 2. Copy your client id
 
-![get client id](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/single-channel/screenshots/server1.PNG)
+![get client id](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/main/screenshots/server1.PNG)
 
 3. Go to the following link, but replace `CLIENT_ID` with your client id
 ```
@@ -107,7 +107,7 @@ https://discord.com/api/oauth2/authorize?client_id=CLIENT_ID&permissions=117760&
 ```
 
 4. Add to the desired server.  Note that you need to have the *Manage Server* permission in whatever server you want to add your bot to.
-![add to server](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/single-channel/screenshots/server2.PNG)
+![add to server](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/main/screenshots/server2.PNG)
 
 ## Usage
 >When you say, "I have nothing to hide," you’re saying, "I don’t care about this right." You’re saying, "I don’t have this right, because I’ve got to the point where I have to justify it." **The way rights work is, the government has to justify its intrusion into your rights.**
