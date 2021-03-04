@@ -15,7 +15,7 @@ This means that the keys used to encrypt & decrypt messages are different.  The 
 
 **NOTE ＳＴＯＷＡＷＡＹ v0.2.x & v0.3.0  currently only supports connecting to a _single server channel_ at a time, I will add support to navigate between multiple servers, channels, and direct messages SOON:tm:**
 
-SCREENSHOTS SOON :tm:
+![spurdo](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/single-channel/screenshots/spurdo.PNG)
 
 If you're on Windows you can use [ColorTool](https://github.com/microsoft/terminal/tree/main/src/tools/ColorTool) to change your terminal's color scheme.
 
@@ -139,11 +139,13 @@ And if you're running ＳＴＯＷＡＷＡＹ from source you can use `npm run 
 > -Upton Sinclar in **The Profits of Religion**
 
 1. Navigate through all servers & channels available to the bot
-2. `--about`
-3. Handshake protocol performed through DM's (can bots DM each other?)
-4. More PGP features (key + message signing & key revoking)
-5. See who's signed whose keys for a "web of trust".
-6. Humans dm the bot `about` to find out more w/ link to repo
+2. nicknames
+3. option to display nickname associated w/ key
+4. password encrypted private key?
+5. Handshake protocol performed through DM's (can bots DM each other?)
+6. More PGP features (key + message signing & key revoking)
+7. See who's signed whose keys for a "web of trust".
+8. Humans dm the bot `about` to find out more w/ link to repo
 
 And in general I need to check out v8 options to see what'd I should bake into the executables
 
