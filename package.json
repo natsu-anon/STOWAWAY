@@ -1,6 +1,6 @@
 {
 	"name": "STOWAWAY",
-	"version": "0.3.0",
+	"version": "0.3.1",
 	"description": "(^;",
 	"license": "WTFPL",
 	"author": "Klokov",
@@ -23,10 +23,10 @@
 		"build": "pkg -t latest-win --public -o STOWAWAY .",
 		"build-all": "pkg -t latest-win,latest-linux,latest-macos --public -o STOWAWAY .",
 		"start": "node src/index.js",
-		"about" : "node src/index.js --about",
+		"about": "node src/index.js --about",
 		"channels": "node src/index.js --channels",
 		"help": "node src/index.js --help",
-		"version" : "node src/index.js --version",
+		"version": "node src/index.js --version",
 		"query": "node src/query.js"
 	}
 }

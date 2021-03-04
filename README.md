@@ -13,7 +13,7 @@ This software is licensed under the WTFPL
 An End-to-End PGP encryption layer for Discord focused on making privacy easy & accesible via bots [(instructions included)](#create-a-bot).
 This means that the keys used to encrypt & decrypt messages are different.  The keys to encrypt are *public*, the keys to decrypt are *private* and should __NEVER__ be shared.
 
-**NOTE ＳＴＯＷＡＷＡＹ v0.2.x & v0.3.0  currently only supports connecting to a _single server channel_ at a time, I will add support to navigate between multiple servers, channels, and direct messages SOON:tm:**
+**NOTE ＳＴＯＷＡＷＡＹ v0.2.x & v0.3.x  currently only supports connecting to a _single server channel_ at a time, I will add support to navigate between multiple servers, channels, and direct messages SOON:tm:**
 
 ![spurdo](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/main/screenshots/spurdo.PNG)
 
@@ -147,12 +147,13 @@ And if you're running ＳＴＯＷＡＷＡＹ from source you can use `npm run 
 1. Navigate through all servers & channels available to the bot
 2. nicknames
 3. **UPDATE REMINDERS**
-3. option to display nickname associated w/ key
-4. password encrypted private key?
-5. Handshake protocol performed through DM's (can bots DM each other?)
-6. More PGP features (key + message signing & key revoking)
-7. See who's signed whose keys for a "web of trust".
-8. Humans dm the bot `about` to find out more w/ link to repo
+4. WASM
+5. option to display nickname associated w/ key
+6. password encrypted private key?
+7. Handshake protocol performed through DM's (can bots DM each other?)
+8. More PGP features (key + message signing & key revoking)
+9. See who's signed whose keys for a "web of trust".
+10. Humans dm the bot `about` to find out more w/ link to repo
 
 And in general I need to check out v8 options to see what'd I should bake into the executables
 
