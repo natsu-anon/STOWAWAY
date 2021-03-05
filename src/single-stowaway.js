@@ -82,10 +82,8 @@ class SingleStowaway extends EventEmitter {
 					const keyFile = getAttachment(message, KEYFILE);
 					if (keyFile.exists) {
 						this.receiveHandshake(message.author, message.id, keyFile.url, message.content === HANDSHAKE_REQUEST)
-						.then((flag) => {
-							if (flag) {
-								this.emit('handshake', message.createdTimestamp, message.createdAt, message.author);
-							}
+						.then(() => {
+							this.emit('handshake', message.createdTimestamp, message.createdAt, message.author);
 							this.updateLatests(message.createdTimestamp, message.id);
 						})
 						.catch(err => { this.emit('bad handshake', message.author); });
@@ -147,10 +145,8 @@ class SingleStowaway extends EventEmitter {
 						const keyFile = getAttachment(message, KEYFILE);
 						if (keyFile.exists) {
 							this.receiveHandshake(message.author, message.id, keyFile.url, message.content === HANDSHAKE_REQUEST)
-							.then((flag) => {
-								if (flag) {
-									this.emit('handshake', message.createdTimestamp, message.createdAt, message.author);
-								}
+							.then(() => {
+								this.emit('handshake', message.createdTimestamp, message.createdAt, message.author);
 								this.updateLatests(message.createdTimestamp, message.id);
 								resolve();
 							})
@@ -350,7 +346,7 @@ class SingleStowaway extends EventEmitter {
 								this.handshake(HANDSHAKE_RESPONSE);
 							}
 							// this.emit('handshake', user);
-							resolve(true);
+							resolve();
 						}
 						else {
 							reject();
@@ -359,7 +355,7 @@ class SingleStowaway extends EventEmitter {
 					.catch(reject);
 				}
 				else {
-					resolve(false);
+					resolve();
 				}
 			});
 		});
