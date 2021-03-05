@@ -110,6 +110,7 @@ else {
 		return new Promise((resolve, reject) => {
 			clientInit(API_TOKEN, fs, cli, Client)
 			.then(client => {
+				client.user.setStatus('dnd');
 				cli.cat(`{green-fg}DONE!{/}`);
 				cli.log(`>logged in as {black-fg}{green-bg}${client.user.tag}{/}`);
 				resolve({
@@ -145,6 +146,26 @@ else {
 	.then(({ key: key, database: db, client: client, channel: channel }) => {
 		const stowaway = new SingleStowaway(key, channel, db);
 		const model = new SingleChannel();
+		client.on('message', message => {
+			if (message.channel.type === 'dm' && !message.author.bot) {
+				if (message.content === 'about') {
+					let about = `Hello ${message.author.username}, I'm a STOWAWAY bot!`;
+					about += "That means I allow my user to send & receive encrypted messages with ease.  ";
+					about += "You can learn more about STOWAWAY and get your own at: https://github.com/natsu-anon/STOWAWAY";
+					message.reply(about);
+				}
+				else {
+					message.reply("dm me 'about' to learn about what I do");
+				}
+			}
+		});
+		client.user.setPresence({
+			activity: {
+				type: 'LISTENING',
+				name: ' dms for "about"'
+			},
+			status: 'online'
+		});
 		cli.destroy();
 		cli = new SingleCLI(SCREEN_TITLE, '{bold}[Ctrl-C] to quit{/bold}', `${channel.guild.name} {green-fg}#${channel.name}{/}`, client.user.tag);
 		stowaway.on('message', model.message);
@@ -204,6 +225,7 @@ else {
 		.build();
 		fsm.on('quit', () => {
 			client.destroy();
+			db.persistence.compactDatafile();
 			return process.exit(0);
 		});
 		cli.screen.key(['space'], () => {
