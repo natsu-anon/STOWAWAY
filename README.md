@@ -115,6 +115,9 @@ https://discord.com/api/oauth2/authorize?client_id=CLIENT_ID&permissions=117760&
 4. Add to the desired server.  Note that you need to have the *Manage Server* permission in whatever server you want to add your bot to.
 ![add to server](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/main/screenshots/server2.PNG)
 
+### Adding someone else's bot to your server
+Same as above, but have the bot owner briefly enable 'PUBLIC BOT' (see [Step 9 in Create a Bot](#create-a-bot) in order to add it.  Afterwards the bot owner can disable 'PUBLIC BOT' once more.
+
 ## Usage
 >When you say, "I have nothing to hide," you’re saying, "I don’t care about this right." You’re saying, "I don’t have this right, because I’ve got to the point where I have to justify it." **The way rights work is, the government has to justify its intrusion into your rights.**
 >
