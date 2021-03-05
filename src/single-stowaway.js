@@ -76,8 +76,8 @@ class SingleStowaway extends EventEmitter {
 
 	_handleMessage (message) {
 		if (message.createdAt >= this.oldest) {
-			this.emit('timestamp', message.createdAt, message.id);
 			if (message.channel.id == this.channel.id) {
+				this.emit('timestamp', message.createdAt, message.id);
 				if (message.author.id != this.id && (message.content === HANDSHAKE_REQUEST || message.content === HANDSHAKE_RESPONSE) && message.attachments.size > 0) {
 					const keyFile = getAttachment(message, KEYFILE);
 					if (keyFile.exists) {
@@ -115,6 +115,7 @@ class SingleStowaway extends EventEmitter {
 	_handleBatch (messages) {
 		this._handshakes(messages).then(() => {
 			messages.each(message => {
+				this.emit('timestamp', message.createdAt, message.id);
 				if (message.createdAt > this.oldest && message.content === ENCRYPTED_MESSAGE && message.attachments.size > 0) {
 					const messageFile = getAttachment(message, MSGFILE);
 					if (messageFile.exists) {
@@ -197,8 +198,8 @@ class SingleStowaway extends EventEmitter {
 						return this.channel.messages.fetch({ around: doc.last_seen }, false, false)
 					})
 					.then(messages => {
-						// this._handleBatch(messages);
-						messages.each(message => { this._handleMessage(message); });
+						this._handleBatch(messages);
+						// messages.each(message => { this._handleMessage(message); });
 						resolve();
 						// return this.channel.messages.fetch({after: doc.last_seen}, false, false);
 					})
@@ -221,8 +222,8 @@ class SingleStowaway extends EventEmitter {
 				if (doc != null) {
 					this.channel.messages.fetch({ before: id }, false, false)
 					.then(messages => {
-						// this._handleBatch(messages);
-						messages.each(message => { this._handleMessage(message); });
+						this._handleBatch(messages);
+						// messages.each(message => { this._handleMessage(message); });
 						// this.emit('notify', `${Array.from(messages.values()).length} older messages fetched`);
 						// this.db.persistence.compactDatafile();
 						resolve();
@@ -242,8 +243,8 @@ class SingleStowaway extends EventEmitter {
 				if (doc != null) {
 					this.channel.messages.fetch({ after: id }, false, false)
 					.then(messages => {
-						// this._handleBatch(messages);
-						messages.each(message => { this._handleMessage(message); });
+						this._handleBatch(messages);
+						// messages.each(message => { this._handleMessage(message); });
 						// this.db.persistence.compactDatafile();
 						resolve();
 					})
