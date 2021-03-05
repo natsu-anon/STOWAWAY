@@ -109,10 +109,16 @@ When you launch ＳＴＯＷＡＷＡＹ, you must provide your bot's token to u
 
 3. Go to the following link, but replace `CLIENT_ID` with your client id
 ```
-https://discord.com/api/oauth2/authorize?client_id=CLIENT_ID&permissions=117760&scope=bot
+https://discord.com/api/oauth2/authorize?client_id=CLIENT_ID&permissions=67226624&scope=bot
 ```
 
-4. Add to the desired server.  Note that you need to have the *Manage Server* permission in whatever server you want to add your bot to.
+4. Add to the desired server.  Note that you need to have the *Manage Server* permission in whatever server you want to add your bot to.  Make sure your bot can:
+- change its nickname
+- view channels
+- send messages
+- embed links
+- attach files
+- read message history
 ![add to server](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/main/screenshots/server2.PNG)
 
 ### Adding someone else's bot to your server
