@@ -22,7 +22,7 @@ const SC_TARGET = './channel_id.txt';
 
 const banner = `      _  __ __        __        __
  //  /_\` / / / | | | /_/ | | | /_/ /_/  //
-//  ._/ / /_/  |/|/ / /  |/|/ / /  /   //  v 0.3.1
+//  ._/ / /_/  |/|/ / /  |/|/ / /  /   //  v 0.3.2
 This software is licensed under the WTFPL`
 
 const warning = `
@@ -70,7 +70,7 @@ if (process.argv.length > 2 && (process.argv[2] == '--channels' || process.argv[
 	*/
 }
 else if (process.argv.length > 2 && (process.argv[2] == '--version' || process.argv[2] == '-v')) {
-	console.log("0.3.1");
+	console.log("0.3.2");
 }
 else if (process.argv.length > 2 && (process.argv[2] == '--about' || process.argv[2] == '-a')) {
 	require('./about.js')(banner);
