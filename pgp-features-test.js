@@ -3,7 +3,7 @@ const openpgp = require('openpgp');
 function diff (s1, s2) {
 	let res='';
 	s2.split('').forEach((char, i) => {
-		if (char != s1.charAt(i)) {
+		if (char !== s1.charAt(i)) {
 			res += char;
 		}
 	});
@@ -18,17 +18,17 @@ async function main () {
 	let { key: k0, privateKeyArmored: sk0, publicKeyArmored: pk0, revocationCertificate: rc0 } = await openpgp.generateKey({
 		type: 'ecc',
 		curve: 'curve25519',
-		userIds: [{ name: "foo", comment: "STOWAWAY" }], // hashed discord snowflake
+		userIds: [{ name: 'foo', comment: 'STOWAWAY' }], // hashed discord snowflake
 	});
-	let { key: k1, privateKeyArmored: sk1, publicKeyArmored: pk1, revocationCertificate: rc1 } = await openpgp.generateKey({
+	const { key: k1, privateKeyArmored: sk1, publicKeyArmored: pk1, revocationCertificate: rc1 } = await openpgp.generateKey({
 		type: 'ecc',
 		curve: 'curve25519',
-		userIds: [{ name: "bar", comment: "STOWAWAY" }],
+		userIds: [{ name: 'bar', comment: "STOWAWAY" }],
 	});
 	let { key: k2, privateKeyArmored: sk2, publicKeyArmored: pk2, revocationCertificate: rc2 } = await openpgp.generateKey({
 		type: 'ecc',
 		curve: 'curve25519',
-		userIds: [{ name: "baz", comment: "STOWAWAY" }],
+		userIds: [{ name: 'baz', comment: 'STOWAWAY' }],
 	});
 
 
@@ -53,15 +53,15 @@ async function main () {
 	// update private key with new signature -- armored private key looks similar but it has the new certs
 	// update does not change the fingerprint -- which is what you WANT
 	// public & private keys have the same fingerprint
-	await k0.update(publicKey) // NOTE: await.  NOTE: ONLY WORKS IF FINGERPRINTS MATCH (very based)
+	await k0.update(publicKey); // NOTE: await.  NOTE: ONLY WORKS IF FINGERPRINTS MATCH (very based)
 	sk0 = k0.armor(); // write this to disk
 	k0 = await openpgp.readKey({ armoredKey: sk0 });
 	publicKey = await openpgp.readKey({ armoredKey: k0.toPublic().armor() });
-	console.log("\x1b[33mAFTER UPDATE & SERIALIZATION & ALL THAT\x1b[0m");
+	console.log('\x1b[33mAFTER UPDATE & SERIALIZATION & ALL THAT\x1b[0m');
 	res = await publicKey.verifyPrimaryUser(keys);
 	for (let i = 0; i < res.length; i++) {
 		if (res[i].valid) {
-			let { user: u } = await keys[i].getPrimaryUser();
+			const { user: u } = await keys[i].getPrimaryUser();
 			console.log(`\x1b[33mknown signer: ${u.userId.name}\x1b[0m`);
 		}
 	}
@@ -75,9 +75,9 @@ async function main () {
 	/*  JSON & MESSAGE SIGNING TESTING  */
 
 
-	console.log("\x1b[32m\n#### JSON TESTING\n\x1b[0m");
-	let json = JSON.stringify({ some: "json", more: 'database usage' }, null, '\t');
-	console.log("encrypted json:");
+	console.log('\x1b[32m\n#### JSON TESTING\n\x1b[0m');
+	let json = JSON.stringify({ some: 'json', more: 'database usage' }, null, '\t');
+	console.log('encrypted json:');
 	let encrypted = await openpgp.encrypt({
 		message: openpgp.Message.fromText(json), // you MUST stringify your json
 		publicKeys: await openpgp.readKey({ armoredKey: pk1 }),
@@ -90,29 +90,29 @@ async function main () {
 		publicKeys: await openpgp.readKey({ armoredKey: pk0 }),
 		privateKeys: k1,
 	});
-	console.log("decrypted message:");
+	console.log('decrypted message:');
 	console.log(decrypted);
 	if (decrypted.signatures.length > 0) {
 		console.log(`signature verified? ${await decrypted.signatures[0].verified} (i.e. is it from whomstve I think it's from?)`);
 	}
 	else {
-		console.log("no signature on message :c");
+		console.log('no signature on message :c');
 	}
-	console.log("parsed json:");
+	console.log('parsed json:');
 	console.log(JSON.parse(decrypted.data));
 
 
-	console.log("\x1b[32m\n#### PARTIAL ENCRYPTION\n\x1b[0m");
+	console.log('\x1b[32m\n#### PARTIAL ENCRYPTION\n\x1b[0m');
 	encrypted = await openpgp.encrypt({
-		message: openpgp.Message.fromText(JSON.stringify({ content: "HENLO!" }, null, '\t')),
+		message: openpgp.Message.fromText(JSON.stringify({ content: 'HENLO!' }, null, '\t')),
 		publicKeys: await openpgp.readKey({ armoredKey: pk1 }),
 		privateKeys: k0,
 	});
 	json = JSON.stringify({ type: 'encrypted', encrypted: encrypted }, null, '\t'); // this is what's attached
-	console.log("mixed encryption stringified json:");
+	console.log('mixed encryption stringified json:');
 	console.log(json);
-	let parsed = JSON.parse(json);
-	let message = openpgp.Message.fromText({ armoredMessage: parsed.encrypted });
+	const parsed = JSON.parse(json);
+	// let message = openpgp.Message.fromText({ armoredMessage: parsed.encrypted });
 	if (parsed.type.toLowerCase() === 'encrypted') {
 		decrypted = await openpgp.decrypt({
 			message: await openpgp.readMessage({ armoredMessage: parsed.encrypted }),
@@ -126,7 +126,7 @@ async function main () {
 	/*  KEY REVOKING  */
 
 
-	console.log("\x1b[32m\n#### KEY REVOKING\n\x1b[0m");
+	console.log('\x1b[32m\n#### KEY REVOKING\n\x1b[0m');
 	// only revokes if key & cert match
 	let { publicKey: rKey } = await openpgp.revokeKey({
 		key: await openpgp.readKey({ armoredKey: pk1 }),
