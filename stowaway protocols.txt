@@ -5,10 +5,10 @@ NOTE: encrypted is encrypted.  Clearly.  But I need to write about what's in the
 SENDING A MESSAGE:
 json:
 {
-	type: 'message',
-	encrypted: {
+	type: 'channel_message',
+	encrypted: { <= SIGN THIS BIT
 		fingerprints: [ fingerprints of public keys used to send this message ]
-		message: the message itself.  SIGN IT.
+		plainText: the message itself.
 	}
 }
 
@@ -25,14 +25,14 @@ then when message recieved:
 HANDSHAKE REQUEST:
 json:
 {
-	type: 'handshake request',
+	type: 'handshake_request',
 	publicKey: armored public key
 }
 
 HANDHSAKE RESPONSE:
 json:
 {
-	type: 'handhsake response'
+	type: 'handhsake_response'
 	publicKey: armored public key
 }
 
@@ -44,7 +44,7 @@ KEY SIGNATURE:
 NOTE: signer doesn't update his own keys, only after receiving KEY UPDATE does anyone (aside from recipient) update their public keys
 json:
 {
-	type: 'signed key'
+	type: 'signed_key'
 	recipient: snowflake of intended recipient
 	publicKey: signed key
 }
@@ -54,7 +54,7 @@ recipient still checks if fingerprints match, and if they do (1) update then:
 KEY UPDATE (send this to all known channels):
 json:
 {
-	type: 'key update'
+	type: 'key_update'
 	publicKey: update public key
 }
 again, perform the fingerprint check then use update.  It gracefully merges keys if they have the same fingerprint.
@@ -63,7 +63,7 @@ REVOCATION PROTOCOL (send this to all known channels):
 - NOTE SAVE OLD PUBLIC KEYS & REVOKED KEYS -- USED IN KEY PROVENANCE
 json:
 {
-	type: 'key revocation'
+	type: 'revocation'
 	revokedKey: the revoked key (see pgp-features-test.js -- should be signed by the new private key)
 	publicKey: new public key
 }
@@ -75,7 +75,7 @@ PROVENANCE PROTOCOL (happens when you notice sending you a message with some com
 
 json:
 {
-	type: 'key provenance'
+	type: 'key_provenance'
 	recipient: snowflake of intended recipient
 	order: [
 		{
@@ -93,7 +93,7 @@ json:
 can also request a key provenance via:
 json:
 {
-	type: 'provenance request'
-	recipient: snowflake of intended recipient
-	fingerprint: fingerprint of current public key
+	type: 'provenance_request'
+	recipient: id of intended recipient
+	fingerprint: fingerprint of (sender's) current public key for recipient
 }
