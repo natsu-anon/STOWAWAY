@@ -43,7 +43,6 @@ async function main () {
 	console.log(`post-sign public fingerprint: ${publicKey.getFingerprint()}`);
 	// verify primary user
 	let keys = [ k0.toPublic(), k1.toPublic(), k2.toPublic() ];
-	keys = [ k1.toPublic() ];
 	let res = await publicKey.verifyPrimaryUser(keys);
 	console.log(res);
 	// NOTE USE a for-loop. Don't filter & foreach res
@@ -176,7 +175,6 @@ async function main () {
 
 	/*  openpgp.readKey()  */
 
-
 	console.log('\x1b[32m\n#### OPENPGP.READKEY() \n\x1b[0m');
 	const armoredKey = k0.armor();
 	openpgp.readKey({ armoredKey })
@@ -192,19 +190,23 @@ async function main () {
 		console.error(err);
 	});
 
+	console.log('\x1b[32m\n#### OPENPGP.READKEY() \n\x1b[0m');
 
 	/*  openpgp.readMessage()  */
 
 
-	// console.log('\x1b[32m\n#### OPENPGP.READMESSAGE() \n\x1b[0m');
-	// const armoredMessage = 'bruh';
-	// openpgp.readMessage({ armoredMessage })
-	// .then(res => {
-	// 	console.log(res);
-	// })
-	// .catch(err => {
-	// 	console.error(err);
-	// });
+	console.log('\x1b[32m\n#### OPENPGP.READMESSAGE() \n\x1b[0m');
+	const armoredMessage = 'bruh';
+	openpgp.readMessage({ armoredMessage })
+	.then(res => {
+		console.log(res);
+	})
+	.catch(err => {
+		console.error(err);
+	});
+
+
+
 }
 
 main();
