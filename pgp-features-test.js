@@ -1,4 +1,5 @@
 const openpgp = require('openpgp');
+const crypto = require('crypto');
 
 function diff (s1, s2) {
 	let res='';
@@ -38,11 +39,13 @@ async function main () {
 	console.log("\x1b[32m#### KEY SIGNING\n\x1b[0m");
 	let publicKey = await openpgp.readKey({ armoredKey: pk0 });
 	console.log(`pre-sign public fingerprint: ${publicKey.getFingerprint()}`);
-	publicKey = await publicKey.signPrimaryUser([k1, k2]);
+	publicKey = await publicKey.signPrimaryUser([k1]);
 	console.log(`post-sign public fingerprint: ${publicKey.getFingerprint()}`);
 	// verify primary user
 	let keys = [ k0.toPublic(), k1.toPublic(), k2.toPublic() ];
+	keys = [ k1.toPublic() ];
 	let res = await publicKey.verifyPrimaryUser(keys);
+	console.log(res);
 	// NOTE USE a for-loop. Don't filter & foreach res
 	for (let i = 0; i < res.length; i++) {
 		if (res[i].valid) {
@@ -146,17 +149,62 @@ async function main () {
 	console.log(rKey.armor());
 	console.log("new public key:");
 	console.log(pk3);
-	rKey.toPublic().getRevocationCertificate() // if there's not a revocation certificate this throws an error
-	.then(async () => {
-		// verify the original self-signature & new signature match -- only then does the recipient update their local shit
+	try {
+		await rKey.toPublic().getRevocationCertificate(); // if there's not a revocation certificate this throws an error
 		res = await rKey.verifyPrimaryUser([ await openpgp.readKey({ armoredKey: pk1 }), k3.toPublic() ]);
 		console.log(`key is revoked & check signature on revoked public key matches newly supplied public key: ${res[0].valid && res[1].valid}`);
-	})
-	.catch(err => { console.error(err); });
+	}
+	catch (err) {
+		console.error(err);
+	}
 	// console.log(rKey.revocationSignatures[0]);
 	// what happens if a user misses the original revocation but sees later signature messages????
 	// bruh just send the revoked public key fuggit
 	// BRUH.  JUST SEND THE ENTIRE REVOCATION KEY SERIRES & FINAL KEY -- THAT'S YOUR PROVENANCE
+
+
+	/*  HASHED FINGERPRINTS  */
+
+
+	console.log('\x1b[32m\n#### FINGERPRINT HASHING\n\x1b[0m');
+	const fingerprint = k0.getFingerprint();
+	console.log(`fingerprint: ${fingerprint}`);
+	console.log(crypto.createHash('sha256').update(fingerprint).digest('base64')); // use base64
+	console.log(crypto.createHash('sha224').update(fingerprint).digest('base64')); // use base64
+	console.log(crypto.createHash('sha1').update(fingerprint).digest('base64'));
+
+
+	/*  openpgp.readKey()  */
+
+
+	console.log('\x1b[32m\n#### OPENPGP.READKEY() \n\x1b[0m');
+	const armoredKey = k0.armor();
+	openpgp.readKey({ armoredKey })
+	.then(key => {
+		// console.log(key);
+		return openpgp.readKeys({ armoredKeys: pk0+pk2 });
+	})
+	.then(keys => {
+		console.log(keys);
+		return openpgp.readKey({ armoredKey: 'bruh' });
+	})
+	.catch(err => {
+		console.error(err);
+	});
+
+
+	/*  openpgp.readMessage()  */
+
+
+	// console.log('\x1b[32m\n#### OPENPGP.READMESSAGE() \n\x1b[0m');
+	// const armoredMessage = 'bruh';
+	// openpgp.readMessage({ armoredMessage })
+	// .then(res => {
+	// 	console.log(res);
+	// })
+	// .catch(err => {
+	// 	console.error(err);
+	// });
 }
 
 main();
