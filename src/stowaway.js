@@ -15,8 +15,15 @@ const SIGNED_KEY = 'signed_key';
 const KEY_UPDATE = 'key_update';
 const REVOCATION = 'revocation';
 const PROVENANCE_REQUEST = 'provenance_request';
-const KEY_PROVENANCE = 'key_provenance';
+const PARTIAL_PROVENANCE = 'partial_provenance';
+const FULL_PROVENANCE = 'full_provenance';
 // TODO session
+
+const ERR_SYNTAX = 'SyntaxError';
+// this is janky but w/e openpgp doesn't have custom errors yet
+const ERR_ARMORED = 'Misformed armored text';
+const ERR_DECRYPT = 'Error decrypting message: Session key decryption failed.';
+const ERR_UPDATE = 'Key update method: fingerprints of keys not equal';
 
 function readAttached (url) {
 	return new Promise((resolve, reject) => {
@@ -63,17 +70,14 @@ function hash (input) {
 	database error
 */
 class Stowaway extends EventEmitter {
-	constructor (key, db, versionFlag=true, comment='') { // YES, you do want to pass in the key object
+	constructor (key, db, keyFile, version, comment='') { // YES, you do want to pass in the key object
 		super();
 		this.key = key;
 		this.fingerprint = key.getFingerprint();
 		this.db = db;
-		this.discordMessage = STOWAWAY;
-		if (versionFlag) {
-			this.discordMessage += '\nVERSION: 1.0.0';
-		}
+		this.discordMessage = `${STOWAWAY}\nVERSION: ${version}`;
 		if (comment.length > 0) {
-			this.discordMessage += `\n${comment}`;
+			this.discordMessage += `\nUser comment: ${comment}`;
 		}
 	}
 
@@ -241,10 +245,20 @@ class Stowaway extends EventEmitter {
 										// emit missing fields
 									}
 									break;
-								case KEY_PROVENANCE:
+								case PARTIAL_PROVENANCE:
 									if (data.recipient != null && key.order != null) {
 										if (data.recipient == this.id) {
-											this._keyProvenance(data.order);
+											this._partialProvenance(data.order);
+										}
+									}
+									else {
+										// emit something about missing fields
+									}
+									break;
+								case FULL_PROVENANCE:
+									if (data.recipient != null && key.order != null) {
+										if (data.recipient == this.id) {
+											this._fullProvenance(data.order);
 										}
 									}
 									else {
@@ -279,11 +293,9 @@ class Stowaway extends EventEmitter {
 			});
 		})
 		.then(async (decrypted) => {
-			try {
 				const json = JSON.parse(decrypted.data);
 			}
 			catch (err) {
-				// emit something about malformed JSON in encrypted
 				return;
 			}
 			if (json.fingerprints != null && json.plainText != null) {
@@ -309,8 +321,21 @@ class Stowaway extends EventEmitter {
 
 		})
 		.catch(err => {
-			// check the error -- if it's from readMessage emit something about misformed armored text
-			// if it's from decrypt emit something about decrypt emit decryption failure
+			if (err.name === ERR_SYNTAX) {
+				// emit something about malformed JSON in encrypted
+			}
+			else if (err.message === ERR_ARMORED) {
+				// emit something about misformed armored text
+			}
+			else if (err.message === ERR_DECRYPT) {
+				// if you're here it's possible you (1) the author doesn't have your public key or (2) author has one of your revoked public keys
+				// determine if you handshook with the author in the past
+				// if so perform a full provenance
+				// o.w. perform a handshake request
+			}
+			else {
+				this.emit('Unexpected Error', `error in Stowaway._message(): ${err}`);
+			}
 		});
 	}
 
@@ -352,7 +377,7 @@ class Stowaway extends EventEmitter {
 				if (err != null) {
 				}
 				else if (doc != null) {
-					const userKey = await openpgp.readKey({ armoredKey: public_key })
+					const userKey = await openpgp.readKey({ armoredKey: doc.public_key })
 					.then(userKey => {
 						return publicKey.verifyPrimaryUser([ userKey ]);
 					})
@@ -361,33 +386,47 @@ class Stowaway extends EventEmitter {
 					})
 					.then(res => {
 						if (res == undefined) {
-							// do provenance request
-							throw Error('something about unrecognized signatures on key');
+							// emit something about lack of expected key signature so no update
+						}
+						else if (res.valid) {
+							this._updatePrivateKey(publicKey);
 						}
 					})
-					.catch(err => { throw err; });
+					.catch(err => {
+						if (err.message === ERR_ARMOR) {
+							// get here if readKey fails to read public_key
+						}
+						else if (err.message === ERR_SIGNATURES) {
+							// emit something about lack of expected key signature
+						}
+						else {
+							this.emit('Unexpected Error', `error in Stowaway._signedKey(): ${err}`);
+						}
+					});
 				}
 				else {
-					throw Error('something about unrecognized signatures on key');
+					// emit something about unexpected key signature
 				}
 			});
-			return this.key.update(publicKey);
 		})
-		.then(() => {
-			this._sendKeyUpdate(this.key.toPublic().armor());
-		})
-		.catch(err => {
-			// check the error -- if it's from readKey emit something about misformed armored key
-			// if it's from update emit something else
+		.catch (err => {
+			// can only be a ERR_ARMOR
 		});
 	}
 
 	_keyUpdate (armoredKey, userId) {
-		openpgp.readKey({ armoredKey })
-		.then(async (publicKey) => {
-			await publicKey.verifyPrimaryUser(
+	}
+
+	_updatePrivateKey (publicKey) {
+		this.key.update(publicKey)
+		.then(() => {
+
 		})
-		.then
+		.catch(err => {
+			if (err.message === ERR_UPDATE) {
+				// mismatched fingerprints
+			}
+		});
 	}
 
 	_channelKeys (channel) {
