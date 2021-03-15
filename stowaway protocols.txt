@@ -64,7 +64,7 @@ REVOCATION PROTOCOL (send this to all known channels):
 json:
 {
 	type: 'revocation'
-	revokedKey: the revoked key (see pgp-features-test.js -- should be signed by the new private key)
+	revocation: the revoked key (see pgp-features-test.js -- should be signed by the new private key)
 	publicKey: new public key
 }
 
@@ -78,12 +78,12 @@ json:
 	recipient: snowflake of intended recipient
 	order: [
 		{
-			revokedKey: revoked key that matches old fingerprint
-			publicKey: public key that signed the revokedKey
+			revocation: revoked key that matches old fingerprint
+			publicKey: new public key that signed the revokedKey
 		},
 		etc. until:
 		{
-			revokedKey: revoked key that matches previous key fingerprint
+			revocation: revoked key that matches previous key fingerprint
 			publicKey: current public key that signed the last revokedKey
 		}
 	]
@@ -93,14 +93,15 @@ json:
 {
 	type: 'full_provenance',
 	recipient: snowflake of intended recipient
+	firstKey: first public key
 	order: [
 		{
-			revokedKey: revoked key that matches old fingerprint
+			revocation: revoked key that matches old fingerprint
 			publicKey: public key that signed the revokedKey
 		},
 		etc. until:
 		{
-			revokedKey: revoked key that matches previous key fingerprint
+			revocation: revoked key that matches previous key fingerprint
 			publicKey: current public key that signed the last revokedKey
 		}
 	]
