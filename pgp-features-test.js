@@ -11,6 +11,10 @@ function diff (s1, s2) {
 	return res;
 }
 
+function sleep (ms) {
+	return new Promise(r => setTimeout(r, ms));
+}
+
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
 /* KEY SIGNING & ENCRYPTING JSON (feat. parsing) & KEY REVOCATION
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
@@ -128,12 +132,16 @@ async function main () {
 	/*  KEY REVOKING  */
 
 
+	// NOTE key.getRevocationCertificate() does not give you the revocation certificate that revokes the key
 	console.log('\x1b[32m\n#### KEY REVOKING\n\x1b[0m');
 	// only revokes if key & cert match
 	let { publicKey: rKey } = await openpgp.revokeKey({
 		key: await openpgp.readKey({ armoredKey: pk1 }),
 		revocationCertificate: rc1,
 	});
+	console.log(rKey);
+	console.log(await k1.revoke());
+	return;
 	console.log(`revoked key matches original? ${rKey.hasSameFingerprintAs(await openpgp.readKey({armoredKey: pk1 }))}`);
 	// console.log(revokedKeyArmored);
 	let { key: k3, privateKeyArmored: sk3, publicKeyArmored: pk3, revocationCertificate: rc3 } = await openpgp.generateKey({
@@ -149,12 +157,12 @@ async function main () {
 	console.log("new public key:");
 	console.log(pk3);
 	try {
-		await rKey.toPublic().getRevocationCertificate(); // if there's not a revocation certificate this throws an error
+		await k3.toPublic().getRevocationCertificate(); // if there's not a revocation certificate this throws an error
 		res = await rKey.verifyPrimaryUser([ await openpgp.readKey({ armoredKey: pk1 }), k3.toPublic() ]);
 		console.log(`key is revoked & check signature on revoked public key matches newly supplied public key: ${res[0].valid && res[1].valid}`);
 	}
 	catch (err) {
-		console.error(err);
+		console.error(err.message);
 	}
 	// console.log(rKey.revocationSignatures[0]);
 	// what happens if a user misses the original revocation but sees later signature messages????
@@ -174,6 +182,7 @@ async function main () {
 
 
 	/*  openpgp.readKey()  */
+
 
 	console.log('\x1b[32m\n#### OPENPGP.READKEY() \n\x1b[0m');
 	const armoredKey = k0.armor();
