@@ -81,33 +81,24 @@ class Stowaway extends EventEmitter {
 		}
 	}
 
-	launch (client, lockedKey, passphrase) {
-		return new Promise((resolve, reject) => {
+	async launch (client, lockedKey, passphrase) {
 			this.client = client;
 			this.id = client.user.id;
-			openpgp.decryptKey({
+			this.key = await openpgp.decryptKey({
 				privateKey: lockedKey,
 				passphase: passphrase
-			})
-			.then(key => {
-				this.key = key;
-				this.fingerprint = key.getFingerprint();
-				return this._cacheOld();
-			})
-			.then(() => {
-				client.on('message', message => {
-					this._handleMessage(message);
-				});
-				client.on('channelDelete', channel => {
-					// TODO remove channel from db if in db
-				});
-				client.on('channelUpdate', (ch0, ch1) => {
-					// TODO set channel id of ch0 matches
-				});
-				resolve();
-			})
-			.catch(reject);
-		});
+			});
+			this.fingerprint = this.key.getFingerprint();
+			await this._cacheOld();
+			client.on('message', message => {
+				this._handleMessage(message);
+			});
+			client.on('channelDelete', channel => {
+				// TODO remove channel from db if in db
+			});
+			client.on('channelUpdate', (ch0, ch1) => {
+				// TODO set channel id of ch0 matches
+			});
 	}
 
 	fetchOlder (channel, messageID) {
