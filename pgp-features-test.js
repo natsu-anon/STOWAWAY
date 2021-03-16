@@ -32,9 +32,11 @@ async function main () {
 	});
 	let { key: k2, privateKeyArmored: sk2, publicKeyArmored: pk2, revocationCertificate: rc2 } = await openpgp.generateKey({
 		type: 'ecc',
+		passphrase: 'foo',
 		curve: 'curve25519',
 		userIds: [{ name: 'baz', comment: 'STOWAWAY' }],
 	});
+	console.log(k2.getFingerprint()); // it's ok to use public keys
 
 
 	/*  KEY SIGNING  */
