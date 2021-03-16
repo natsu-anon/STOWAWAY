@@ -41,7 +41,7 @@ function attachText (text, name) {
 
 
 function attachJSON (json, name) {
-	return attachText(JSON.stringify(json, null, '\t'));
+	return attachText(JSON.stringify(json, null, '\t'), name);
 }
 
 function getAttachment (message, name=FILE) {
@@ -82,28 +82,49 @@ class Stowaway extends EventEmitter {
 	}
 
 	async launch (client, lockedKey, passphrase) {
-			this.client = client;
-			this.id = client.user.id;
-			this.key = await openpgp.decryptKey({
-				privateKey: lockedKey,
-				passphase: passphrase
+		this.client = client;
+		this.id = client.user.id;
+		this.key = await openpgp.decryptKey({
+			privateKey: lockedKey,
+			passphase: passphrase
+		});
+		this.fingerprint = this.key.getFingerprint();
+		await this.#cacheOldKeys();
+		client.on('channelDelete', channel => {
+			// TODO remove channel from db if in db
+		});
+		client.on('channelUpdate', (ch0, ch1) => {
+			// TODO set channel id of ch0 matches
+		});
+		client.on('message', message => {
+			this.#handleMessage(message);
+		});
+	}
+
+	// needs existence of { key_index: uint, old_fingerprint: fingerprint, old_key: privateKey, old_revocation: revokingKey } in db
+	#cacheOldKeys () {
+		return new Promise(resolve => {
+			this.db.find({ old_key: { $exists: true } }, (err, docs) => {
+				if (err != null) {
+					throw err;
+				}
+				else {
+					this.oldFingerprints = docs.map(doc => doc.old_fingerprint);
+					Promise.all(docs.map(doc => {
+						return openpgp.readKey({ armoredKey: doc.old_key });
+					}))
+					.then(keys => {
+						this.oldKeys = keys;
+						resolve();
+					});
+				}
 			});
-			this.fingerprint = this.key.getFingerprint();
-			await this._cacheOld();
-			client.on('message', message => {
-				this._handleMessage(message);
-			});
-			client.on('channelDelete', channel => {
-				// TODO remove channel from db if in db
-			});
-			client.on('channelUpdate', (ch0, ch1) => {
-				// TODO set channel id of ch0 matches
-			});
+		});
 	}
 
 	fetchOlder (channel, messageID) {
 		return new Promise((resolve, reject) => {
-			this._findChannel(channel.id, (err, doc) => {
+			this.#findChannel(channel.id, (err, doc) => {
 				if (err != null) {
 					this.emit('database error', `Stowaway.fetchOlder() channel_id: ${channel.id}`);
 					reject(err);
@@ -113,7 +134,7 @@ class Stowaway extends EventEmitter {
 					.then(messages => {
 						messages.sort((m0, m1) => m0.createdTimestamp - m1.createdTimestamp)
 						.each(message => {
-							this._handleMessage(message);
+							this.#handleMessage(message);
 						});
 						resolve();
 					})
@@ -125,7 +146,7 @@ class Stowaway extends EventEmitter {
 
 	fetchNewer (channel, messageID) {
 		return new Promise((resolve, reject) => {
-			this._findChannel(channel.id, (err, doc) => {
+			this.#findChannel(channel.id, (err, doc) => {
 				if (err != null) {
 					this.emit('database error', `Stowaway.fetchNewer() channel_id: ${channel.id}`);
 					reject(err);
@@ -135,7 +156,7 @@ class Stowaway extends EventEmitter {
 					.then(messages => {
 						messages.sort((m0, m1) => m0.createdTimestamp - m1.createdTimestamp)
 						.each(message => {
-							this._handleMessage(message);
+							this.#handleMessage(message);
 						});
 						resolve();
 					})
@@ -149,13 +170,13 @@ class Stowaway extends EventEmitter {
 	// returns a promise so you can enable autoscroll after loading
 	loadChannel (channel) {
 		return new Promise((resolve, reject) => {
-			this._findChannel(channel.id, (err, doc) => {
+			this.#findChannel(channel.id, (err, doc) => {
 				if (err != null) {
 					this.emit('database error', `Stowaway.loadChannel(), channel id argument: ${channel.id}`);
 					reject(err);
 				}
 				else if (doc == null) { // handshake channel
-					this._sendHandshake(channel, HANDSHAKE_REQUEST)
+					this.#sendHandshake(channel, HANDSHAKE_REQUEST)
 					.then(message => {
 						this.db.insert({
 							channel_id: channel.id,
@@ -178,7 +199,7 @@ class Stowaway extends EventEmitter {
 					})
 					.then(messages => {
 						messages.sort((m0, m1) => m0.createdTimestamp - m1.createdTimestamp)
-						.each(message => { this._handleMessage(message); });
+						.each(message => { this.#handleMessage(message); });
 						resolve();
 					})
 					.catch(reject);
@@ -187,29 +208,27 @@ class Stowaway extends EventEmitter {
 		});
 	}
 
-	revokeKey (revocationCertificate) {
-		// TODO
-	}
+	// TODO
+	revokeKey (revocationCertificate) {}
 
-	signKey (channel, userId) {
-		// TODO
-	}
+	// TODO
+	signKey (channel, userId) {}
 
 	messageChannel (channel, plainText) {
-		this._publicKeys(channel)
+		this.#publicKeys(channel)
 		.then(publicKeys => {
 			return openpgp.encrypt({
 				message: openpgp.Message.fromText(
 					JSON.stringify({
-						fingerprints: publicKeys.map(k => k.getFingerprint()).push(this.key.getFingerprint()),
+						fingerprints: publicKeys.map(k => k.getFingerprint()).concat(this.fingeprint),
 						message: plainText
 					}, null, '\t')),
-				publicKeys: publicKeys.push(this.key.toPublic()),
+				publicKeys: publicKeys.concat(this.key.toPublic()),
 				privateKeys: this.key
 			});
 		})
 		.then(armoredText => {
-			this._send(channel, attachJSON({
+			this.#send(channel, attachJSON({
 				type: CHANNEL_MESSAGE,
 				encrypted: armoredText
 			}));
@@ -217,85 +236,107 @@ class Stowaway extends EventEmitter {
 		.catch(err => { this.emit('failed encrypt', plainText, err); });
 	}
 
+	// TODO
 	knownSignatures (userId) {
-		// TODO
-	}
-
-	// implies existence of { key_index: uint, old_fingerprint: fingerprint, old_key: privateKey, old_revocation: revokingKey } in db
-	_cacheOld () {
-		return new Promise(resolve => {
-			this.db.find({ old_key: { $exists: true } }, (err, docs) => {
-				this.oldFingerprints = docs.map(doc => doc.old_fingerprint);
-				Promise.all(docs.map(doc => {
-					return openpgp.readKey({ armoredKey: doc.old_key });
-				}))
-				.then(keys => {
-					this.oldKeys = keys;
-					resolve();
-				});
-			});
+		this.#allUsers((err, docs) => {
+			// see whomstve has signed it
 		});
 	}
 
-	_allChannels (callback) {
+	requestProvenance (channel, userId) {
+		this.#findUser(userId, (err, doc) => {
+			if (err != null) {
+				// db error
+			}
+			else if (doc != null) {
+				openpgp.readKey({ armoredKey: doc.public_key })
+				.then(publicKey => {
+					return this.#send(channel, attachJSON({
+						type: PROVENANCE_REQUEST,
+						recipient: userId,
+						fingerprint: publicKey.getFingerprint()
+					}));
+				})
+				.catch(err => {
+					// emit something
+				});
+			}
+			else {
+				return this.#send(channel, attachJSON({
+					type: PROVENANCE_REQUEST,
+					recipient: userId
+				}));
+			}
+		});
+	}
+
+	#allChannels (callback) {
 		this.db.find({ channel_id: { $exists: true }, handshake_id: { $exists: true } }, callback);
 	}
 
-	_allUsers (callback) {
+	#allUsers (callback) {
 		this.db.find({ user_id: { $exists: true }, public_key: { $exists: true } }, callback);
 	}
 
-	_findChannel (channelId, callback) {
+	#findChannel (channelId, callback) {
 		this.db.findOne({ channel_id: channelId, handshake_id: { $exists: true } }, callback);
 	}
 
-	_findUser (userId, callback) {
+	#findUser (userId, callback) {
 		this.db.findOne({ user_id: userId, public_key: { $exists: true } }, callback);
 	}
 
-	_updateLatests (channelId, messageId, messageTs) {
-		this._findChannel(channelId, (err, doc) => {
-			if (err != null) {
-				this.emit('database error', `SingleStowaway.updateLatests() channel id argument: ${channelId}`);
-			}
-			else if (doc != null) {
-				if (messageTs > doc.last_ts) {
-					this.db.update({ channel_id: channelId, handshake_id: { $exists: true } }, { $set: { last_id: messageId, last_ts: messageTs } });
-				}
-			}
-		});
-	}
-
-	_send (channel, attachment) {
+	#send (channel, attachment) {
 		return channel.send(this.discordMessage, attachment);
 	}
 
-	_sendHandshake (channel, type) {
-		return this._send(channel, attachJSON({
+	#sendHandshake (channel, type) {
+		return this.#send(channel, attachJSON({
 			type: type,
 			public_key: this.key.toPublic().armor()
 		}, FILE));
 	}
 
-	_sendKeyUpdate (armoredPublicKey) {
+	#sendKeyUpdate (armoredPublicKey) {
 		const updateJSON = {
 			type: KEY_UPDATE,
 			publicKey: armoredPublicKey
 		};
 		this.allChannels((err, docs) => {
 			if (err != null) {
-				this.emit('database error', 'Error while accsesing database in Stowaway._sendKeyUpdate()');
+				this.emit('database error', 'Error while accsesing database in Stowaway.#sendKeyUpdate()');
 			}
 			else {
 				docs.forEach(doc => {
 					this.client.channels.fetch(doc.channel_id, false)
 					.then(channel => {
-						this._send(channel, updateJSON);
+						this.#send(channel, updateJSON);
 					})
 					.catch(err => {
 						this.emit('unexpected error', `error fetching channel with id: ${doc.channel_id} in _sendKeyUpdate():  ${err}`);
 					});
 				});
+			}
+		});
+	}
+
+	#sendKeySignature (channel, userId, armoredPublicKey) {
+		this.#send(channel, attachJSON({
+			type: SIGNED_KEY,
+			recipient: userId,
+			publicKey: armoredPublicKey
+		}));
+	}
+
+	#updateLatests (channelId, id, ts) {
+		this.#findChannel(channelId, (err, doc) => {
+			if (err != null) {
+				this.emit('database error', `SingleStowaway.updateLatests() channel id argument: ${channelId}`);
+			}
+			else if (doc != null) {
+				if (ts > doc.last_ts) {
+					this.db.update({ channel_id: channelId, handshake_id: { $exists: true } }, { $set: { last_id: id, last_ts: ts } });
+				}
 			}
 		});
 	}
@@ -311,10 +352,10 @@ class Stowaway extends EventEmitter {
 	// DONE? _provenance
 	// MOSTLY DONE _partialProvenance
 	// _fullProvenance
-	_handleMessage (message) {
-		this._findChannel(message.channel.id, (err, doc) => {
+	#handleMessage (message) {
+		this.#findChannel(message.channel.id, (err, doc) => {
 			if (err != null) {
-				this.emit('database error', `Error while accessing database in Stowaway._handleMessage().  Channel id argument: ${message.channel.id}`);
+				this.emit('database error', `Error while accessing database in Stowaway.#handleMessage().  Channel id argument: ${message.channel.id}`);
 			}
 			else if (doc != null && message.createdTimestamp >= doc.handshake_ts) {
 				this.emit('timestamp', message.channel.id, message.createdAt, message.id);
@@ -331,7 +372,7 @@ class Stowaway extends EventEmitter {
 						}
 						if (data.type === CHANNEL_MESSAGE) {
 							if (data.encrypted != null) {
-								this._channelMesssage(data.encrypted, message); // may cause a key provenance
+								this.#channelMessage(data.encrypted, message); // may cause a key provenance
 							}
 							else {
 								// emit something about no encrypted field
@@ -341,7 +382,7 @@ class Stowaway extends EventEmitter {
 							switch (data.type) {
 								case HANDSHAKE_REQUEST:
 									if (data.publicKey != null) {
-										this._handshake(data.publicKey, message, true); // may cauase a handhsake
+										this.#handshake(data.publicKey, message, true); // may cauase a handhsake
 									}
 									else {
 										// emit something about no publicKey field
@@ -349,7 +390,7 @@ class Stowaway extends EventEmitter {
 									break;
 								case HANDSHAKE_RESPONSE:
 									if (data.publicKey != null) {
-										this._handshake(data.publicKey, message, false);
+										this.#handshake(data.publicKey, message, false);
 									}
 									else {
 										// emit something about no publicKey field
@@ -358,7 +399,7 @@ class Stowaway extends EventEmitter {
 								case SIGNED_KEY:
 									if (data.recipient != null && data.publicKey != null) {
 										if (data.recipient === this.id) {
-											this._signedKey(data.publicKey, message); // causes key update
+											this.#signedKey(data.publicKey, message); // causes key update
 										}
 										// o.w. ignore
 									}
@@ -368,7 +409,7 @@ class Stowaway extends EventEmitter {
 									break;
 								case KEY_UPDATE:
 									if (data.publicKey != null) {
-										this._keyUpdate(data.publicKey, message.author.id);
+										this.#keyUpdate(data.publicKey, message.author.id);
 									}
 									else {
 										// emit something about no publicKey field
@@ -376,16 +417,19 @@ class Stowaway extends EventEmitter {
 									break;
 								case REVOCATION:
 									if (data.revocation != null && data.publicKey != null) {
-										this._keyRevocation(data.revocation, data.publicKey, message.author); // force the user if to trust the revocation
+										this.#keyRevocation(data.revocation, data.publicKey, message.author); // force the user if to trust the revocation
 									}
 									else {
 										// emit something about missing fields
 									}
 									break;
 								case PROVENANCE_REQUEST:
-									if (data.recipient != null && data.fingerprint != null) {
-										if (data.recipient === this.id && data.fingerprint !== this.fingerprint) {
-											this._provenanceRequest(data.fingerprint, message.author.id, message.channel);
+									if (data.recipient != null && data.recipient === this.id) {
+										if (data.fingerprint !== null && data.fingerprint === this.fingerprint) {
+											this.#partialProvenanceRequest(data.fingerprint, message.channel, message.author.id);
+										}
+										else {
+											this.#fullProvenanceRequest(message.channel, message.author.id);
 										}
 									}
 									else {
@@ -396,7 +440,7 @@ class Stowaway extends EventEmitter {
 									if (data.recipient != null && data.order != null && data.order.isArray()) {
 										if (data.recipient === this.id) {
 											if (data.order.length > 0) {
-												this._partialProvenance(data.order, message.author); // force the user to decide if to trust the provenance }
+												this.#partialProvenance(data.order, message.author); // force the user to decide if to trust the provenance }
 											}
 											else {
 												// emit something about 0 length provenance
@@ -411,7 +455,7 @@ class Stowaway extends EventEmitter {
 									if (data.recipient != null && data.order != null && data.order.isArray()) {
 										if (data.recipient === this.id) {
 											if (data.order.length > 0) {
-												this._fullProvenance(data.order, message.author); // force the user to decide if to trust the provenance
+												this.#fullProvenance(data.order, message.author); // force the user to decide if to trust the provenance
 											}
 											else {
 												// emit something about 0 length provenance
@@ -440,13 +484,13 @@ class Stowaway extends EventEmitter {
 		});
 	}
 
-	_encypted (armoredMessage, userId, channel) {
+	#encypted (armoredMessage, userId, channel) {
 		return new Promise((resolve, reject) => {
 			openpgp.readMessage({ armoredMessage })
 			.then(async (message) => {
 				return openpgp.decrypt({
 					message: message,
-					publicKeys: await this._publicKey(userId),
+					publicKeys: await this.#publicKey(userId),
 					privateKeys: [ this.key ].concat(this.oldKeys) // array of current private key & old (revoked) private key
 				});
 			})
@@ -455,7 +499,7 @@ class Stowaway extends EventEmitter {
 				if (!json.fingerprints.includes(this.fingerprint)) {
 					for (let i = 0; i < this.oldFingerprintHashes.length; i++) {
 						if (json.fingerprints.includes(this.oldFingerprints[i])) {
-							this._provenance(this.oldFingerprintHashes[i], userId, );
+							this.#provenance(this.oldFingerprintHashes[i], userId, );
 							break;
 						}
 					}
@@ -466,8 +510,8 @@ class Stowaway extends EventEmitter {
 		});
 	}
 
-	_channelMessage (armoredMessage, message) {
-		this._encrypted(armoredMessage, message.author.id)
+	#channelMessage (armoredMessage, message) {
+		this.#encrypted(armoredMessage, message.author.id)
 		.then((verified, plainText) => {
 			if (verified) {
 				this.emit('verified message', message.channel.id, message.createdTimestamp, message.createdAt, message.author, plainText);
@@ -475,7 +519,7 @@ class Stowaway extends EventEmitter {
 			else {
 				this.emit('unverified message', message.channel.id, message.createdTimestamp, message.createdAt, message.author, plainText);
 			}
-			this._updateLatests(message.channel.id, message.id, message.createdTimestamp);
+			this.#updateLatests(message.channel.id, message.id, message.createdTimestamp);
 		})
 		.catch(err => {
 			if (err.name === ERR_SYNTAX) {
@@ -491,16 +535,16 @@ class Stowaway extends EventEmitter {
 				// o.w. perform a handshake request
 			}
 			else {
-				this.emit('unexpected error', `error in Stowaway._message(): ${err}`);
+				this.emit('unexpected error', `error in Stowaway.#message(): ${err}`);
 			}
 		});
 	}
 
-	_handshake (armoredKey, message, respond) {
+	#handshake (armoredKey, message, respond) {
 		new Promise((resolve, reject) => {
 			this.db.findOne({ user_id: message.author.id }, (err, doc) => {
 				if (err) {
-					this.emit('database error', `Stowaway._handshake() user id argument: ${message.author.id}`);
+					this.emit('database error', `Stowaway.#handshake() user id argument: ${message.author.id}`);
 					resolve(false);
 				}
 				else if (doc == null) {
@@ -508,7 +552,7 @@ class Stowaway extends EventEmitter {
 					.then(publicKey => {
 						this.db.insert({ user_id: message.author.id, public_key: armoredKey });
 						if (respond) {
-							this._sendHandshake(message.channel, HANDSHAKE_RESPONSE);
+							this.#sendHandshake(message.channel, HANDSHAKE_RESPONSE);
 						}
 					})
 					.catch(reject);
@@ -526,7 +570,7 @@ class Stowaway extends EventEmitter {
 		.catch(err => { this.emit('bad handshake', message.channel.id, message.author); });
 	}
 
-	_signedKey (armoredKey, channel, user) {
+	#signedKey (armoredKey, channel, user) {
 		openpgp.readKey({ armoredKey })
 		.then(publicKey => {
 			this.db.findOne({ user_id: user.id, public_key: { $exists: true } }, async (err, doc) => {
@@ -545,7 +589,7 @@ class Stowaway extends EventEmitter {
 							// emit something about lack of expected key signature so no update
 						}
 						else if (res.valid) {
-							this._updatePrivateKey(publicKey);
+							this.#updatePrivateKey(publicKey);
 						}
 					})
 					.catch(err => {
@@ -553,7 +597,7 @@ class Stowaway extends EventEmitter {
 							// get here if readKey fails to read public_key
 						}
 						else {
-							this.emit('unexpected error', `error in Stowaway._signedKey(): ${err}`);
+							this.emit('unexpected error', `error in Stowaway.#signedKey(): ${err}`);
 						}
 					});
 				}
@@ -567,15 +611,15 @@ class Stowaway extends EventEmitter {
 		});
 	}
 
-	_updatePrivateKey (publicKey, sender) {
+	#updatePrivateKey (publicKey, sender) {
 		this.key.update(publicKey)
 		.then(() => {
 			fs.writeFile(this.keyFile, this.key.armor(), 'utf8', err => {
 				if (err) {
-					this.emit('write error', `error writing updated key to ${this.keyFile} in Stowaway._updateKey(): ${err}`);
+					this.emit('write error', `error writing updated key to ${this.keyFile} in Stowaway.#updateKey(): ${err}`);
 				}
 				else {
-					this._sendKeyUpdate(this.key.toPublic().armor());
+					this.#sendKeyUpdate(this.key.toPublic().armor());
 				}
 			});
 		})
@@ -584,12 +628,12 @@ class Stowaway extends EventEmitter {
 		});
 	}
 
-	_keyUpdate (armoredKey, userId) {
+	#keyUpdate (armoredKey, userId) {
 		openpgp.readKey({ armoredKey })
 		.then(publicKey1 => {
-			this._findUser(userId, (err, doc) => {
+			this.#findUser(userId, (err, doc) => {
 				if (err) {
-					this.emit('database error', `Stowaway._keyUpdate(), userId: ${userId}`);
+					this.emit('database error', `Stowaway.#keyUpdate(), userId: ${userId}`);
 				}
 				if (doc != null) {
 					openpgp.readKey({ armoredKey: doc.public_key })
@@ -617,7 +661,7 @@ class Stowaway extends EventEmitter {
 		});
 	}
 
-	async _revocation (revocation, publicKey0, publicKey1) {
+	async #revocation (revocation, publicKey0, publicKey1) {
 		try {
 			await revocation.getRevocationCertificate();
 		}
@@ -638,10 +682,10 @@ class Stowaway extends EventEmitter {
 		}
 	}
 
-	_keyRevocation (armoredRevocation, armoredPublicKey, user) {
-		this._findUser(user.id, (err, doc) => {
+	#keyRevocation (armoredRevocation, armoredPublicKey, user) {
+		this.#findUser(user.id, (err, doc) => {
 			if (err != null) {
-				this.emit('database error', `Stowaway._keyRevocation() user id argument: ${user.id}`);
+				this.emit('database error', `Stowaway.#keyRevocation() user id argument: ${user.id}`);
 			}
 			else if (doc != null) {
 				Promise.all([
@@ -651,7 +695,7 @@ class Stowaway extends EventEmitter {
 				])
 				.then(keys => {
 					if (!keys[1].hasSameFingerprintAs(keys[2])) {
-						return this._revocation(keys[0], keys[1], keys[2]);
+						return this.#revocation(keys[0], keys[1], keys[2]);
 					}
 				})
 				.then(result => {
@@ -675,57 +719,74 @@ class Stowaway extends EventEmitter {
 		});
 	}
 
-	_provenanceRequest (fingerprint, userId, channel) {
-		// check to see if fingerprint exists
+	#partialProvenanceRequest (fingerprint, channel, userId) {
 		if (this.old_fingerprints.contains(fingerprint)) {
-			this.db.findOne({ old_fingerprint: fingerprint, key_index: { $exists: true } }, async (err, doc) => {
-				if (err != null) {
-					this.emit('database error', `Stowaway._provenanceRequest(), fingerprint argument: ${fingerprint}`);
+			this.db.findOne({ old_fingerprint: fingerprint, key_index: { $exists: true } }, (error, doc) => {
+				if (error != null) {
+					this.emit('database error', `Stowaway.#provenanceRequest(), fingerprint argument: ${fingerprint}`);
 				}
-				else if (doc != null) {
-					this._keyOrder(doc, [], order => {
-						this._sendPartialProvenance(channel, userId, order);
+				else if (document != null) {
+					this.db.find({ key_index: { $lte: doc.key_index } }).sort({ key_index: 1 }).exec((err, docs) => {
+						if (err != null) {
+							this.emit('database error', `Stowaway.#provenanceRequest(), index rgument: ${doc.key_index}`);
+						}
+						else {
+							const order = [];
+							for (let i = 0; i < docs.length - 1; i++) {
+								order.push({
+									revocation: docs[i].old_revocation,
+									publicKey: docs[i + 1].old_key
+								});
+							}
+							if (docs.length > 0) {
+								order.push({
+									revocation: docs[docs.length - 1].old_revocation,
+									publicKey: this.key.toPublic()
+								});
+							}
+							this.#sendPartialProvenance(channel, userId, order);
+						}
 					});
 				}
 				else {
-					this.emit('database error', `Stowaway._provenanceRequest(), mismatched fingeprints! fingeprint: ${fingerprint} not in database`);
+					this.emit('request error', `Stowaway.#provenanceRequest(), mismatched fingeprints! fingeprint: ${fingerprint} not in database`);
 				}
 			});
 		}
 		else {
-			// do something
+			this.#fullProvenanceRequest(channel, userId);
 		}
 	}
 
-	// get reddi for MULTIPLE db queries lmao
-	// assumes all revoking keys & old public keys stored as well formed armored text
-	_keyOrder (document, order, callback) {
-		this.db.findOne({ key_index: document.key_index + 1 }, (err, doc) => {
-			if (err) {
-				throw Error('Database error in Stowaway._keyOrder()');
-			}
-			else if (doc != null) {
-				order.push({
-					revocation: document.old_revocation,
-					publicKey: doc.old_key
-				});
-				this._keyOrder(doc, order, callback);
+	#fullProvenanceRequest (channel, userId) {
+		this.db.find({ key_index: { $exists: true } }).sort({ key_index: 1 }).exec((err, dos) => {
+			if (err != null) {
+					this.emit('database error', `Stowaway.#fullProvenanceRequest()`);
 			}
 			else {
-				order.push({
-					revocation: document.old_revocation,
-					publicKey: this.key.toPublic().armor()
-				});
-				callback(order);
+				const order = []
+				for (let i = 0; i < docs.length - 1; i++) {
+					order.push({
+						revocation: docs[i].old_revocation,
+						publicKey: docs[i + 1].old_key
+					});
+				}
+				if (docs.length > 0) {
+					order.push({
+						revocation: docs[docs.length - 1],
+						publicKey: this.key.toPublic()
+					});
+				}
+				this.#sendFullProvenance(channel, userId, order);
 			}
 		});
 	}
 
-	_partialProvenance (order, user) {
+	#partialProvenance (order, user) {
 		if (order[0].revocation != null && order[0].publicKey != null) {
-			this._findUser(user.id, (err, doc) => {
+			this.#findUser(user.id, (err, doc) => {
 				if (err != null) {
-					this.emit('database error', `Stowaway._partialProvenance() user id argument: ${user.id}`);
+					this.emit('database error', `Stowaway.#partialProvenance() user id argument: ${user.id}`);
 				}
 				else if (doc != null) {
 					Promise.all([
@@ -734,12 +795,12 @@ class Stowaway extends EventEmitter {
 						openpgp.readKey({ armoredKey: order.publicKey })
 					])
 					.then(keys => {
-						this._revocation(keys[0], keys[1], keys[2]);
+						this.#revocation(keys[0], keys[1], keys[2]);
 					})
 					.then(result => {
 						if (result.valid) {
 							if (order.length > 1) {
-								return this._tailProvenance(order.slice(1), result.publicKey);
+								return this.#tailProvenance(order.slice(1), result.publicKey);
 							}
 							else {
 								// provenance is valid
@@ -775,7 +836,7 @@ class Stowaway extends EventEmitter {
 		}
 	}
 
-	async _tailProvenance (order, publicKey0) {
+	async #tailProvenance (order, publicKey0) {
 		if (order[0].revocation != null && order[1].publicKey != null) {
 			let revocation;
 			let publicKey1;
@@ -786,9 +847,9 @@ class Stowaway extends EventEmitter {
 			catch (err) {
 				return { valid: false, reason: 'misformed armored text' };
 			}
-			const result = await this._revocation(revocation, publicKey0, publicKey1);
+			const result = await this.#revocation(revocation, publicKey0, publicKey1);
 			if (result.valid && order.length > 1) {
-				return this._tailProvenance(order.slice(1), result.publicKey);
+				return this.#tailProvenance(order.slice(1), result.publicKey);
 			}
 			else {
 				return result;
@@ -799,7 +860,7 @@ class Stowaway extends EventEmitter {
 		}
 	}
 
-	_publicKeys (channel) {
+	#publicKeys (channel) {
 		return new Promise(resolve => {
 			 Promise.allSettled(channel.members.map(user => {
 				return new Promise((res, rej) => {
@@ -828,11 +889,11 @@ class Stowaway extends EventEmitter {
 		});
 	}
 
-	_publicKey (userId) {
+	#publicKey (userId) {
 		return new Promise(resolve => {
 			this.findUser(userId, (err, doc) => {
 				if (err) {
-					this.emit('database error', `Stowaway._publicKey() user id argument: ${userId}`);
+					this.emit('database error', `Stowaway.#publicKey() user id argument: ${userId}`);
 				}
 				else if (doc != null) {
 					openpgp.readKey({ armoredKey: doc.public_key })
