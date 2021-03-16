@@ -6,10 +6,8 @@ SENDING A MESSAGE:
 json:
 {
 	type: 'channel_message',
-	encrypted: { <= SIGN THIS BIT
-		fingerprints: [ fingerprints of public keys used to send this message ]
-		plainText: the message itself.
-	}
+	level: (can be 'public', or 'trusted')
+	encrypted: the encrypted message itself
 }
 
 then when message recieved:
@@ -27,6 +25,12 @@ json:
 {
 	type: 'handshake_request',
 	publicKey: armored public key
+	revocations: [
+		revokingKey0, (can get the fingerprint of the original key from it)
+		revokingKey1, (can get the fingerprint of the original key from it)
+		...
+		revokingKeyN, (can get the fingerprint of the original key from it)
+	]
 }
 
 HANDHSAKE RESPONSE:
@@ -34,6 +38,12 @@ json:
 {
 	type: 'handhsake_response'
 	publicKey: armored public key
+	revocations: [
+		revokingKey0, (can get the fingerprint of the original key from it)
+		revokingKey1, (can get the fingerprint of the original key from it)
+		...
+		revokingKeyN, (can get the fingerprint of the original key from it)
+	]
 }
 
 then when message recieved
@@ -58,59 +68,3 @@ json:
 	publicKey: update public key
 }
 again, perform the fingerprint check then use update.  It gracefully merges keys if they have the same fingerprint.
-
-REVOCATION PROTOCOL (send this to all known channels):
-- NOTE SAVE OLD PUBLIC KEYS & REVOKED KEYS -- USED IN KEY PROVENANCE
-json:
-{
-	type: 'revocation'
-	revocation: the revoked key (see pgp-features-test.js -- should be signed by the new private key)
-	publicKey: new public key
-}
-
-etc.
-
-PROVENANCE PROTOCOL (happens when you notice sending you a message with some compromised keys)
-
-json:
-{
-	type: 'partial_provenance'
-	recipient: snowflake of intended recipient
-	order: [
-		{
-			revocation: revoked key that matches old fingerprint
-			publicKey: new public key that signed the revokedKey
-		},
-		etc. until:
-		{
-			revocation: revoked key that matches previous key fingerprint
-			publicKey: current public key that signed the last revokedKey
-		}
-	]
-}
-
-json:
-{
-	type: 'full_provenance',
-	recipient: snowflake of intended recipient
-	firstKey: first public key
-	order: [
-		{
-			revocation: revoked key that matches old fingerprint
-			publicKey: public key that signed the revokedKey
-		},
-		etc. until:
-		{
-			revocation: revoked key that matches previous key fingerprint
-			publicKey: current public key that signed the last revokedKey
-		}
-	]
-}
-
-can also request a key provenance via:
-json:
-{
-	type: 'provenance_request'
-	recipient: id of intended recipient
-	fingerprint: fingerprint of (sender's) current public key for recipient
-}

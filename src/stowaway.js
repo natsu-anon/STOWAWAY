@@ -20,9 +20,7 @@ const HANDSHAKE_RESPONSE = 'handshake_response';
 const SIGNED_KEY = 'signed_key';
 const KEY_UPDATE = 'key_update';
 const REVOCATION = 'revocation';
-const PROVENANCE_REQUEST = 'provenance_request';
-const PARTIAL_PROVENANCE = 'partial_provenance';
-const FULL_PROVENANCE = 'full_provenance';
+const PROVENANCE = 'provenance';
 // TODO session
 
 
@@ -97,44 +95,29 @@ class Stowaway extends EventEmitter {
 	}
 
 	// assume errors thrown by launch() are handled properly i.e. ones from openpgp.decryptKey()
-	async launch (client, lockedKey, passphrase) {
+	launch (client, lockedKey, passphrase) {
 		this.client = client;
 		this.id = client.user.id;
-		this.key = await openpgp.decryptKey({
-			privateKey: lockedKey,
-			passphase: passphrase
-		});
-		this.fingerprint = this.key.getFingerprint();
-		await this.#cacheOldKeys();
-		client.on('channelDelete', channel => {
-			// TODO remove channel from db if in db
-		});
-		client.on('channelUpdate', (ch0, ch1) => {
-			// TODO set channel id of ch0 matches
-		});
-		client.on('message', message => {
-			this.#handleMessage(message);
-		});
-	}
-
-	// needs existence of { key_index: uint, old_fingerprint: fingerprint, old_key: privateKey, old_revocation: revokingKey } in db
-	#cacheOldKeys () {
 		return new Promise((resolve, reject) => {
-			this.db.find({ old_key: { $exists: true } }, (err, docs) => {
-				if (err != null) {
-					reject(err);
-				}
-				else {
-					this.oldFingerprints = docs.map(doc => doc.old_fingerprint);
-					Promise.all(docs.map(doc => {
-						return openpgp.readKey({ armoredKey: doc.old_key });
-					}))
-					.then(keys => {
-						this.oldKeys = keys;
-						resolve();
-					});
-				}
-			});
+			openpgp.decryptKey({
+				privateKey: lockedKey,
+				passphase: passphrase
+			})
+			.then(key => {
+				this.key = key;
+				this.fingerprint = key.getFingerprint();
+				client.on('message', message => {
+					this.#handleMessage(message);
+				});
+				client.on('channelDelete', channel => {
+					// TODO remove channel from db if in db
+				});
+				client.on('channelUpdate', (ch0, ch1) => {
+					// TODO set channel id of ch0 matches
+				});
+				resolve(this);
+			})
+			.catch(reject)
 		});
 	}
 
@@ -231,8 +214,12 @@ class Stowaway extends EventEmitter {
 			key0,
 			revocationCertificate
 		})
-		revocation = await revocation.signPrimaryUser([ key1 ]);
-		let key = await key1.signPrimaryUser([ revocation ]);
+		const revocations = await this.#revocations();
+		revocation = await revocation.signPrimaryUser(revocations.concat(key1));
+		this.db.insert({
+			revocation: revocation.armor()
+		})
+		const key = key.signPrimaryUser(revocations.concat(revocation));
 		await this.#writeKey(key.armor());
 		this.#allChannels((err, docs) => {
 			if (err) {
@@ -377,6 +364,21 @@ class Stowaway extends EventEmitter {
 
 	#allUsers (callback) {
 		this.db.find({ user_id: { $exists: true }, public_key: { $exists: true } }, callback);
+	}
+
+	#revocations () {
+		return new Promise((resolve, reject) => {
+			this.db.find({ revocation: { $exists: true } }, (err, docs) => {
+				if (err != null) {
+					reject(err);
+				}
+				else {
+					Promise.all(docs.map(x => openpgp.readKey({ armoredKey: x.revocation })))
+					.then(resolve)
+					.catch(reject);
+				}
+			});
+		});
 	}
 
 	#findChannel (channelId, callback) {
