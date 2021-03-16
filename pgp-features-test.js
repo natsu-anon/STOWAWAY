@@ -139,12 +139,12 @@ async function main () {
 		key: await openpgp.readKey({ armoredKey: pk1 }),
 		revocationCertificate: rc1,
 	});
-	console.log(`revoked key matches original? ${rKey.hasSameFingerprintAs(await openpgp.readKey({armoredKey: pk1 }))}`);
+	console.log(`revoked key matches original? ${rKey.hasSameFingerprintAs(await openpgp.readKey({ armoredKey: pk1 }))}`);
 	// console.log(revokedKeyArmored);
 	let { key: k3, privateKeyArmored: sk3, publicKeyArmored: pk3, revocationCertificate: rc3 } = await openpgp.generateKey({
 		type: 'ecc',
 		curve: 'curve25519',
-		userIds: [{ name: "baz", comment: "STOWAWAY" }],
+		userIds: [{ name: 'baz', comment: 'STOWAWAY' }],
 	});
 	// sign the revoked key with new key
 	rKey = await rKey.signPrimaryUser([ k3 ]);
