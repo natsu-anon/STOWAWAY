@@ -139,9 +139,6 @@ async function main () {
 		key: await openpgp.readKey({ armoredKey: pk1 }),
 		revocationCertificate: rc1,
 	});
-	console.log(rKey);
-	console.log(await k1.revoke());
-	return;
 	console.log(`revoked key matches original? ${rKey.hasSameFingerprintAs(await openpgp.readKey({armoredKey: pk1 }))}`);
 	// console.log(revokedKeyArmored);
 	let { key: k3, privateKeyArmored: sk3, publicKeyArmored: pk3, revocationCertificate: rc3 } = await openpgp.generateKey({
