@@ -6,7 +6,7 @@ SENDING A MESSAGE:
 json:
 {
 	type: 'channel_message',
-	level: (can be 'public', or 'trusted')
+	public: true/false -- if false only sends message to recipients whose key you HAVE signed o.w. everyone in the channel
 	encrypted: the encrypted message itself
 }
 
@@ -20,23 +20,11 @@ then when message recieved:
   c. if old key in fingerprint respond with current key provenance protocol from fingerprinted key
 
 
-HANDSHAKE REQUEST:
+HANDSHAKE:
 json:
 {
-	type: 'handshake_request',
-	publicKey: armored public key
-	revocations: [
-		revokingKey0, (can get the fingerprint of the original key from it)
-		revokingKey1, (can get the fingerprint of the original key from it)
-		...
-		revokingKeyN, (can get the fingerprint of the original key from it)
-	]
-}
-
-HANDHSAKE RESPONSE:
-json:
-{
-	type: 'handhsake_response'
+	type: 'handshake',
+	respond: true/false,
 	publicKey: armored public key
 	revocations: [
 		revokingKey0, (can get the fingerprint of the original key from it)
@@ -55,7 +43,7 @@ NOTE: signer doesn't update his own keys, only after receiving KEY UPDATE does a
 json:
 {
 	type: 'signed_key'
-	recipient: snowflake of intended recipient
+	recipient: snowflake (discord id) of intended recipient
 	publicKey: signed key
 }
 
