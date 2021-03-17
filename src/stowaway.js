@@ -326,7 +326,7 @@ class Stowaway extends EventEmitter {
 		.then(publicKeys => {
 			const temp = [ this.key ];
 			return new Promise(resolve => {
-				Promise.all(key => key.verifyPrimaryUser(temp))
+				Promise.all(publicKeys.map(key => key.verifyPrimaryUser(temp)))
 				.then(bonafides => {
 					const signedKeys = [];
 					for (let i = 0; i < bonafides.length; i++) {
