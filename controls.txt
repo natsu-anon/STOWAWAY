@@ -1,0 +1,66 @@
+STATES:
+	navigation state
+	read state
+	write state
+	help state
+	member state (for signing & seeing whomstve signed whose key)
+	revoke sequence
+	NOTE: leave room for sessions
+	NOTE: maybe leave room for event log
+
+all states:
+	[Ctrl-C] quit
+	[Ctrl-R] initiate revoke sequence
+	[Ctrl-H] to show controls/basic gestalt for current state
+
+
+navigation state:
+	- NOTE: just show available channels -- don't bother with category channels
+	- NOTE: channels you've handshaked in are white, unhandshaked channels are yellow
+	- NOTE: saved channels are green w/ jump number to the side
+	- NOTE: currently selected channel is inverted w/ > to the side
+	[space] begin reading selected channel if already handshaken/o.w. ask if they want to really want to enter & handshake
+	[W/S] navigate to prev/next channel (or server if at first/last channel of current server)
+	[A/D] jump to prev/next handshaked channel
+	[Ctrl + Number] to save a jump to curently selected channel
+	[Number] jump to previously saved channel (if unavailable do nothing)
+	[Tab] enter read state
+
+read state:
+	- NOTE: unverified messages are entirely yellow
+	- NOTE: messages from signed keys have sender & date underlined
+	[W/S] scroll up/down
+	[F] enter member view for channel
+	[Ctrl - space] jump to top
+	[Space] jump to bottom
+	[Enter] begin writing public message
+	[Ctrl - enter] begin writing trusted message (only to signed keys)
+	[Number] jump to previously saved channel (if unavailable do nothing)
+	[Tab] enter navigation state
+
+write state:
+	- NOTE: the write box element itself only appears when viewing a channel
+	- NOTE: height should increase as needed
+	[escape] stop writing & clearout the text
+	[enter] send message
+
+help state:
+	- NOTE: popup window that covers majority (but not all) of screen
+	[W/S] scroll up/down (if needed)
+	[escape] return to previous state
+
+member state
+	[W/S] scroll up/down - show known signers in a sidebar, highlight those whose key you have also signed
+	[escape] return to previous state (read state)
+	[enter] sign currently selected (unless already signed)
+		-- WARN THAT THIS IS IRREVOCABLE
+		-- make user enter random phrase to sign
+
+
+revoke sequence:
+	- NOTE: WARN THAT THIS IS IRREVOCABLE & SHOULD ONLY BE USED IF YOU:
+		1) think someone else has your private key
+		2) think someone else knows your passphrase
+		3) both of the above
+	- NOTE: make user enter "randomly" generated phrase to revoke key
+	[Escape] end revoke sequence & return to previous state
