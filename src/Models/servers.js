@@ -1,227 +1,240 @@
 const Model = require('./model.js');
-const { Node, ParentNode, RootNode } = require('../Structs/tree.js');
 
-class Server extends RootNode {
-	constructor (id, name) {
-		super(id);
-		this.name = name;
-		this.expand = true;
+const VIEW = 'VIEW_CHANNEL';
+const SEND = 'SEND_MESSAGES';
+const READ = 'READ_MESSAGE_HISTORY';
+
+function nonDM (channel, callback) {
+	if (channel.type !== 'dm') {
+		callback(channel);
 	}
 }
 
-class Category extends ParentNode {
-	constructor (id, name) {
-		super(id);
-		this.name = name;
-		this.expand = true;
+function stowawayPermissions (channel, user) {
+	const permissions = channel.permissionsFor(user);
+	return permissions.has(VIEW) && permissions.has(SEND) && permissions.has(READ);
+}
+
+function channelData (channel) {
+	return {
+		id: channel.id,
+		name: channel.name,
+		topic: channel.topic,
+		handshaked: false
+	};
+}
+
+function removeChannel (server, channel) {
+	const index = server.channels.findIndex(({ id }) => id === channel.id);
+	if (index > -1) {
+		server.channels.splice(index, 1);
 	}
 }
 
-class Channel extends Node {
-	constructor (id, name) {
-		super(id);
-		this.name = name;
-	}
-}
-
-// TODO handle focus
 class Servers extends Model {
-	constructor (client, db) {
-		this.servers = [];
-		client.guilds.cache.each(guild => guildCache(guild));
-		client.on('guildCreate', (g) => {
-			guildCache(g);
+	#data;
+
+	constructor () {
+		super();
+		this.#data = [];
+	}
+
+	async initialize (stowaway, client, db) {
+		await this.#cacheCurrent(client, db);
+		this.#clientSubscriptions(client);
+		this.#stowawaySubscriptions(stowaway);
+	}
+
+	#cacheCurrent (client, db) {
+		const channelIds = [];
+		let temp;
+		client.guilds.cache.each(guild => {
+			temp = {
+				id: guild.id,
+				name: guild.name,
+				channels: []
+			};
+			guild.channels.cache.filter(channel => channel.isText())
+			.each(channel => {
+				if (stowawayPermissions(channel, client.user)) {
+					temp.channels.push(channelData(channel));
+					channelIds.push(channel.id);
+				}
+			});
+			if (temp.channels.length > 0) {
+				this.#data.push(temp);
+			}
+		});
+		return new Promise((resolve, reject) => {
+			new Promise(res => {
+				db.find({ favorite_id: { $exists: true } }, (err, docs) => {
+					if (err != null) {
+						throw err;
+					}
+					else {
+						docs.forEach(doc => {
+							temp = this.#data.find(({ channels }) => channels.find(({ id }) => id === doc.favorite_id) !== undefined);
+							if (temp !== undefined) {
+								temp.channels.find(({ id }) => id === doc.channel_id).favorite_number = document.favorite_number;
+							}
+						});
+						res();
+					}
+				});
+			})
+			.then(() => {
+				db.find({ channel_id: { $exists: true } }, (err, docs) => {
+					if (err != null) {
+						throw err;
+					}
+					else {
+						docs.forEach(doc => {
+							temp = this.#data.find(({ channels }) => channels.find(({ id }) => id === doc.channel_id) !== undefined);
+							if (temp !== undefined) {
+								temp.channels.find(({ id }) => id === doc.channel_id).handshaked = true;
+							}
+							// o.w. don't sweat it
+						});
+						resolve();
+					}
+				});
+			})
+			.catch(reject);
+		});
+	}
+
+	favorite (channelId, number, db) {
+		const server = this.#data(({ channels }) => channels.find(({ id }) => id === channelId));
+		if (server === undefined) {
+			throw Error(`Error in Servers.favorite(); channelId argument: ${channelId}`);
+		}
+		const channel = server.channels.find(({ id }) => id === channelId);
+		if (channel.handshaked) {
+			channel.jump = number;
+			this.db.update({ favorite_number: number }, { favorite_id: channelId, favorite_numer: number }, { upsert: true });
+			this.emit('update');
+		}
+		else {
+			throw Error(`Error in Servers.favorite(); Cannot favorite non-handshaked channel ${channelId}!`);
+		}
+	}
+
+	#clientSubscriptions (client) {
+		client.on('guildCreate', server => {
+			const temp = {
+				id: server.id,
+				name: server.name,
+				channels: [],
+			};
+			server.channels.cache.filter(channel => channel.isText())
+			.each(channel => {
+				if (stowawayPermissions(channel, client.user)) {
+					temp.channels.push(channelData(channel));
+				}
+			});
+			this.#data.push(temp);
 			this.emit('update');
 		});
-		client.on('guildUpdate', (g0, g1) => {
-			guildUpdate(g0, g1);
+		client.on('guildDelete', server => {
+			const index = this.#data.findIndex(({ id }) => id === server.id);
+			if (index > -1) {
+				this.#data.splice(index, 1);
+			}
 			this.emit('update');
 		});
-		client.on('guildDeleted', (g) => {
-			guildClear(g);
-			this.emit('update');
-		});
-		client.on('channelCreate', (ch) => {
-			if (channelCache(ch)) {
+		client.on('guildUpdate', (server0, server1) => {
+			const server = this.#data.find(({ id }) => id === server0.id);
+			if (server !== undefined) {
+				server.id = server1.id;
+				server.name = server1.name;
 				this.emit('update');
 			}
 		});
-		client.on('channelDelete', (ch) => {
-			if (channelClear(ch)) {
-				this.emit('update');
-			}
-		});
-		client.on('channelUpdate', (ch0, ch1) => {
-			if (channelUpdate(ch0, ch1)) {
-				this.emit('update');
-			}
-		});
-		this.focus = null;
-		if (this.servers.length > 0) {
-			this.focus = this.servers[0].id;
-		}
-	}
-
-		let current = new Server(guild.id, guild.name);
-		this.servers.AddChild(current);
-		let temp = {};
-		let node;
-		guild.channels.cache(channel => channel.isText())
-		.each((channel) => {
-			node = new Channel(channel.id, channel.name);
-			if (channel.parent == null) {
-				current.addChild(node);
-			}
-			else {
-				if (channel.parentID in temp) {
-					temp[channel.parentID].push(node);
-				}
-				else {
-					temp[channel.parentID] = [ node ];
-				}
-			}
-		});
-		let category;
-		for (let id in temp) {
-			category = guild.channels.cache.find(channel => channel.id == id);
-			node = new Category(category.id, category.name);
-			this.current.addChild(node);
-			for (let i = 0; i < temp[id].length; i++) {
-				node.addChild(temp[id][i]);
-			}
-			current.addChild(node);
-		}
-	}
-
-	guildClear (guild) {
-		for (let i = 0; i < this.servers.length; i++) {
-			if (this.servers[i].id == guild.id) {
-				this.servers.splice(i);
-				return;
-			}
-		}
-	}
-
-	guildUpdate (guild0, guild1) {
-		for (let i = 0; i < this.servers.length; i++) {
-			if (this.servers[i].id == guild0.id) {
-				this.servers[i].id == guild1.id;
-				this.servers[i].name == guild1.name;
-				return;
-			}
-		}
-	}
-
-	channelCreate (channel) {
-		if (!channel.isText || channel.guild == null) {
-			return false;
-		}
-		else {
-			const ch = new Channel(channel.id, channel.name);
-			const server = this.servers.find(s => s.id == channel.guild.id);
-			if (channel.parentID == null) {
-				server.addChild(ch);
-			}
-			else {
-				let category = server.find(channel.parentID);
-				if (category == null) {
-					category = new Category(channel.parentID, channel.parent.name);
-					server.addChild(category);
-				}
-				category.addChild(ch);
-			}
-			return true;
-		}
-	}
-
-	channelClear (channel) {
-		if (channel.guild == null) {
-			return false;
-		}
-		else {
-			const server = this.server.find(s => s.id == channel.guild.id);
-			return server != null ? server.remove(ch.id) : false;
-		}
-	}
-
-	channelUpdate (channel0, channel1) {
-		if (channel0.guild) {
-			return false;
-		}
-		else {
-			const server = this.server.find(s => s.id == channel.guild.id);
-			if (server == null) {
-				return false;
-			}
-			const ch = server.find(channel0.id);
-			if (ch != null) {
-				ch.id = channel1.id;
-				ch.name = channel1.name;
-				if (channel0.parentID == channel1.parentID) {
-					return true;
-				}
-				else {
-					const flag0 = ch0.parentID != null;
-					const flag1 = ch1.parentID != null;
-					let category;
-					if  (flag0) {
-						category = server.find(channel0.parentID);
-						if (category.children.length > 1) {
-							category.remove(ch.id);
+		client.on('channelCreate', channel => {
+			nonDM(channel, channel => {
+				if (channel.isText()) {
+					if (stowawayPermissions(client.user)) {
+						const server = this.#data.find(({ id }) => id === channel.guild.id);
+						if (server === undefined) {
+							this.#data.push({
+								id: channel.guild.id,
+								name: channel.guild.name,
+								channels: [ channelData(channel) ]
+							});
 						}
 						else {
-							server.remove(channel0.parentID);
+							server.channels.push(channelData(channel));
 						}
+						this.emit('update');
 					}
-					if (flag1) {
-						category = server.find(channel1.parentID);
-						if (category == null) {
-							category = new Category(channel1.parentID, channel1.parent.name);
-							server.addChild(category);
+				}
+			});
+		});
+		client.on('channelDelete', channel => {
+			nonDM(channel, channel => {
+				const server = this.#data.find(({ id }) => id === channel.guild.id);
+				if (server !== undefined) {
+					removeChannel(server, channel);
+					this.emit('update');
+				}
+			});
+		});
+		client.on('channelUpdate', (channel0, channel1) => {
+			if (channel0.type !== 'dm' && channel1.type !== 'dm') {
+				const server = this.#data.find(({ id }) => id === channel0.guild.id);
+				if (server !== undefined) {
+					const channel = server.channels.find(({ id }) => id === channel0.id);
+					if (channel !== undefined) {
+						if (stowawayPermissions(channel1, client.user)) {
+							channel.id = channel1.id;
+							channel.name = channel1.name;
+							channel.topic = channel1.topic;
 						}
-						category.addChild(ch);
+						else {
+							removeChannel(server, channel0);
+						}
+						this.emit('update');
 					}
-					return true;
 				}
 			}
-			else {
-				return false;
+		});
+		client.on('guildMemberUpdate', (user0, user1) => {
+			if (user0.id === client.user.id) {
+				const server = this.#data.find(({ id }) => id === user0.guild.id );
+				if (server !== undefined) {
+					Promise.all(server.channels.map(channel => {
+						client.channels.fetch(channel.id, false);
+					}))
+					.then(channels => {
+						let flag = false;
+						channels.forEach(channel => {
+							if (!stowawayPermissions(channel, user1)) {
+								removeChannel(server, channel);
+								flag = true;
+							}
+						});
+						if (flag) {
+							this.emit('update');
+						}
+					});
+				}
 			}
-		}
+		});
 	}
 
-	display () {
-		if (this.servers.length > 0) {
-			let res = [];
-			for (let i = 0; i < this.servers.length; i++) {
-				res.concat(displayExpanded(this.servers[i]));
+	#stowawaySubscriptions (stowaway) {
+		stowaway.on('handshake channel', (serverId, channelId) => {
+			const server = this.#data.find(({ id }) => id === serverId);
+			if (server === undefined) {
+				throw Error(`Error in Servers.#stowawaySubscriptions() on 'handhshake channel'; serverId argument: ${serverId}`);
 			}
-			return res.join('\n');
-		}
-		else {
-			return 'no servers');
-		}
-	}
-
-	displayExpanded (node, depth=0) {
-		let temp = node.name;
-		if (node.expand != undefined) {
-			temp  = (node.expand ? "[-] " : "[+] ") + temp;
-		}
-		temp = temp.padStart(temp.length + 2 * depth, ' ');
-		if (node.id == this.focus) {
-			temp = `{underline}${temp}{/underline}`;
-		}
-		if (node.expand != undefined && node.expand == true) {
-			let res = [ temp ];
-			for (let i = 0; i < node.children.length; i++) {
-				res.concat(displayExpanded(node.children[i], depth + 1));
+			const channel = server.find(({ id }) => id === channelId);
+			if (channel !== undefined) {
+				throw Error(`Error in Servers.#stowawaySubscriptions() on 'handhshake channel'; channelId argument: ${channelId}`);
 			}
-			return res
-		}
-		else {
-			return [ temp ];
-		}
+			channel.handhsaked = true;
+			this.emit('update');
+		});
 	}
 }
 
