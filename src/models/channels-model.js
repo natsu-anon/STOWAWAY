@@ -13,7 +13,6 @@ function channelData (channel) {
 	return {
 		id: channel.id,
 		name: channel.name,
-		topic: channel.topic,
 		serverId: channel.guild.id,
 		serverName: channel.guild.name,
 		handshaked: false
@@ -239,7 +238,6 @@ class ChannelsModel extends Model {
 					if (stowawayPermissions(channel1, client.user)) {
 						this.#data[i].id = channel1.id;
 						this.#data[i].name = channel1.name;
-						this.#data[i].topic = channel1.topic;
 					}
 					else {
 						this.#data.splice(i, 1);
