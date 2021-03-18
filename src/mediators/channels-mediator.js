@@ -37,7 +37,7 @@ class ChannelsMediator extends Mediator {
 	get text () {
 		const res = [];
 		for (let i = 0; i < this.#model.data.length; i++) {
-			if (i === 0) {
+			if (i === 0 || this.#model.data[i - 1 ].serverId !== this.#model.data[i].serverId) {
 				res.push(`{underline}${this.#model.data[i].serverName}{/}`);
 			}
 			if (i === this.#index) {
