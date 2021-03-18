@@ -1,5 +1,17 @@
 const Mediator = require('./mediator.js');
 
+function displayChannel (channel) {
+	if (channel.favoriteNumber != null) { // NOTE: channel cannot be
+		return `{green-fg}[${channel.favoriteNumber}] #${channel.name}{/}`;
+	}
+	else if (channel.handshaked) {
+		return `#${channel.name}{/}`;
+	}
+	else {
+		return `{yellow-fg}#${channel.name}{/}`;
+	}
+}
+
 // really more of a wrapper but w/e
 class ChannelsMediator extends Mediator {
 	#model;
@@ -21,8 +33,21 @@ class ChannelsMediator extends Mediator {
 		return this.#index;
 	}
 
+	// since the model sorts its data by serverId then channelId you can relax.
 	get text () {
-		return '{underline}TODO{/}';
+		const res = [];
+		for (let i = 0; i < this.#model.data.length; i++) {
+			if (i === 0) {
+				res.push(`{underline}${this.#model.data[i].serverName}{/}`);
+			}
+			if (i === this.#index) {
+				res.push(`\t{inverse}> ${displayChannel(this.#model.data[i])}`);
+			}
+			else {
+				res.push(`\t${displayChannel(this.#model.data[i])}`);
+			}
+		}
+		return res.join('\n');
 	}
 
 	get channelId () {
@@ -40,7 +65,7 @@ class ChannelsMediator extends Mediator {
 			.catch(reject);
 		});
 	}
-	
+
 	nextChannel () {
 		this.#index = ++this.#index % this.model.data.length;
 		this.emit('update', this.text);
