@@ -22,17 +22,26 @@ function channelData (channel) {
 
 class ChannelsModel extends Model {
 	#data;
+	#launchChannel;
 
 	constructor () {
 		super();
 		this.#data = [];
 	}
 
+	get launchChannel () {
+		return this.#launchChannel;
+	}
+
+	get data () {
+		return this.#data;
+	}
+
 	async initialize (stowaway, client, db) {
 		await this.#initCache(client, db);
 		this.#initClient(client);
 		this.#initStowaway(stowaway);
-		return await this.#launchChannel(db);
+		this.#launchChannel = await this.#getLaunchChannel(db);
 	}
 
 	setFavorite (channelId, number, db) {
@@ -41,7 +50,7 @@ class ChannelsModel extends Model {
 			if (channel !== undefined) {
 				channel.favoriteNumber = null;
 			}
-			channel = this.#getChannel(channelId);
+			channel = this.getChannel(channelId);
 			if (channel !== undefined) {
 				if (channel.handshaked) {
 					channel.favoriteNumber = number;
@@ -71,19 +80,19 @@ class ChannelsModel extends Model {
 		});
 	}
 
-	#getChannel (channelId) {
+	getChannel (channelId) {
 		return this.#data.find(({ id }) => id === channelId);
 	}
 
-	#getChannelIndex (channelId) {
+	getChannelIndex (channelId) {
 		return this.#data.findIndex(({ id }) => id === channelId);
 	}
 
-	#launchChannel (db) {
+	#getLaunchChannel (db) {
 		return new Promise((resolve, reject) => {
 			db.findOne({ last_channel: { $exists: true } }, (_, doc) => {
 				if (doc != null) {
-					const channel = this.#getChannel(doc.channel_id);
+					const channel = this.getChannel(doc.channel_id);
 					if (channel !== undefined) {
 						resolve(channel.id);
 						return;
@@ -98,6 +107,35 @@ class ChannelsModel extends Model {
 				}
 			});
 		});
+	}
+
+	firstHandshaked () {
+		for (let i = 0; i < this.#data.length; i++) {
+			if (this.#data[i].handshaked) {
+				return this.#data[i].id;
+			}
+		}
+		return 0;
+	}
+
+	lastHandshaked () {
+		for (let i = this.#data.length - 1; i > -1; i--) {
+			if (this.#data[i].handshaked) {
+				return this.#data[i].id;
+			}
+		}
+		return this.#data.length - 1;
+	}
+
+	// NOTE: firstServer() would just return the 0th index.  THINK ABOUT IT.
+
+	lastServer () {
+		for (let i = this.#data.length - 2; i > -1; i--) {
+			if (this.#data[i + 1].serverId !== this.#data[i].serverId) {
+				return i + 1;
+			}
+		}
+		return 0;
 	}
 
 	#initCache (client, db) {
@@ -118,7 +156,7 @@ class ChannelsModel extends Model {
 					}
 					else {
 						docs.forEach(doc => {
-							channel = this.#getChannel(doc.favorite_id);
+							channel = this.getChannel(doc.favorite_id);
 							if (channel !== undefined) {
 								channel.favoriteNumber = doc.favorite_number;
 							}
@@ -134,12 +172,13 @@ class ChannelsModel extends Model {
 					}
 					else {
 						docs.forEach(doc => {
-							channel = this.#getChannel(doc.channel_id);
+							channel = this.getChannel(doc.channel_id);
 							if (channel !== undefined) {
 								channel.handshaked = true;
 							}
 							// o.w. don't sweat it
 						});
+						this.#sortChannels();
 						resolve();
 					}
 				});
@@ -154,6 +193,7 @@ class ChannelsModel extends Model {
 			.each(channel => {
 				this.#data.push(channelData(channel));
 			});
+			this.#sortChannels();
 			this.emit('update');
 		});
 		client.on('guildDelete', server => {
@@ -178,13 +218,14 @@ class ChannelsModel extends Model {
 			if (channel.type !== 'dm') {
 				if (channel.isText() && stowawayPermissions(channel, client.user)) {
 					this.#data.push(channelData(channel));
+					this.#sortChannels();
 					this.emit('update');
 				}
 			}
 		});
 		client.on('channelDelete', channel => {
 			if (channel.type !== 'dm') {
-				const index = this.#getChannelIndex(channel.id);
+				const index = this.getChannelIndex(channel.id);
 				if (index >= 0) {
 					this.#data.splice(index, 1);
 					this.emit('update');
@@ -193,7 +234,7 @@ class ChannelsModel extends Model {
 		});
 		client.on('channelUpdate', (channel0, channel1) => {
 			if (channel0.type !== 'dm' && channel1.type !== 'dm') {
-				const i = this.#getChannelIndex(channel0.id);
+				const i = this.getChannelIndex(channel0.id);
 				if (i > -1) {
 					if (stowawayPermissions(channel1, client.user)) {
 						this.#data[i].id = channel1.id;
@@ -207,7 +248,7 @@ class ChannelsModel extends Model {
 				}
 			}
 			else if (channel0.type !== 'dm') {
-				const i = this.#getChannelIndex(channel0.id);
+				const i = this.getChannelIndex(channel0.id);
 				if (i >= 0) {
 					this.#data.splice(i, 1);
 					this.emit('update');
@@ -222,7 +263,7 @@ class ChannelsModel extends Model {
 					let i;
 					channels.filter(channel => !stowawayPermissions(channel, user1))
 					.each(channel => {
-						i = this.#getChannelIndex(channel.id);
+						i = this.getChannelIndex(channel.id);
 						if (i > -1) {
 							this.#data.splice(i, 1);
 						}
@@ -245,6 +286,20 @@ class ChannelsModel extends Model {
 			}
 			channel.handhsaked = true;
 			this.emit('update');
+		});
+	}
+
+	#sortChannels () {
+		this.#data.sort((a, b) => {
+			if (a.serverId < b.serverId) {
+				return -1;
+			}
+			else if (a.serverId > b.serverId) {
+				return 1;
+			}
+			else {
+				return a.channelId < b.channelId ? -1 : 1;
+			}
 		});
 	}
 }
