@@ -219,6 +219,7 @@ class Stowaway extends EventEmitter {
 							last_id: message.id,
 							last_ts: message.createdTimestamp,
 						}, () => {
+							this.emit('handshake channel', channel.guild.id, channel.id);
 							this.emit('handshake', channel.id, message.createdTimestamp, message.createdAt, message.author);
 							resolve();
 						});
@@ -491,11 +492,6 @@ class Stowaway extends EventEmitter {
 	}
 
 	// AFTER 1.0.0: SESSION SUPPORT
-	// TODO:
-	// MOSTLY DONE _channelMessage
-	// MOSTLY DONE _handshake
-	// MOSTLY DONE _signedKey
-	// MOSTLY DONE _keyUpdate
 	#handleMessage (message) {
 		this.#findChannel(message.channel.id, (err, doc) => {
 			if (err != null) {
@@ -616,14 +612,14 @@ class Stowaway extends EventEmitter {
 			});
 		})
 		.then(decrypted => {
-			return this.#verifyMessage(decrypted);
+			return this.#verifyMessage(decrypted, publicKey);
 		})
 		.then(result => {
 			if (result.verified) {
-				this.emit('verified message', message.channel.id, message.createdTimestamp, message.createdAt, message.author, result.plainText);
+				this.emit('verified message', message.channel.id, message.createdTimestamp, message.createdAt, message.author, result.signed, result.plainText);
 			}
 			else {
-				this.emit('unverified message', message.channel.id, message.createdTimestamp, message.createdAt, message.author, result.plainText);
+				this.emit('unverified message', message.channel.id, message.createdTimestamp, message.createdAt, message.author, result.signed, result.plainText);
 			}
 			this.#updateLatests(message.channel.id, message.id, message.createdTimestamp);
 		})
@@ -641,18 +637,35 @@ class Stowaway extends EventEmitter {
 			}
 		});
 	}
+
 	// OK
-	#verifyMessage (decrypted) {
+	#verifyMessage (decrypted, publicKey) {
 		if (decrypted.signatures.length > 0) {
 			return new Promise(resolve => {
-					decrypted.signatures[0].verified
-					.then(flag => {
-						resolve({ verified: flag, plaintext: decrypted.data });
+				decrypted.signatures[0].verified
+				.then(flag => {
+					publicKey.verifyPrimaryUser([ this.key ])
+					.then(bonafides => {
+						resolve({
+							signed: bonafides.find(x => x.valid) !== undefined,
+							verified: flag,
+							plainText: decrypted.data
+						});
 					});
+				});
 			});
 		}
 		else {
-			return Promise.resolve({ verified: false, plaintext: decrypted.data });
+			return new Promise(resolve => {
+				publicKey.verifyPrimaryUser([ this.key ])
+				.then(bonafides => {
+					resolve({
+						signed: bonafides.find(x => x.valid) !== undefined,
+						verified: false,
+						plainText: decrypted.data
+					});
+				});
+			});
 		}
 	}
 
@@ -837,7 +850,7 @@ class Stowaway extends EventEmitter {
 		}
 		if (publicKey0.hasSameFingerprintsAs(revocation)) {
 			const res = await revocation.verifyPrimaryUser([ publicKey0, publicKey1 ]);
-			if (res[0].valid && res[1].valid && (await publicKey1.verifyPrimaryUser([ revocation ]))[0].valid) {
+			if (res.filter(x => x.valid) === 2 && (await publicKey1.verifyPrimaryUser([ revocation ]))[0].valid) {
 				return { valid: true, publicKey: publicKey1 };
 			}
 			else {
