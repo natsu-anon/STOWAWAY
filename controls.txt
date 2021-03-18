@@ -10,6 +10,7 @@ STATES:
 
 all states:
 	[Ctrl-C] quit
+	[Ctrl-A] about
 	[Ctrl-R] initiate revoke sequence
 	[Ctrl-H] to show controls/basic gestalt for current state
 
@@ -24,7 +25,7 @@ navigation state:
 	[Ctrl-W/Ctrl-S] jump to prev/next handshaked channel (loops)
 	[A/D] navigate to first channel of prev/next server (loops)
 	[Ctrl + Number] to save a jump to curently selected channel
-	[Number] jump to previously saved channel (if unavailable do nothing)
+	[Number] jump to previously saved channel (if unavailable do nothing) & enter read state
 	[Tab] enter read state
 
 read state:
