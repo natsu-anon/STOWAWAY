@@ -21,7 +21,8 @@ navigation state:
 	- NOTE: currently selected channel is inverted w/ > to the side
 	[space] begin reading selected channel if already handshaken/o.w. ask if they want to really want to enter & handshake
 	[W/S] navigate to prev/next channel (or server if at first/last channel of current server)
-	[A/D] jump to prev/next handshaked channel
+	[Ctrl-W/Ctrl-S] jump to prev/next handshaked channel (loops)
+	[A/D] navigate to first channel of prev/next server (loops)
 	[Ctrl + Number] to save a jump to curently selected channel
 	[Number] jump to previously saved channel (if unavailable do nothing)
 	[Tab] enter read state
