@@ -2,13 +2,13 @@ const Mediator = require('./mediator.js');
 
 function displayChannel (channel) {
 	if (channel.favoriteNumber != null) { // NOTE: channel cannot be
-		return `{green-fg}[${channel.favoriteNumber}] #${channel.name}{/}`;
+		return `{green-fg}[${channel.favoriteNumber}] #${channel.name}{/green-fg}`;
 	}
 	else if (channel.handshaked) {
-		return `#${channel.name}{/}`;
+		return `#${channel.name}`;
 	}
 	else {
-		return `{yellow-fg}#${channel.name}{/}`;
+		return `{yellow-fg}#${channel.name}{/yellow-fg}`;
 	}
 }
 
@@ -38,10 +38,10 @@ class ChannelsMediator extends Mediator {
 		const res = [];
 		for (let i = 0; i < this.#model.data.length; i++) {
 			if (i === 0 || this.#model.data[i - 1 ].serverId !== this.#model.data[i].serverId) {
-				res.push(`{underline}${this.#model.data[i].serverName}{/}`);
+				res.push(`{underline}${this.#model.data[i].serverName}{/underline}`);
 			}
 			if (i === this.#index) {
-				res.push(`\t{inverse}> ${displayChannel(this.#model.data[i])}`);
+				res.push(`\t{inverse}> ${displayChannel(this.#model.data[i])}{/inverse}`);
 			}
 			else {
 				res.push(`\t${displayChannel(this.#model.data[i])}`);
