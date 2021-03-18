@@ -20,8 +20,7 @@ function channelData (channel) {
 	};
 }
 
-// gotta be a better name for this
-class Channels extends Model {
+class ChannelsModel extends Model {
 	#data;
 
 	constructor () {
@@ -250,4 +249,4 @@ class Channels extends Model {
 	}
 }
 
-module.exports = Channels;
+module.exports = ChannelsModel;
