@@ -1,9 +1,13 @@
+const EventEmitter = require('events');
 const fs = require('fs');
 const https = require('https');
 const crypto = require('crypto');
 const Datastore = require('nedb');
 const { Client } = require('discord.js');
+const ChannelsModel = require('./models/channels-model.js');
+const ChannelsMediator = require('./mediators/channels-mediator.js');
 const API_TOKEN = './token DO NOT SHARE';
+const DATABASE = './stowaway.db';
 const REGEX = /^#{4} STOWAWAY #{4}$/m;
 
 /* lmao didn't work
@@ -20,7 +24,8 @@ https.get("https://api.github.com/repos/octocat/hello-world/releases", options, 
 });
 */
 
-
+const db = new Datastore({ filename: DATABASE, autoload: true });
+db.persistence.setAutocompactionInterval(5000);
 return new Promise((resolve, reject) => {
 	const client = new Client();
 	client.once('ready', () => {
@@ -37,6 +42,8 @@ return new Promise((resolve, reject) => {
 })
 .then(client => {
 	console.log(`logged in as ${client.user.tag}\tid: ${client.user.id}`);
+	return new ChannelsModel().initialize(new EventEmitter(), client, db);
+	// 	client.destroy();
 	// client.on('message', message => {
 	// 	console.log(REGEX.test(message.content));
 	// });
@@ -47,19 +54,31 @@ return new Promise((resolve, reject) => {
 	// 		throw err;
 	// 	}
 	// 	console.log(docs);
-	// 	client.destroy();
 	// 	process.exit(0);
 	// });
-	client.guilds.cache.each(guild => {
-		console.log(typeof guild.id);
-		guild.channels.cache.filter(channel => channel.isText())
-		.each(channel => {
-			console.log(channel.name);
-			console.log(`\tcan view: ${channel.permissionsFor(client.user).has('VIEW_CHANNEL')}`);
-			console.log(`\tcan message: ${channel.permissionsFor(client.user).has('SEND_MESSAGES')}`);
-			console.log(`\tread history: ${channel.permissionsFor(client.user).has('READ_MESSAGE_HISTORY')}`);
-		});
-	});
+	// client.guilds.cache.each(guild => {
+	// 	console.log(typeof guild.id);
+	// 	guild.channels.cache.filter(channel => channel.isText())
+	// 	.each(channel => {
+	// 		console.log(channel.name);
+	// 		console.log(`\tcan view: ${channel.permissionsFor(client.user).has('VIEW_CHANNEL')}`);
+	// 		console.log(`\tcan message: ${channel.permissionsFor(client.user).has('SEND_MESSAGES')}`);
+	// 		console.log(`\tread history: ${channel.permissionsFor(client.user).has('READ_MESSAGE_HISTORY')}`);
+	// 	});
+	// });
+
 	// console.log(crypto.getHashes());
+})
+.then(async (model) => {
+	const mediator = new ChannelsMediator(model);
+	mediator.on('update', text => {
+		console.log(`\n### UPDATE\n${text}\n`);
+	});
+	mediator.nextChannel();
+	mediator.prevChannel();
+	mediator.nextHandshaked();
+	mediator.prevHandshaked();
+	mediator.nextServer();
+	mediator.prevServer();
 })
 .catch(err => { console.error(err); });

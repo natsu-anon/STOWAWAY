@@ -23,7 +23,7 @@ class ChannelsModel extends Model {
 	#data;
 	#launchChannel;
 
-	constructor () {
+	constructor (db) {
 		super();
 		this.#data = [];
 	}
@@ -37,23 +37,28 @@ class ChannelsModel extends Model {
 	}
 
 	async initialize (stowaway, client, db) {
+		console.log('initializing channels model');
 		await this.#initCache(client, db);
-		this.#initClient(client);
-		this.#initStowaway(stowaway);
+		console.log('cache initialized');
+		this.#initClient(client, db);
+		// this.#initStowaway(stowaway);
 		this.#launchChannel = await this.#getLaunchChannel(db);
+		this.db = db;
+		console.log('launch channel set');
+		return this;
 	}
 
-	setFavorite (channelId, number, db) {
+	setFavorite (channelId, number) {
 		return new Promise((resolve, reject) => {
 			let channel = this.#data.find(({ favoriteNumber }) => favoriteNumber === number);
 			if (channel !== undefined) {
-				channel.favoriteNumber = null;
+				channel.favoriteNumber = undefined;
 			}
 			channel = this.getChannel(channelId);
 			if (channel !== undefined) {
 				if (channel.handshaked) {
 					channel.favoriteNumber = number;
-					db.update({ favorite: number }, { favorite_id: channelId, favorite_number: number }, { upsert: true });
+					this.db.update({ favorite_number: number }, { favorite_id: channelId, favorite_number: number }, { upsert: true });
 					this.emit('update');
 					resolve();
 				}
@@ -63,6 +68,28 @@ class ChannelsModel extends Model {
 			}
 			else {
 				reject(Error(`Error in Servers.setFavorite(): Unrecognized channel ${channelId}`));
+			}
+		});
+	}
+
+	clearFavorite (channelId) {
+		return new Promise((resolve, reject) => {
+			const channel = this.getChannel(channelId);
+			if (channel !== undefined) {
+				channel.favoriteNumber = undefined;
+				this.db.remove({ favorite_id: channelId }, {}, err => {
+					if (err != null) {
+						reject(err);
+					}
+					else {
+						this.emit('update');
+						resolve();
+					}
+				});
+			}
+			else {
+				resolve();
+				// channel DNE in #data... so mb everything is fine?
 			}
 		});
 	}
@@ -80,7 +107,7 @@ class ChannelsModel extends Model {
 	}
 
 	getChannel (channelId) {
-		return this.#data.find(({ id }) => id === channelId);
+		return this.#data.find(({ id }) => id === channelId );
 	}
 
 	getChannelIndex (channelId) {
@@ -91,10 +118,13 @@ class ChannelsModel extends Model {
 		return new Promise((resolve, reject) => {
 			db.findOne({ last_channel: { $exists: true } }, (_, doc) => {
 				if (doc != null) {
-					const channel = this.getChannel(doc.channel_id);
+					const channel = this.getChannel(doc.last_channel);
 					if (channel !== undefined) {
 						resolve(channel.id);
 						return;
+					}
+					else {
+						reject(Error('Unexpected error in ChannelsModel.#getLaunchChannel()'));
 					}
 				}
 				else if (this.#data.length > 0) {
@@ -111,7 +141,7 @@ class ChannelsModel extends Model {
 	firstHandshaked () {
 		for (let i = 0; i < this.#data.length; i++) {
 			if (this.#data[i].handshaked) {
-				return this.#data[i].id;
+				return i;
 			}
 		}
 		return 0;
@@ -120,7 +150,7 @@ class ChannelsModel extends Model {
 	lastHandshaked () {
 		for (let i = this.#data.length - 1; i > -1; i--) {
 			if (this.#data[i].handshaked) {
-				return this.#data[i].id;
+				return i;
 			}
 		}
 		return this.#data.length - 1;
@@ -186,7 +216,7 @@ class ChannelsModel extends Model {
 		});
 	}
 
-	#initClient (client) {
+	#initClient (client, db) {
 		client.on('guildCreate', server => {
 			server.channels.cache.filter(channel => channel.isText() && stowawayPermissions(channel, client.user))
 			.each(channel => {
@@ -199,6 +229,7 @@ class ChannelsModel extends Model {
 			// RETVRN TO TRADITION
 			for (let i = this.#data.length - 1; i >= 0; i--) {
 				if (this.#data[i].serverId === server.id) {
+					db.remove({ favorite_id: this.#data[i].id });
 					this.#data.splice(i, 1);
 				}
 			}
@@ -224,9 +255,10 @@ class ChannelsModel extends Model {
 		});
 		client.on('channelDelete', channel => {
 			if (channel.type !== 'dm') {
-				const index = this.getChannelIndex(channel.id);
-				if (index >= 0) {
-					this.#data.splice(index, 1);
+				const i = this.getChannelIndex(channel.id);
+				if (i >= 0) {
+					db.remove({ favorite_id: this.#data[i].id });
+					this.#data.splice(i, 1);
 					this.emit('update');
 				}
 			}
@@ -240,6 +272,7 @@ class ChannelsModel extends Model {
 						this.#data[i].name = channel1.name;
 					}
 					else {
+						db.remove({ favorite_id: this.#data[i].id });
 						this.#data.splice(i, 1);
 					}
 					this.emit('update');
@@ -247,7 +280,8 @@ class ChannelsModel extends Model {
 			}
 			else if (channel0.type !== 'dm') {
 				const i = this.getChannelIndex(channel0.id);
-				if (i >= 0) {
+				if (i > -1) {
+					db.remove({ favorite_id: this.#data[i].id });
 					this.#data.splice(i, 1);
 					this.emit('update');
 				}
@@ -263,6 +297,7 @@ class ChannelsModel extends Model {
 					.each(channel => {
 						i = this.getChannelIndex(channel.id);
 						if (i > -1) {
+							db.remove({ favorite_id: this.#data[i].id });
 							this.#data.splice(i, 1);
 						}
 					});
