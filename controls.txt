@@ -52,9 +52,11 @@ help state:
 	[escape] return to previous state
 
 member state
+	- NOTE: restrict to known members
 	[W/S] scroll up/down - show known signers in a sidebar, highlight those whose key you have also signed
 	[escape] return to previous state (read state)
-	[enter] sign currently selected (unless already signed)
+	[enter] change bot nickname (if possible)
+	[ctrl-enter] sign currently selected (unless already signed)
 		-- WARN THAT THIS IS IRREVOCABLE
 		-- make user enter random phrase to sign
 
