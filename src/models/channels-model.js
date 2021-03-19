@@ -58,7 +58,14 @@ class ChannelsModel extends Model {
 			if (channel !== undefined) {
 				if (channel.handshaked) {
 					channel.favoriteNumber = number;
-					this.db.update({ favorite_number: number }, { favorite_id: channelId, favorite_number: number }, { upsert: true });
+					this.db.update({ favorite_number: number }, { $unset: { favorite_number: number } }, {}, (err) => {
+						if (err != null) {
+							reject(Error('database error in Servers.setFavorite()'));
+						}
+						else {
+							this.db.update({ channel_id: channelId }, { $set: { favorite_number: number } });
+						}
+					});
 					this.emit('update');
 					resolve();
 				}
@@ -178,41 +185,25 @@ class ChannelsModel extends Model {
 		});
 		return new Promise((resolve, reject) => {
 			let channel;
-			new Promise(res => {
-				db.find({ favorite_id: { $exists: true } }, (err, docs) => {
-					if (err != null) {
-						throw err;
-					}
-					else {
-						docs.forEach(doc => {
-							channel = this.getChannel(doc.favorite_id);
-							if (channel !== undefined) {
+			db.find({ channel_id: { $exists: true } }, (err, docs) => {
+				if (err != null) {
+					reject(err);
+				}
+				else {
+					docs.forEach(doc => {
+						channel = this.getChannel(doc.channel_id);
+						if (channel !== undefined) {
+							channel.handshaked = true;
+							if (doc.favorite_number != null) {
 								channel.favoriteNumber = doc.favorite_number;
 							}
-						});
-						res();
-					}
-				});
-			})
-			.then(() => {
-				db.find({ channel_id: { $exists: true } }, (err, docs) => {
-					if (err != null) {
-						throw err;
-					}
-					else {
-						docs.forEach(doc => {
-							channel = this.getChannel(doc.channel_id);
-							if (channel !== undefined) {
-								channel.handshaked = true;
-							}
-							// o.w. don't sweat it
-						});
-						this.#sortChannels();
-						resolve();
-					}
-				});
-			})
-			.catch(reject);
+						}
+						// o.w. don't sweat it
+					});
+					this.#sortChannels();
+					resolve();
+				}
+			});
 		});
 	}
 
