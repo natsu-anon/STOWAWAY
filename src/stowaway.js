@@ -93,7 +93,7 @@ class Stowaway extends EventEmitter {
 		}
 	}
 
-	get #revocations() {
+	get #revocations () {
 		return new Promise((resolve, reject) => {
 			this.db.find({ revocation: { $exists: true } }, (err, docs) => {
 				if (err != null) {
@@ -102,6 +102,23 @@ class Stowaway extends EventEmitter {
 				else {
 					Promise.all(docs.map(x => openpgp.readKey({ armoredKey: x.revocation })))
 					.then(resolve)
+					.catch(reject);
+				}
+			});
+		});
+	}
+
+	get #armoredPublicRevocations () {
+		return new Promise((resolve, reject) => {
+			this.db.find({ revocation: { $exists: true } }, (err, docs) => {
+				if (err != null) {
+					reject(err);
+				}
+				else {
+					Promise.all(docs.map(x => openpgp.readKey({ armoredKey: x.revocation })))
+					.then(revokingKeys => {
+						resolve(revokingKeys.map(x => x.toPublic().armor()));
+					})
 					.catch(reject);
 				}
 			});
@@ -468,7 +485,7 @@ class Stowaway extends EventEmitter {
 			type: HANDSHAKE,
 			respond: requestResponse,
 			public_key: this.key.toPublic().armor(),
-			revocations: await this.#revocations
+			revocations: await this.#armoredPublicRevocations
 		}, FILE));
 	}
 
@@ -527,8 +544,11 @@ class Stowaway extends EventEmitter {
 						else if (message.author.id !== this.id) {
 							switch (data.type) {
 								case HANDSHAKE:
-									if (data.publicKey != null && data.respond != null && (typeof data.respond) === 'boolean') {
-										this.#handshake(data.publicKey, data.respond, message); // may cauase a handhsake
+									if (data.publicKey != null && data.respond != null
+										&& (typeof data.respond) === 'boolean'
+										&& data.revocations != null && data.revocations.isArray())
+									{
+										this.#handshake(data.publicKey, data.respond, data.revocations, message); // may cauase a handhsake
 									}
 									else {
 										// emit something about no publicKey field
@@ -672,7 +692,7 @@ class Stowaway extends EventEmitter {
 	}
 
 	// OK -- improve error handling
-	#handshake (armoredKey, plsRespond, message) {
+	#handshake (armoredKey, plsRespond, revocations, message) {
 		new Promise((resolve, reject) => {
 			this.#findUser(message.author.id, (err, doc) => {
 				if (err) {
@@ -680,7 +700,7 @@ class Stowaway extends EventEmitter {
 				}
 				else if (doc == null) {
 					openpgp.readKey({ armoredKey }) // do this just to check it's armored key is actually a key
-					.then(publicKey => {
+					.then(_ => {
 						this.db.insert({ user_id: message.author.id, public_key: armoredKey });
 						if (plsRespond) {
 							this.#sendHandshake(message.channel, HANDSHAKE);
@@ -690,7 +710,35 @@ class Stowaway extends EventEmitter {
 					.catch(reject);
 				}
 				else {
-					resolve(false);
+					openpgp.readKey({ armoredKey })
+					.then(publicKey => {
+						openpgp.readKey({ armoredKey: doc.public_key })
+						.then(savedKey => {
+							if (!publicKey.hasSameFingerprintAs(savedKey)) {
+								// check the revocations for a key fingerprint that matches your saved key
+								Promise.all(revocations.map(revocation => {
+									return openpgp.readKey({ armoredKey: revocation });
+								})
+								.then(revokingKeys => {
+									const revokingKey = revokingKeys.find(x => savedKey.hasSameFingerprintAs(x));
+									 return this.#revocation(revokingKey, savedKey, publicKey);
+								})
+								.then(result => {
+									if (result.valid) {
+										this.db.update({ user_id: message.author.id }, { public_key: armoredKey });
+										resolve(true);
+									}
+									else {
+										reject();
+									}
+								});
+							}
+							else {
+								resolve(false);
+							}
+						});
+					})
+					.catch(reject);
 				}
 			});
 		})
