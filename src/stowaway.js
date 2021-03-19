@@ -221,6 +221,7 @@ class Stowaway extends EventEmitter {
 						}, () => {
 							this.emit('handshake channel', channel.guild.id, channel.id);
 							this.emit('handshake', channel.id, message.createdTimestamp, message.createdAt, message.author);
+							this.db.update({ last_channel: { $exists: true }}, { last_channel: channel.id }, { upsert: true });
 							resolve();
 						});
 					})
@@ -235,6 +236,7 @@ class Stowaway extends EventEmitter {
 					.then(messages => {
 						messages.sort((m0, m1) => m0.createdTimestamp - m1.createdTimestamp)
 						.each(message => { this.#handleMessage(message); });
+						this.db.update({ last_channel: { $exists: true }}, { last_channel: channel.id }, { upsert: true });
 						resolve();
 					})
 					.catch(reject);
