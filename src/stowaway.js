@@ -511,6 +511,7 @@ class Stowaway extends EventEmitter {
 	}
 
 	// AFTER 1.0.0: SESSION SUPPORT
+	// NOTE since only guild channel messages get processed you can use message.member to access the guildMember of the sender
 	#handleMessage (message) {
 		this.#findChannel(message.channel.id, (err, doc) => {
 			if (err != null) {
