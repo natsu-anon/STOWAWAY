@@ -33,10 +33,10 @@ read state:
 	- NOTE: messages from signed keys have sender & date underlined
 	[W/S] scroll up/down
 	[F] enter member view for channel
-	[Ctrl - space] jump to top
-	[Space] jump to bottom
+	[Ctrl-W] jump to top
+	[Ctrl-S] jump to bottom
 	[Enter] begin writing public message
-	[Ctrl - enter] begin writing trusted message (only to signed keys)
+	[Ctrl-Enter] begin writing trusted message (only to signed keys)
 	[Number] jump to previously saved channel (if unavailable do nothing)
 	[Tab] enter navigation state
 
