@@ -56,3 +56,10 @@ json:
 	publicKey: update public key
 }
 again, perform the fingerprint check then use update.  It gracefully merges keys if they have the same fingerprint.
+
+REVOCATION (send this to all known channels upon key revocation):
+json:
+{
+	revocation: revokingKey
+	publicKey: new publicKey
+}
