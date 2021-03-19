@@ -42,7 +42,10 @@ return new Promise((resolve, reject) => {
 })
 .then(client => {
 	console.log(`logged in as ${client.user.tag}\tid: ${client.user.id}`);
-	return new ChannelsModel().initialize(new EventEmitter(), client, db);
+	client.on('message', message => {
+		console.log(typeof message.createdTimestamp);
+		console.log(message.createdTimestamp);
+	});
 	// 	client.destroy();
 	// client.on('message', message => {
 	// 	console.log(REGEX.test(message.content));
@@ -68,17 +71,5 @@ return new Promise((resolve, reject) => {
 	// });
 
 	// console.log(crypto.getHashes());
-})
-.then(async (model) => {
-	const mediator = new ChannelsMediator(model);
-	mediator.on('update', text => {
-		console.log(`\n### UPDATE\n${text}\n`);
-	});
-	mediator.nextChannel();
-	mediator.prevChannel();
-	mediator.nextHandshaked();
-	mediator.prevHandshaked();
-	mediator.nextServer();
-	mediator.prevServer();
 })
 .catch(err => { console.error(err); });
