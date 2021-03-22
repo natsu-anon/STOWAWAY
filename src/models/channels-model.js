@@ -23,7 +23,7 @@ class ChannelsModel extends Model {
 	#data;
 	#launchChannel;
 
-	constructor (db) {
+	constructor () {
 		super();
 		this.#data = [];
 	}
@@ -41,7 +41,7 @@ class ChannelsModel extends Model {
 		await this.#initCache(client, db);
 		console.log('cache initialized');
 		this.#initClient(client, db);
-		// this.#initStowaway(stowaway);
+		this.#initStowaway(stowaway);
 		this.#launchChannel = await this.#getLaunchChannel(db);
 		this.db = db;
 		console.log('launch channel set');
@@ -58,7 +58,7 @@ class ChannelsModel extends Model {
 			if (channel !== undefined) {
 				if (channel.handshaked) {
 					channel.favoriteNumber = number;
-					this.db.update({ favorite_number: number }, { $unset: { favorite_number: number } }, {}, (err) => {
+					this.db.update({ favorite_number: number }, { $unset: { favorite_number: number } }, {}, err => {
 						if (err != null) {
 							reject(Error('database error in Servers.setFavorite()'));
 						}
