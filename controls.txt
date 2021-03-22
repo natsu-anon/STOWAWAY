@@ -35,6 +35,7 @@ read state:
 	[F] enter member view for channel
 	[Ctrl-W] jump to top
 	[Ctrl-S] jump to bottom
+	[H] to repeat handshake protocol.
 	[Enter] begin writing public message
 	[Ctrl-Enter] begin writing trusted message (only to signed keys)
 	[Number] jump to previously saved channel (if unavailable do nothing)
