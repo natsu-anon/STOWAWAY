@@ -568,7 +568,7 @@ class Stowaway extends EventEmitter {
 									break;
 								case KEY_UPDATE:
 									if (data.publicKey != null) {
-										this.#keyUpdate(data.publicKey, message.author.id);
+										this.#keyUpdate(data.publicKey, message);
 									}
 									else {
 										// emit something about no publicKey field
@@ -576,7 +576,7 @@ class Stowaway extends EventEmitter {
 									break;
 								case REVOCATION:
 									if (data.revocation != null && data.publicKey != null) {
-										this.#keyRevocation(data.revocation, data.publicKey, message.author); // force the user if to trust the revocation
+										this.#keyRevocation(data.revocation, data.publicKey, message); // force the user if to trust the revocation
 									}
 									else {
 										// emit something about missing fields
@@ -638,12 +638,7 @@ class Stowaway extends EventEmitter {
 			return this.#verifyMessage(decrypted, publicKey);
 		})
 		.then(result => {
-			if (result.verified) {
-				this.emit('verified message', message.channel.id, message.createdTimestamp, message.createdAt, message.author, result.signed, result.plainText);
-			}
-			else {
-				this.emit('unverified message', message.channel.id, message.createdTimestamp, message.createdAt, message.author, result.signed, result.plainText);
-			}
+			this.emit('channel message', message, result);
 			this.#updateLatests(message.channel.id, message.id, message.createdTimestamp);
 		})
 		.catch(err => {
@@ -652,8 +647,7 @@ class Stowaway extends EventEmitter {
 			}
 			else if (err.message === ERR_DECRYPT) {
 				// if you're here it's possible you (1) the author doesn't have your public key or (2) author has one of your revoked public keys
-				// so just do a handshake
-				this.#sendHandshake(message.channel, false);
+				this.emit('decryption failure', message);
 			}
 			else {
 				this.emit('unexpected error', `error in Stowaway.#message(): ${err}`);
@@ -693,6 +687,7 @@ class Stowaway extends EventEmitter {
 	}
 
 	// OK -- improve error handling
+	// figure out why linter says this is wrong
 	#handshake (armoredKey, plsRespond, revocations, message) {
 		new Promise((resolve, reject) => {
 			this.#findUser(message.author.id, (err, doc) => {
@@ -745,17 +740,17 @@ class Stowaway extends EventEmitter {
 		})
 		.then(flag => {
 			if (flag) {
-				this.emit('handshake', message.channel.id, message.createdTimestamp, message.createdAt, message.author);
+				this.emit('handshake', true, message);
 			}
 		})
-		.catch(err => { this.emit('bad handshake', message.channel.id, message.author); });
+		.catch(err => { this.emit('handshake', false, message); });
 	}
 
 	// OK -- add proper emissions & error handling
-	#signedKey (armoredKey, sender) {
+	#signedKey (armoredKey, message) {
 		openpgp.readKey({ armoredKey })
 		.then(publicKey => {
-			this.#publicKey(sender.id)
+			this.#publicKey(message.author.id)
 			.then(userKey => {
 				return publicKey.verifyPrimaryUser([ userKey ]);
 			})
@@ -765,6 +760,7 @@ class Stowaway extends EventEmitter {
 			.then(res => {
 				if (res != null && res.valid) {
 					this.#updatePrivateKey(publicKey, sender);
+					this.emit('signed key', message);
 				}
 				else {
 					// emit something about lack of expected key signature so no update
@@ -818,10 +814,10 @@ class Stowaway extends EventEmitter {
 	}
 
 	// OK -- do error handling
-	#keyUpdate (armoredKey, userId) {
+	#keyUpdate (armoredKey, message) {
 		openpgp.readKey({ armoredKey })
 		.then(publicKey1 => {
-			this.#findUser(userId, (err, doc) => {
+			this.#findUser(message.author.id, (err, doc) => {
 				if (err) {
 					this.emit('database error', `Stowaway.#keyUpdate(), userId: ${userId}`);
 				}
@@ -830,7 +826,8 @@ class Stowaway extends EventEmitter {
 					.then(publicKey0 => {
 						publicKey0.update(publicKey1)
 						.then(() => {
-							this.db.update({ user_id: userId }, { $set: { public_key: publicKey0.armor() } });
+							this.db.update({ user_id: message.author.id }, { $set: { public_key: publicKey0.armor() } });
+							this.emit('key update', message);
 						})
 						.catch(err => { throw err; });
 					})
@@ -855,8 +852,8 @@ class Stowaway extends EventEmitter {
 	}
 
 
-	#keyRevocation (armoredRevocation, armoredPublicKey, user) {
-		this.#findUser(user.id, (err, doc) => {
+	#keyRevocation (armoredRevocation, armoredPublicKey, message) {
+		this.#findUser(message.author.id, (err, doc) => {
 			if (err != null) {
 				this.emit('database error', `Stowaway.#keyRevocation() user id argument: ${user.id}`);
 			}
@@ -873,11 +870,11 @@ class Stowaway extends EventEmitter {
 				})
 				.then(result => {
 					if (result.valid) {
-						this.emit('successful revocation', user.id);
-						this.db.update({ user_id: user.id }, { $set: { public_key: armoredPublicKey } });
+						this.db.update({ user_id: message.author.id }, { $set: { public_key: armoredPublicKey } });
+						this.emit('revocation', message);
 					}
 					else {
-						this.emit('blocked revocation', user, result.reason);
+						this.emit('revocation', message, result.reason);
 					}
 				})
 				.catch(err => {
