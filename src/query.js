@@ -42,9 +42,13 @@ return new Promise((resolve, reject) => {
 })
 .then(client => {
 	console.log(`logged in as ${client.user.tag}\tid: ${client.user.id}`);
-	client.on('message', message => {
-		console.log(typeof message.createdTimestamp);
-		console.log(message.createdTimestamp);
+	// client.on('message', message => {
+	// 	console.log(typeof message.createdTimestamp);
+	// 	console.log(message.createdTimestamp);
+	// });
+	https.get('https://raw.githubusercontent.com/natsu-anon/STOWAWAY/development/version.json', response => {
+		response.on('data', data => { console.log(JSON.parse(data.toString())); });
+		response.on('err', err => { throw err; });
 	});
 	// 	client.destroy();
 	// client.on('message', message => {
