@@ -125,51 +125,60 @@ class Stowaway extends EventEmitter {
 		});
 	}
 
-	// assume errors thrown by launch() are handled properly i.e. ones from openpgp.decryptKey()
-	launch (client, lockedKey, passphrase) {
-		return new Promise((resolve, reject) => {
-			openpgp.decryptKey({
-				privateKey: lockedKey,
-				passphase: passphrase
-			})
-			.then(key => {
-				this.id = client.user.id;
-				this.key = key;
-				this.fingerprint = key.getFingerprint();
-				client.on('message', message => {
-					this.#handleMessage(message);
-				});
-				client.on('channelDelete', channel => {
-					// TODO remove channel from db if in db
-				});
-				client.on('channelUpdate', (ch0, ch1) => {
-					// TODO set channel id of ch0 matches
-				});
-				this.#sendKeyUpdate = armoredPublicKey => {
-					const updateJSON = {
-						type: KEY_UPDATE,
-						publicKey: armoredPublicKey
-					};
-					this.#allChannels((err, docs) => {
-						if (err != null) {
-							this.emit('database error', 'Error while accsesing database in Stowaway.#sendKeyUpdate()');
-						}
-						else {
-							docs.forEach(doc => {
-								client.channels.fetch(doc.channel_id, false)
-								.then(channel => {
-									this.#send(channel, updateJSON);
-								})
-								.catch(err => {
-									this.emit('unexpected error', `error fetching channel with id: ${doc.channel_id} in _sendKeyUpdate():  ${err}`);
-								});
-							});
-						}
+	launch (client, key) {
+		this.id = client.user.id;
+		this.key = key;
+		this.fingerprint = key.getFingerprint();
+		client.on('message', message => {
+			if (message.channel.type === 'dm') {
+				if (message.content.toLowerCase() === 'about') {
+					let about = `Hello ${message.author.username}, I'm a STOWAWAY bot!`;
+					about += 'That means I allow my user to send & receive encrypted messages with ease.  ';
+					about += 'You can learn more about STOWAWAY and get your own at: https://github.com/natsu-anon/STOWAWAY';
+					message.reply(about);
+				}
+				else {
+					message.reply("dm me 'about' to learn about what I do");
+				}
+			}
+			else  {
+				this.#handleMessage(message);
+			}
+		});
+		client.on('channelDelete', channel => {
+			// TODO remove channel from db if in db
+		});
+		client.on('channelUpdate', (ch0, ch1) => {
+			// TODO set channel id of ch0 matches
+		});
+		this.#sendKeyUpdate = armoredPublicKey => {
+			const updateJSON = {
+				type: KEY_UPDATE,
+				publicKey: armoredPublicKey
+			};
+			this.#allChannels((err, docs) => {
+				if (err != null) {
+					this.emit('database error', 'Error while accsesing database in Stowaway.#sendKeyUpdate()');
+				}
+				else {
+					docs.forEach(doc => {
+						client.channels.fetch(doc.channel_id, false)
+						.then(channel => {
+							this.#send(channel, updateJSON);
+						})
+						.catch(err => {
+							this.emit('unexpected error', `error fetching channel with id: ${doc.channel_id} in _sendKeyUpdate():  ${err}`);
+						});
 					});
-				};
-				resolve(this);
-			})
-			.catch(reject);
+				}
+			});
+		};
+		client.user.setPresence({
+			activity: {
+				type: 'LISTENING',
+				name: ' dms for "about"'
+			},
+			status: 'online'
 		});
 	}
 
@@ -262,6 +271,7 @@ class Stowaway extends EventEmitter {
 		});
 	}
 
+	// OK to run before launch
 	// can revoke key0 without passphrase
 	// assume key1 is decrypted already
 	async revokeKey (client, key0, key1, revocationCertificate) {
@@ -276,7 +286,7 @@ class Stowaway extends EventEmitter {
 		await this.#writeKey(key.armor());
 		this.#allChannels((err, docs) => {
 			if (err) {
-				this.emit('database error', 'SingleStowaway.revokeKey()');
+				this.emit('database error', 'Stowaway.revokeKey()');
 			}
 			else {
 				const publicRevocationArmored = revocation.toPublic().armor();
