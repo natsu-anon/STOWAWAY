@@ -1,0 +1,16 @@
+{
+	"redirect": "this eats everything",
+	"version": "1.0.0",
+	"url": "https://github.com/natsu-anon/STOWAWAY/releases/tag/version-0.3.2",
+	"guide": "this shows tells how to upgrade",
+	"changelog": {
+		"body": "this text prepends the list of changes",
+		"list": [
+			"just"
+			"a"
+			"list"
+			"of"
+			"stuff"
+	]}
+
+}
