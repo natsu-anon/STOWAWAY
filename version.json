@@ -6,10 +6,10 @@
 	"changelog": {
 		"body": "this text prepends the list of changes",
 		"list": [
-			"just"
-			"a"
-			"list"
-			"of"
+			"just",
+			"a",
+			"list",
+			"of",
 			"stuff"
 	]}
 
