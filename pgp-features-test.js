@@ -30,6 +30,7 @@ async function main () {
 		curve: 'curve25519',
 		userIds: [{ name: 'bar', comment: "STOWAWAY" }],
 	});
+	// NOTE k2 comes out NEEDING to be decrypted
 	let { key: k2, privateKeyArmored: sk2, publicKeyArmored: pk2, revocationCertificate: rc2 } = await openpgp.generateKey({
 		type: 'ecc',
 		passphrase: 'foo',
@@ -37,6 +38,18 @@ async function main () {
 		userIds: [{ name: 'baz', comment: 'STOWAWAY' }],
 	});
 	console.log(k2.getFingerprint()); // it's ok to use public keys
+
+
+	// decyrpt key throws 'Error: Error decrypting private key: Incorrect key passphrase' if given wrong passphrase
+	let bruh = await openpgp.encrypt({
+		message: openpgp.Message.fromText('HENLO!'),
+		publicKeys: k2,
+		privateKeys: await openpgp.decryptKey({
+			privateKey: k2,
+			// passphrase: 'bar'
+			passphrase: 'foo'
+		})
+	});
 
 
 	/*  KEY SIGNING  */
