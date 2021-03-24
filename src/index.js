@@ -7,16 +7,18 @@ const API_TOKEN = SAVE_DIR + 'stowaway.token';
 const PRIVATE_KEY = SAVE_DIR + 'stowaway.key';
 const REVOCATION_CERTIFICATE = SAVE_DIR + 'stowaway.revoke';
 
+const VERSION = '1.0.0';
 const BANNER = `      _  __ __        __        __
  //  /_\` / / / | | | /_/ | | | /_/ /_/  //
 //  ._/ / /_/  |/|/ / /  |/|/ / /  /   //  v 1.0.0
 This software is licensed under the WTFPL`;
 
+
 if (process.argv.length > 2 && (process.argv[2] === '--channels' || process.argv[2] === '-c')) {
 	require('./list-channels.js')(API_TOKEN, Client);
 }
 else if (process.argv.length > 2 && (process.argv[2] === '--version' || process.argv[2] === '-v')) {
-	console.log('1.0.0');
+	console.log(VERSION);
 }
 else if (process.argv.length > 2 && (process.argv[2] === '--about' || process.argv[2] === '-a')) {
 	require('./about.js')(BANNER);
