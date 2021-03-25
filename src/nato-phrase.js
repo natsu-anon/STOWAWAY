@@ -30,12 +30,8 @@ const NATO = [
 ];
 
 function hash (str, length) {
-	return crypto.createHash('sha256')
-		.update(str)
-		.digest()
-		.slice(0, length)
-		.map(x => NATO[x % NATO.length])
-		.join(' ');
+	const temp = crypto.createHash('sha256').update(str).digest().slice(0, length);
+	return [...temp].map(x => NATO[x % 26]).join(' ');
 }
 
 function phrase (length=3) {
