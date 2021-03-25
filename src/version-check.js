@@ -1,15 +1,23 @@
 const https = require('https');
 
-function equals (semanticVersion0, semanticVersion1) {
-	const v0 = semanticVersion0.split('.');
-	const v1 = semanticVersion1.split('.');
-	return v0[0] === v1[0] && v0[1] === v1[1] && v0[2] === v1[2];
+const SV_RGX = /(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)/;
+
+function lessThan (semanticVersion0, semanticVersion1) {
+	const v0 = semanticVersion0.match(SV_RGX);
+	const v1 = semanticVersion1.match(SV_RGX);
+	if (v0 !== null && v1 !== null) {
+		return v0[1] < v1[1] || v0[2] < v1[2] || v0[3] < v1[3];
+	}
+	else {
+		throw Error('Non-semantic version encountered');
+	}
 }
 
 function versionCheck (url, version) {
+	console.log('checking for newer versions of STOWAWAY...');
 	return new Promise((resolve, reject) => {
 		https.get(url, response => {
-			response.on('err', reject);
+			response.on('err', () => { resolve(); });
 			response.on('data', data => {
 				try {
 					const json = JSON.parse(data.toString());
@@ -19,32 +27,37 @@ function versionCheck (url, version) {
 						.catch(reject);
 					}
 					else if (json.version != null) {
-						if (equals(version, json.version)) {
-							const res = { current: false };
+						if (lessThan(version, json.version)) {
+							console.log(`STOWAWAY version ${json.version} available!`);
 							if (json.text != null) {
-								res.text = json.text;
+								console.log(json.text);
 							}
 							if (json.changelog != null) {
-								res.changelog = {};
 								if (json.changelog.body != null) {
-									res.changelog.body = json.changelog.body;
+									console.log('\n');
+									console.log(json.changelog.body);
 								}
 								if (json.changelog.list != null && json.changelog.list.isArray()) {
-									res.changelog.list = json.changelog.list;
+									console.log('\nCHANGES');
+									console.log(json.changelog.list.join('\n- '));
 								}
 							}
-							resolve(res);
+							reject();
 						}
 						else {
-							resolve({ current: true });
+							resolve();
 						}
 					}
 					else {
-						reject();
+						throw Error('No version key found in "version.json"');
 					}
 				}
 				catch (err) {
-					reject(err);
+					console.log('\x1b[4m\x1b[31mERROR ENCOUNTERED WHILE VERSION CHECKING:\x1b[0m');
+					console.log(`\x1b[31m${err.message}\x1b[0m`);
+					console.log('\x1b[43m\x1b[30mCHECK FOR NEWER RELEASES YOURSELF.\x1b[0m');
+					console.log('Continuing in 3 seconds...');
+					setTimeout(resolve, 3000);
 				}
 			});
 		});
