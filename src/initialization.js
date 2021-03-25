@@ -3,7 +3,6 @@ const process = require('process');
 const { Client } = require('discord.js');
 
 const InitCLI = require('./init-cli.js');
-const versionCheck = require('/version-check.js');
 const dbInit = require('./database.js');
 const clientInit = require('./client.js');
 const keyInit = require('./key.js');
@@ -12,14 +11,14 @@ const Stowaway = require('./stowaway.js');
 const WARNING = `
 {black-fg}{yellow-bg}## {underline}WARNING{/underline} ##########################################{/}
 {black-fg}{yellow-bg}#                                                   #{/}
-{black-fg}{yellow-bg}#  ENSURE YOUR BINARY/SOURCE CODE IS FROM:          #{/}
+{black-fg}{yellow-bg}#  ENSURE YOUR EXECUTABLE/SOURCE CODE IS FROM:      #{/}
 {black-fg}{yellow-bg}#  {underline}github.com/natsu-anon/STOWAWAY{/underline}                   #{/}
 {black-fg}{yellow-bg}#  DO NOT SHARE stowaway.db WITH ANYONE.            #{/}
 {black-fg}{yellow-bg}#  DO NOT SHARE stowaway.key WITH ANYONE.           #{/}
 {black-fg}{yellow-bg}#  DO NOT SHARE stowaway.token WITH ANYONE.         #{/}
 {black-fg}{yellow-bg}#  DO NOT SHARE stowaway.revoke WITH ANYONE.        #{/}
 {black-fg}{yellow-bg}#                                                   #{/}
-{black-fg}{yellow-bg}#  DO NOT TRUST ANY GOVERNMENT.                     #{/}
+{black-fg}{yellow-bg}#  DO NOT TRUST THE GOVERNMENT.                     #{/}
 {black-fg}{yellow-bg}#  DO NOT TRUST CORPORATIONS & COMPANIES.           #{/}
 {black-fg}{yellow-bg}#  {underline}DO NOT TRUST GROOMERS.{/underline}                           #{/}
 {black-fg}{yellow-bg}#                                                   #{/}
@@ -45,45 +44,12 @@ const WARNING = `
  *		- if they put in the wrong passphrase three times enter the revoke sequence & generate a new key
  * 5. STOWAWAY
 */
-function initialize (BANNER, SCREEN_TITLE, VERSION_URL, VERSION, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CERTIFICATE) {
+function init (BANNER, SCREEN_TITLE, DATABASE, API_TOKEN, PRIVATE_KEY, VERSION, REVOCATION_CERTIFICATE) {
 	return new Promise((resolve, reject) => {
 		const cli = new InitCLI(BANNER, SCREEN_TITLE, process);
 		cli.log(WARNING);
-		cli.log('>checking version... ');
-		versionCheck(VERSION_URL, VERSION)
-		.then(result => {
-			if (result.current) {
-				cli.cat('{green-fg}Up to date!{/}');
-			}
-			else {
-				cli.cat('{yellow-fg}New version available!{/}');
-				cli.log(`STOWAWAY version ${result.version} available!`);
-				if (result.text != null) {
-					cli.log(result.text);
-				}
-				if (result.changelog != null && result.changelog !== {}) {
-					if (result.changelog.body != null) {
-						cli.log(result.changelog.body);
-					}
-					if (result.changelog.list != null) {
-						cli.log('CHANGES');
-						cli.log(result.changelog.list.join('\n\t-'));
-					}
-				}
-			}
-		})
-		.catch(err => {
-			if (err != null) {
-				cli.cat('{yellow-fg}Encountered unexpected error while checking the version!{/}');
-			}
-			else {
-				cli.cat(`{red-fg}${err.message}{/}`);
-			}
-		})
-		.finally(() => {
-			cli.log('>initializing database... ');
-			return dbInit(DATABASE);
-		})
+		cli.log('>initializing database... ');
+		dbInit(DATABASE)
 		.then(db => {
 			cli.cat('{green-fg}DONE!{/}');
 			cli.log('>initializing discord client... ');
@@ -102,19 +68,20 @@ function initialize (BANNER, SCREEN_TITLE, VERSION_URL, VERSION, DATABASE, API_T
 			cli.log('>initializing pgp keys... ');
 			const stowaway = new Stowaway(db, PRIVATE_KEY, VERSION);
 			return new Promise(res => {
-				keyInit(PRIVATE_KEY, REVOCATION_CERTIFICATE, stowaway, fs, cli)
-				.then(({ key, stowaway }) => { // key is decrypted
+				keyInit(PRIVATE_KEY, REVOCATION_CERTIFICATE, stowaway, client, fs, cli)
+				.then(key => { // key is decrypted
 					cli.cat('{green-fg}DONE!{/}');
-					res({ stowaway, client, key });
+					cli.log('{inverse}STOWING AWAY{/}');
+					setTimeout(() => {
+						cli.destroy();
+						res({ stowaway, client, key });
+					}, 200);
 				})
 				.catch(reject);
 			});
 		})
-		.then(resolve)
-		.finally(() => {
-			cli.destroy();
-		});
+		.then(resolve);
 	});
 }
 
-module.exports = initialize;
+module.exports = init;
