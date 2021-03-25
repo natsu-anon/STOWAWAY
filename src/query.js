@@ -6,6 +6,7 @@ const Datastore = require('nedb');
 const { Client } = require('discord.js');
 const ChannelsModel = require('./models/channels-model.js');
 const ChannelsMediator = require('./mediators/channels-mediator.js');
+const phrase = require('./nato-phrase.js');
 const API_TOKEN = './token DO NOT SHARE';
 const DATABASE = './stowaway.db';
 const REGEX = /^#{4} STOWAWAY #{4}$/m;
@@ -23,6 +24,8 @@ https.get("https://api.github.com/repos/octocat/hello-world/releases", options, 
 	response.on('error', err => { throw err; });
 });
 */
+
+console.log(phrase());
 
 const db = new Datastore({ filename: DATABASE, autoload: true });
 db.persistence.setAutocompactionInterval(5000);
