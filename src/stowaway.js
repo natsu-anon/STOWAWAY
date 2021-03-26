@@ -723,7 +723,7 @@ class Stowaway extends EventEmitter {
 								// check the revocations for a key fingerprint that matches your saved key
 								Promise.all(revocations.map(revocation => {
 									return openpgp.readKey({ armoredKey: revocation });
-								})
+								}))
 								.then(revokingKeys => {
 									const revokingKey = revokingKeys.find(x => savedKey.hasSameFingerprintAs(x));
 									 return this.#revocation(revokingKey, savedKey, publicKey);
