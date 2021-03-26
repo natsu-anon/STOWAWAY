@@ -282,8 +282,7 @@ class Stowaway extends EventEmitter {
 		const revocations = await this.#revocations();
 		revocation = await revocation.signPrimaryUser(revocations.concat(key1));
 		this.db.insert({ revocation: revocation.armor() });
-		const key = key.signPrimaryUser(revocations.concat(revocation));
-		await this.#writeKey(key.armor());
+		const key = key1.signPrimaryUser(revocations.concat(revocation));
 		this.#allChannels((err, docs) => {
 			if (err) {
 				this.emit('database error', 'Stowaway.revokeKey()');
