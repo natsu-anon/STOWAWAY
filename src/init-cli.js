@@ -56,6 +56,7 @@ class BlessedInit {
 			width: '100%',
 			height: 1,
 			tags: true,
+			top: '100%-1',
 			fg: 'black',
 			bg: 'white',
 			content: 'Press [Ctrl-C] to quit'
@@ -76,6 +77,7 @@ class BlessedInit {
 			},
 		});
 		screen.key(['C-c'], () => {
+			throw Error('fug');
 			return process.exit(0);
 		});
 		screen.render();
@@ -119,7 +121,7 @@ class BlessedInit {
 			width: 80,
 			top: 'center',
 			left: 'center',
-			content: "loading...",
+			content: 'loading...',
 			padding: 1,
 			/* NOT WORKING ???
 			scrollable: true,
