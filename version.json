@@ -1,5 +1,5 @@
 {
-	"redirect": "this eats everything",
+	"ignore": { "redirect": "this eats everything" },
 	"version": "1.0.0",
 	"text": "this shows tells how to upgrade",
 	"changelog": {
