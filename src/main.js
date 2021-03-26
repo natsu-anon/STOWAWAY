@@ -1,6 +1,7 @@
 const fs = require('fs');
 const process = require('process');
 const { Client } = require('discord.js');
+const versionCheck = require('/version-check.js');
 
 const initialize = require('./initialization.js');
 
@@ -11,10 +12,14 @@ const VERSION_URL = 'https://raw.githubusercontent.com/natsu-anon/STOWAWAY/devel
 const SCREEN_TITLE = 'ＳＴＯＷＡＷＡＹ';
 
 function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CERTIFICATE) {
-	initialize(BANNER, SCREEN_TITLE, VERSION_URL, VERSION, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CERTIFICATE)
+	let cli;
+	versionCheck(VERSION_URL, VERSION)
+	.then(() => {
+		return initialize(BANNER, SCREEN_TITLE, DATABASE, API_TOKEN, PRIVATE_KEY, VERSION, REVOCATION_CERTIFICATE);
+	})
 	.then(({ stowaway, client, key }) => {
 		const model = new SingleChannel();
-		const cli = new SingleCLI(SCREEN_TITLE, '{bold}[Ctrl-C] to quit{/bold}', `${channel.guild.name} {green-fg}#${channel.name}{/}`, client.user.tag);
+		cli = new SingleCLI(SCREEN_TITLE, '{bold}[Ctrl-C] to quit{/bold}', `${channel.guild.name} {green-fg}#${channel.name}{/}`, client.user.tag);
 		stowaway.on('message', model.message);
 		stowaway.on('error', err => { cli.error(err); });
 		stowaway.on('timestamp', (ts, id) => { model.timestamp(ts, id); });
@@ -143,8 +148,12 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 		});
 	})
 	.catch(err => {
-		cli.destroy();
-		console.error(err);
+		if (cli != null) {
+			cli.destroy();
+		}
+		if (err != null) {
+			console.error(err);
+		}
 		console.log('Pass --help to see usage information');
 		console.log('[Ctrl-C] to quit');
 	});
