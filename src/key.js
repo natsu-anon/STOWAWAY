@@ -24,13 +24,68 @@ function writeFile (file, data, encoding='utf8') {
 	});
 }
 
-function existingKey (armoredKey, keyPath, revocationPath, stowaway, client, cli) {
+function existingKey (lockedKey, keyPath, revocationPath, stowaway, client, cli) {
+	const challenge = phrase();
 	return new Promise((resolve, reject) => {
-		resolve('TODO!');
+		cli.toggleQuestion({
+			text: 'Enter passphrase then press [Enter] to continue. Press [Escape] to begin key revocation',
+			censor: true,
+			callback: input => {
+				openpgp.decryptKey({
+					privateKey: lockedKey,
+					passphrase: input
+				})
+				.then(resolve)
+				.catch(() => {
+					reject(Error('Failed to decrypt key!  Consider revoking your key if you have forgotten your password!'));
+				});
+			}
+		},
+		{
+			text: `Enter '${challenge} then press [Enter] to revoke your key {underline}THIS IS IRREVERSIBLE{/underline}. Press [Escape] to decrypt key.`,
+			callback: input => {
+				if (input.toUpperCase() === challenge) {
+					// read rcert from path
+					fs.readFile(revocationPath, 'utf8', (err, data) => {
+						if (err != null) {
+							reject(Error('Error while attempting to read armored revocation certificate'));
+						}
+						else {
+							// generate new key (DON'T WRITE TO FILE)
+							// stowaway revoke
+							// write new key & revocation cert to file
+							this.generateKey(keyPath, revocationPath, client.user.id, cli, false)
+							.then(({ key, revocationCertificate }) => {
+								openpgp.readKey({ armoredKey: data })
+								.then(certificate => {
+									return stowaway.revoke(client, lockedKey, key, certificate);
+								})
+								.then(() => {
+									return Promise.all([
+										writeFile(keyPath, key.armor()),
+										writeFile(revocationPath, revocationCertificate)
+									]);
+								})
+								.then(() => {
+									resolve({ key, revocationCertificate });
+								})
+								.catch(reject);
+							})
+							.catch(reject);
+						}
+					});
+				}
+				else {
+					this.existingKey(lockedKey, keyPath, revocationPath, stowaway, client, cli)
+					.then(resolve)
+					.catch(reject);
+				}
+			}
+		}, 'escape');
 	});
 }
 
-function generateKey (keyPath, revocationPath, userId, cli) {
+function generateKey (keyPath, revocationPath, userId, cli, writeFlag) {
 	return new Promise((resolve, reject) => {
 		cli.question('Enter a passphrase to encrypt your key with then press [Enter] to continue', true)
 		.then(phrase0 => {
@@ -55,14 +110,19 @@ function generateKey (keyPath, revocationPath, userId, cli) {
 							console.log(WARNING);
 							console.question('After reading the above press [Enter] to continue...')
 							.then(() => {
-								return Promise.all([
-									writeFile(keyPath, unlockedKey.armor()),
-									writeFile(revocationPath, revocationCertificate)
-								])
-								.then(() => {
-									resolve(unlockedKey);
-								})
-								.catch(reject);
+								if (writeFlag) {
+									return Promise.all([
+										writeFile(keyPath, key.armor()),
+										writeFile(revocationPath, revocationCertificate)
+									])
+									.then(() => {
+										resolve({ unlockedKey, revocationCertificate });
+									})
+									.catch(reject);
+								}
+								else {
+									resolve({ key: unlockedKey, revocationCertificate });
+								}
 							});
 						})
 						.catch(reject);
@@ -71,7 +131,7 @@ function generateKey (keyPath, revocationPath, userId, cli) {
 				}
 				else {
 					console.log('passphrases do not match!  Trying again...');
-					generateKey(keyPath, revocationPath, userId, cli)
+					generateKey(keyPath, revocationPath, userId, cli, writeFlag)
 					.then(resolve)
 					.catch(reject);
 				}
@@ -92,7 +152,10 @@ function init (keyPath, revocationPath, stowaway, client, cli) {
 						reject(err);
 					}
 					else {
-						existingKey(data, revocationPath, stowaway, client, cli)
+						openpgp.readKey({ armoredKey: data })
+						.then(key => {
+							return existingKey(key, revocationPath, stowaway, client, cli);
+						})
 						.then(resolve)
 						.catch(reject);
 					}
@@ -101,8 +164,8 @@ function init (keyPath, revocationPath, stowaway, client, cli) {
 			else {
 				cli.cat('{yellow-fg}No existing keys found!{/}');
 				cli.log('\t- Generating new keys...');
-				generateKey(client.user.id, cli)
-				.then(resolve)
+				generateKey(client.user.id, cli, true)
+				.then(({ key }) => { resolve(key); })
 				.catch(reject);
 			}
 		});
