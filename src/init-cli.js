@@ -34,8 +34,8 @@ const spinner = [
 ];
 
 class BlessedInit {
-	constructor (banner,  title, process) {
-		let screen = blessed.screen({
+	constructor (banner, title, process) {
+		const screen = blessed.screen({
 			smartcsr: true,
 			autopadding: true,
 			tabSize: 2,
@@ -47,9 +47,18 @@ class BlessedInit {
 		this.background = blessed.box({
 			parent: screen,
 			width: '100%',
-			height: '100%',
+			height: '100%-1',
 			tags: true,
 			content: this.content[0],
+		});
+		blessed.box({
+			parent: screen,
+			width: '100%',
+			height: 1,
+			tags: true,
+			fg: 'black',
+			bg: 'white',
+			content: 'Press [Ctrl-C] to quit'
 		});
 		this.popup = blessed.box({
 			parent: screen,
@@ -65,7 +74,7 @@ class BlessedInit {
 			border : {
 				type: 'line',
 			},
-		})
+		});
 		screen.key(['C-c'], () => {
 			return process.exit(0);
 		});
@@ -78,42 +87,26 @@ class BlessedInit {
 	}
 
 	question (prompt, censor=false) {
-		let textbox;
-		if (censor) {
-			textbox = blessed.textbox({
-				parent: this.screen,
-				left: 'center',
-				top: 'center',
-				tags: true,
-				width: 80,
-				height: 3,
-				inputOnFocus: true,
-				label: ` ${prompt} `,
-				border: { type: 'line' },
-				censor: true,
-			});
-		}
-		else {
-			textbox = blessed.textbox({
-				parent: this.screen,
-				left: 'center',
-				top: 'center',
-				tags: true,
-				width: 80,
-				height: 3,
-				inputOnFocus: true,
-				label: ` ${prompt} `,
-				border: { type: 'line' },
-			});
-		}
+		const textbox = blessed.textbox({
+			parent: this.screen,
+			left: 'center',
+			top: 'center',
+			tags: true,
+			width: 80,
+			height: 3,
+			inputOnFocus: true,
+			label: ` ${prompt} `,
+			border: { type: 'line' },
+			censor: censor,
+		});
 		textbox.focus();
 		textbox.setFront();
 		this.screen.render();
-		return new Promise((resolve, reject) => {
-			textbox.once('submit', (val) => {
+		return new Promise(resolve => {
+			textbox.once('submit', value => {
 				textbox.destroy();
 				this.screen.render();
-				resolve(val);
+				resolve(value);
 			});
 		});
 	}
@@ -169,7 +162,7 @@ class BlessedInit {
 			this.screen.render();
 		}
 		else {
-			log(text);
+			this.log(text);
 		}
 	}
 
@@ -180,7 +173,7 @@ class BlessedInit {
 			this.screen.render();
 		}
 		else {
-			log(text);
+			this.log(text);
 		}
 	}
 
@@ -188,19 +181,50 @@ class BlessedInit {
 		this.popup.show();
 		this.popup.setLabel(label);
 		let timeout;
-		const cycle = (i) => {
+		const cycle = i => {
 			this.popup.setContent(spinner[i++]);
 			this.screen.render();
 			timeout = setTimeout(() => {
 				cycle(i % spinner.length);
 			}, 40);
-		}
+		};
 		cycle(0);
 		return () => {
 			clearTimeout(timeout);
 			this.popup.hide();
 			this.screen.render();
 		};
+	}
+
+	toggleQuestion (prompt0, prompt1, toggleKey) {
+		let flag = true;
+		const toggleBox = prompt => {
+			const box = blessed.textbox({
+				parent: this.screen,
+				left: 'center',
+				top: 'center',
+				tags: true,
+				width: 80,
+				height: 3,
+				inputOnFocus: true,
+				label: ` ${prompt.text} `,
+				border: { type: 'line' },
+				censor: prompt.censor == null ? true : prompt.censor,
+			});
+			box.focus();
+			this.screen.render();
+			box.key([toggleKey], () => {
+				box.destroy();
+				flag ? toggleBox(prompt1) : toggleBox(prompt0);
+				flag = !flag;
+			});
+			box.once('submit', value => {
+				box.destroy();
+				this.screen.render();
+				prompt.callback(value);
+			});
+		};
+		toggleBox(prompt0);
 	}
 
 	render () {
