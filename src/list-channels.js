@@ -1,11 +1,12 @@
 const fs = require('fs');
+const { Client } = require('discord.js');
 const process = require('process');
 
 function log (text, pad=0) {
 	console.log(text.padStart(text.length + pad));
 }
 
-module.exports = (token, Client) => {
+module.exports = (token) => {
 	new Promise((resolve, reject) => {
 		const client = new Client();
 		client.once('ready', () => {
