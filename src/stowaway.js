@@ -274,33 +274,39 @@ class Stowaway extends EventEmitter {
 	// OK to run before launch
 	// can revoke key0 without passphrase
 	// assume key1 is decrypted already
-	async revokeKey (client, key0, key1, revocationCertificate) {
-		let { privateKey: revocation } = await openpgp.revokeKey({
-			key0,
-			revocationCertificate
-		});
-		const revocations = await this.#revocations();
-		revocation = await revocation.signPrimaryUser(revocations.concat(key1));
-		this.db.insert({ revocation: revocation.armor() });
-		const key = key1.signPrimaryUser(revocations.concat(revocation));
-		this.#allChannels((err, docs) => {
-			if (err) {
-				this.emit('database error', 'Stowaway.revokeKey()');
-			}
-			else {
-				const publicRevocationArmored = revocation.toPublic().armor();
-				const publicKeyArmored = key.toPublic().armor();
-				docs.forEach(doc => {
-					client.channels.fetch(doc.channel_id, false)
-					.then(channel => {
-						this.#send(channel, attachJSON({
-							type: REVOCATION,
-							revocation: publicRevocationArmored,
-							publicKey: publicKeyArmored
-						}));
+	revokeKey (client, key0, key1, revocationCertificate) {
+		return new Promise(resolve => {
+			this.#allChannels(async (err, docs) => {
+				if (err != null) {
+					this.emit('database error', 'Stowaway.revokeKey()');
+				}
+				else if (docs.length > 0) {
+					let { privateKey: revocation } = await openpgp.revokeKey({
+						key0,
+						revocationCertificate
 					});
-				});
-			}
+					const revocations = await this.#revocations();
+					revocation = await revocation.signPrimaryUser(revocations.concat(key1));
+					this.db.insert({ revocation: revocation.armor() });
+					const key = key1.signPrimaryUser(revocations.concat(revocation));
+					const publicRevocationArmored = revocation.toPublic().armor();
+					const publicKeyArmored = key.toPublic().armor();
+					docs.forEach(doc => {
+						client.channels.fetch(doc.channel_id, false)
+						.then(channel => {
+							this.#send(channel, attachJSON({
+								type: REVOCATION,
+								revocation: publicRevocationArmored,
+								publicKey: publicKeyArmored
+							}));
+						});
+					});
+					resolve(key);
+				}
+				else {
+					resolve(key1);
+				}
+			});
 		});
 	}
 
@@ -556,7 +562,7 @@ class Stowaway extends EventEmitter {
 								case HANDSHAKE:
 									if (data.publicKey != null && data.respond != null
 										&& (typeof data.respond) === 'boolean'
-										&& data.revocations != null && data.revocations.isArray())
+										&& data.revocations != null && Array.isArray(data.revocations))
 									{
 										this.#handshake(data.publicKey, data.respond, data.revocations, message); // may cauase a handhsake
 									}
