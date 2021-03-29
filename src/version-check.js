@@ -1,6 +1,14 @@
 const https = require('https');
+const process = require('process');
 
 const SV_RGX = /(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)/;
+
+function countdown (ms) {
+	process.stdout.write(`Continuing in ${ms/1000} seconds...\r`);
+	if (ms - 100 > 0) {
+		setTimeout(countdown, 10, ms - 100);
+	}
+}
 
 function lessThan (semanticVersion0, semanticVersion1) {
 	const v0 = semanticVersion0.match(SV_RGX);
@@ -14,53 +22,59 @@ function lessThan (semanticVersion0, semanticVersion1) {
 }
 
 function versionCheck (url, version) {
-	console.log('checking for newer versions of STOWAWAY...');
-	return new Promise((resolve, reject) => {
-		https.get(url, response => {
-			response.on('err', () => { resolve(); });
-			response.on('data', data => {
-				try {
-					const json = JSON.parse(data.toString());
-					if (json.redirect != null) {
-						versionCheck(json.redirect)
-						.then(resolve)
-						.catch(reject);
-					}
-					else if (json.version != null) {
-						if (lessThan(version, json.version)) {
-							console.log(`STOWAWAY version ${json.version} available!`);
-							if (json.text != null) {
-								console.log(json.text);
-							}
-							if (json.changelog != null) {
-								if (json.changelog.body != null) {
-									console.log('\n');
-									console.log(json.changelog.body);
+	console.log('>checking for newer versions of STOWAWAY...');
+	return new Promise(resolve => {
+		const handleError = e => {
+			let result = '\x1b[4m\x1b[31mERROR ENCOUNTERED WHILE VERSION CHECKING:\x1b[0m\n';
+			result += `\n\x1b[31m${e.message}\x1b[0m\n`;
+			result += '\x1b[43m\x1b[30mCHECK FOR NEWER RELEASES YOURSELF.\x1b[0m';
+			resolve(result);
+		};
+		try {
+			https.get(url, response => {
+				response.on('err', handleError);
+				response.on('data', data => {
+					try {
+						const json = JSON.parse(data.toString());
+						if (json.redirect != null) {
+							versionCheck(json.redirect, version)
+							.then(resolve);
+						}
+						else if (json.version != null) {
+							if (lessThan(version, json.version)) {
+								let result = `\x1b[42m\x1b[30mSTOWAWAY version ${json.version} available!\x1b[0m\n\n`;
+								if (json.text != null) {
+									result += json.text;
 								}
-								if (json.changelog.list != null && json.changelog.list.isArray()) {
-									console.log('\nCHANGES');
-									console.log(json.changelog.list.join('\n- '));
+								if (json.changelog != null) {
+									if (json.changelog.body != null) {
+										result += `\n\n${json.changelog.body}`;
+									}
+									if (json.changelog.list != null && Array.isArray(json.changelog.list) && json.changelog.list.length > 0) {
+										result += '\n\n\x1b[4mCHANGES\x1b[0m';
+										json.changelog.list[0] = '\n- ' + json.changelog.list[0];
+										result += json.changelog.list.join('\n- ');
+									}
 								}
+								resolve(result);
 							}
-							reject();
+							else {
+								resolve();
+							}
 						}
 						else {
-							resolve();
+							throw Error('No version key found in "version.json"');
 						}
 					}
-					else {
-						throw Error('No version key found in "version.json"');
+					catch (err) {
+						handleError(err);
 					}
-				}
-				catch (err) {
-					console.log('\x1b[4m\x1b[31mERROR ENCOUNTERED WHILE VERSION CHECKING:\x1b[0m');
-					console.log(`\x1b[31m${err.message}\x1b[0m`);
-					console.log('\x1b[43m\x1b[30mCHECK FOR NEWER RELEASES YOURSELF.\x1b[0m');
-					console.log('Continuing in 3 seconds...');
-					setTimeout(resolve, 3000);
-				}
+				});
 			});
-		});
+		}
+		catch (error) {
+			handleError(error);
+		}
 	});
 }
 
