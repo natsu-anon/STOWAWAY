@@ -4,7 +4,7 @@ function badtoken (tokenPath) {
 
 function init (tokenPath, fs, cli, Client,) {
 	const clientLogin = function (token) {
-		const stop = cli.spin("logging in with token");
+		const stop = cli.spin('logging in with token');
 		return new Promise((resolve, reject) => {
 			const client = new Client();
 			client.once('ready', () => {
@@ -12,40 +12,40 @@ function init (tokenPath, fs, cli, Client,) {
 				resolve(client);
 			});
 			client.login(token)
-			.catch(err => {
+			.catch(() => {
 				stop();
 				reject(badtoken(tokenPath));
 			});
 		});
 	};
 	return new Promise((resolve, reject) => {
-		cli.log("\t- checking for existing discord bot token... ");
-		fs.access(tokenPath, fs.constants.R_OK, (err) => {
+		cli.log('\t- checking for existing discord bot token... ');
+		fs.access(tokenPath, fs.constants.R_OK, err => {
 			if (err == null) {
-				cli.cat("{green-fg}Found a token file!{/}")
+				cli.cat('{green-fg}Found a token file!{/}');
 				fs.readFile(tokenPath, 'utf8', (err, data) => {
 					if (err) {
 						reject(err);
 					}
 					else {
-						cli.log("\t- attempting to log in with existing... ");
+						cli.log('\t- attempting to log in with existing token... ');
 						clientLogin(data).then(resolve).catch(reject);
 						// clientLogin(data, tokenPath, Client).then(resolve).catch(reject);
 					}
 				});
 			}
 			else {
-				cli.cat("{yellow-fg}No token file found{/}")
-				cli.log("\t- Requesting token... ");
-				cli.question("Enter a discord bot token then press [ENTER] to continue", true)
+				cli.cat('{yellow-fg}No token file found{/}');
+				cli.log('\t- Requesting token... ');
+				cli.question('Enter a discord bot token then press [ENTER] to continue', true)
 				.then(token => {
 					return clientLogin(token);
 					// return clientLogin(token, tokenPath, Client);
 				})
-				.then((client) => {
+				.then(client => {
 					// cli.log('{green-fg}Supplied token accepted!{/}');
 					// console.log("\x1b[1m\x1b[32mSupplied token accepted!\x1b[0m");
-					fs.writeFile(tokenPath, client.token, 'utf8', (err) => {
+					fs.writeFile(tokenPath, client.token, 'utf8', err => {
 						if (err) {
 							reject(err);
 						}
@@ -57,7 +57,7 @@ function init (tokenPath, fs, cli, Client,) {
 				.catch(reject);
 			}
 		});
-	})
+	});
 }
 
 module.exports = init;
