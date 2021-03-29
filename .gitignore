@@ -1,6 +1,9 @@
 # the DO_NOT_SHARE dir
 DO_NOT_SHARE/
 
+# the revocation certificate
+stowaway.revoke
+
 # discord bot token
 token*
 
