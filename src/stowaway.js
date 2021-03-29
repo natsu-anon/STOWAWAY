@@ -276,7 +276,10 @@ class Stowaway extends EventEmitter {
 	// assume key1 is decrypted already
 	revokeKey (client, key0, key1, revocationCertificate) {
 		return new Promise(resolve => {
-			this.#allChannels(async (err, docs) => {
+			this.db.find({ $or : [
+				{ channel_id: { $exists: true } }, { handshake_id: { $exists: true } },
+				{ user_id: { $exists: true } }, { public_key: { $exists: true } }
+			] }, async(err, docs) => {
 				if (err != null) {
 					this.emit('database error', 'Stowaway.revokeKey()');
 				}
@@ -291,7 +294,7 @@ class Stowaway extends EventEmitter {
 					const key = key1.signPrimaryUser(revocations.concat(revocation));
 					const publicRevocationArmored = revocation.toPublic().armor();
 					const publicKeyArmored = key.toPublic().armor();
-					docs.forEach(doc => {
+					docs.filter(x => x.channel_id != null).forEach(doc => {
 						client.channels.fetch(doc.channel_id, false)
 						.then(channel => {
 							this.#send(channel, attachJSON({
