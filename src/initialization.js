@@ -44,12 +44,15 @@ const WARNING = `
  *		- if they put in the wrong passphrase three times enter the revoke sequence & generate a new key
  * 5. STOWAWAY
 */
-function init (BANNER, SCREEN_TITLE, DATABASE, API_TOKEN, PRIVATE_KEY, VERSION, REVOCATION_CERTIFICATE) {
+function init (BANNER, SCREEN_TITLE, DATABASE, API_TOKEN, PRIVATE_KEY, VERSION, REVOCATION_CERTIFICATE, versionText) {
 	return new Promise((resolve, reject) => {
 		const cli = new InitCLI(BANNER, SCREEN_TITLE, process);
-		cli.log(WARNING);
-		cli.log('>initializing database... ');
-		dbInit(DATABASE)
+		(versionText != null ? cli.pauseLog(versionText) : Promise.resolve())
+		.then(() => {
+			cli.log(WARNING);
+			cli.log('>initializing database... ');
+			return dbInit(DATABASE);
+		})
 		.then(db => {
 			cli.cat('{green-fg}DONE!{/}');
 			cli.log('>initializing discord client... ');
@@ -58,29 +61,39 @@ function init (BANNER, SCREEN_TITLE, DATABASE, API_TOKEN, PRIVATE_KEY, VERSION, 
 				.then(client => {
 					client.user.setStatus('dnd');
 					cli.cat('{green-fg}DONE!{/}');
-					cli.log(`>logged in as {black-fg}{green-bg}${client.user.tag}{/}`);
+					cli.log(`>logged in as {green-fg}{underline}${client.user.tag}{/}`);
 					res({ db, client });
 				})
-				.catch(reject);
+				.catch(err => {
+					cli.destroy();
+					reject(err);
+				});
 			});
 		})
 		.then(({ db, client }) => {
-			cli.log('>initializing pgp keys... ');
+			cli.log('>initializing PGP key... ');
 			const stowaway = new Stowaway(db, PRIVATE_KEY, VERSION);
 			return new Promise(res => {
-				keyInit(PRIVATE_KEY, REVOCATION_CERTIFICATE, stowaway, client, fs, cli)
+				keyInit(PRIVATE_KEY, REVOCATION_CERTIFICATE, stowaway, client, cli)
 				.then(key => { // key is decrypted
 					cli.cat('{green-fg}DONE!{/}');
-					cli.log('{inverse}STOWING AWAY{/}');
+					cli.log('>{black-fg}{green-bg}STOWING AWAY!{/}');
 					setTimeout(() => {
 						cli.destroy();
 						res({ stowaway, client, key });
-					}, 200);
+					}, 500);
 				})
-				.catch(reject);
+				.catch(err => {
+					cli.destroy();
+					reject(err);
+				});
 			});
 		})
-		.then(resolve);
+		.then(resolve)
+		.catch(err => {
+			cli.destroy();
+			reject(err);
+		});
 	});
 }
 
