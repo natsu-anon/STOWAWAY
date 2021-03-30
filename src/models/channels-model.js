@@ -36,15 +36,21 @@ class ChannelsModel extends Model {
 		return this.#data;
 	}
 
-	async initialize (stowaway, client, db) {
-		console.log('initializing channels model');
+	async initialize (stowaway, client, db, verbose=false) {
+		if (verbose) {
+			console.log('initializing channels model');
+		}
 		await this.#initCache(client, db);
-		console.log('cache initialized');
+		if (verbose) {
+			console.log('cache initialized');
+		}
 		this.#initClient(client, db);
 		this.#initStowaway(stowaway);
 		this.#launchChannel = await this.#getLaunchChannel(db);
 		this.db = db;
-		console.log('launch channel set');
+		if (verbose) {
+			console.log('launch channel set');
+		}
 		return this;
 	}
 
@@ -123,12 +129,14 @@ class ChannelsModel extends Model {
 
 	#getLaunchChannel (db) {
 		return new Promise((resolve, reject) => {
-			db.findOne({ last_channel: { $exists: true } }, (_, doc) => {
-				if (doc != null) {
+			db.findOne({ last_channel: { $exists: true } }, (err, doc) => {
+				if (err != null) {
+					reject();
+				}
+				else if (doc != null) {
 					const channel = this.getChannel(doc.last_channel);
 					if (channel !== undefined) {
 						resolve(channel.id);
-						return;
 					}
 					else {
 						reject(Error('Unexpected error in ChannelsModel.#getLaunchChannel()'));
