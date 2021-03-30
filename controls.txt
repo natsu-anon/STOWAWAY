@@ -13,6 +13,8 @@ all states:
 	[Ctrl-A] about
 	[Ctrl-R] initiate revoke sequence
 	[Ctrl-H] to show controls/basic gestalt for current state
+	[`] to jump to notification item (unless writing)
+	[Number] jump to previously saved channel (if unavailable do nothing) & enter read state (unless writing)
 
 
 navigation state:
@@ -20,25 +22,22 @@ navigation state:
 	- NOTE: channels you've handshaked in are white, unhandshaked channels are yellow
 	- NOTE: saved channels are green w/ jump number to the side
 	- NOTE: currently selected channel is inverted w/ > to the side
-	[space] begin reading selected channel if already handshaken/o.w. ask if they want to really want to enter & handshake
+	[Enter] begin reading selected channel if already handshaken/o.w. ask if they want to really want to enter & handshake
 	[W/S] navigate to prev/next channel (or server if at first/last channel of current server)
 	[Ctrl-W/Ctrl-S] jump to prev/next handshaked channel (loops)
 	[A/D] navigate to first channel of prev/next server (loops)
 	[Ctrl + Number] to save a jump to curently selected channel
-	[Number] jump to previously saved channel (if unavailable do nothing) & enter read state
 	[Tab] enter read state
 
 read state:
 	- NOTE: unverified messages are entirely yellow
 	- NOTE: messages from signed keys have sender & date underlined
 	[W/S] scroll up/down
-	[F] enter member view for channel
-	[Ctrl-W] jump to top
-	[Ctrl-S] jump to bottom
+	[Ctrl-W/Ctrl-S] jump to top/bottom
+	[M] enter member view for channel
 	[H] to repeat handshake protocol.
 	[Enter] begin writing public message
 	[Ctrl-Enter] begin writing trusted message (only to signed keys)
-	[Number] jump to previously saved channel (if unavailable do nothing)
 	[Tab] enter navigation state
 
 write state:
@@ -57,7 +56,7 @@ member state
 	[W/S] scroll up/down - show known signers in a sidebar, highlight those whose key you have also signed
 	[escape] return to previous state (read state)
 	[enter] change bot nickname (if possible)
-	[ctrl-enter] sign currently selected (unless already signed)
+	[Ctrl-Enter] sign currently selected (unless already signed)
 		-- WARN THAT THIS IS IRREVOCABLE
 		-- make user enter random phrase to sign
 
