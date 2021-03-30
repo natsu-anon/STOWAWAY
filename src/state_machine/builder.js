@@ -1,121 +1,72 @@
-// const HFSM = require('./hfsm.js');
-const foo = require('./fsm.js');
+const FSM = require('./fsm.js');
 
-/*
-class HFSMBuilder {
-	set navigateUpdate (value) {
-		this._navigateUpdate = value;
-	}
-
-	set serverModel (value) {
-		this._serverModel = value;
-	}
-
-	set dmModel (value) {
-		this._dmModel = value;
-	}
-
-	set enterNavigate (value) {
-		this._enterNavigate = value;
-		return this;
-	}
-
-	set exitNavigate (value) {
-		this._exitNavigate = value;
-		return this;
-	}
-
-	set enterNavServer (value) {
-		this._enterNavServer = value;
-		return this;
-	}
-
-	set exitNavServer (value) {
-		this._exitNavServer = value;
-		return this;
-	}
-
-	set enterNavDM (value) {
-		this._enterNavDM = value;
-		return this;
-	}
-
-	set exitNavDM (value) {
-		this._exitNavDm = value;
-		return this;
-	}
-
-	set enterMessage (value) {
-		this._enterMessage = value;
-		return this;
-	}
-
-	set exitMessage (value) {
-		this._exitMessage = value;
-		return this;
-	}
-
-	set enterInput (value) {
-		this._enterInput = value;
-		return this;
-	}
-
-	set exitInput (value) {
-		this._exitInput = value;
-		return this;
-	}
-
-	build () {
-		const hfsm =  new HFSM({
-			enterServer: this._enterNavServer,
-			exitServer: this._exitNavServer,
-			enterDM: this._enterNavDM,
-			exitDM: this._exitNavDM
-		});
-		hfsm.on('enter message', this._enterMessage);
-		hfsm.on('exit message', this._exitMessage);
-		hfsm.on('enter input', this._enterInput);
-		hfsm.on('exit message', this._exitInput);
-		hfsm.launch();
-		reutrn hfsm;
-	}
-}
-*/
+function _ () {}
 
 class FSMBuilder {
+	#navigate;
+	#read;
+	#write;
+	#member;
+	#revoke;
+	#about;
+	#help;
+
 	constructor () {
-		this._enterRead = () => {};
-		this._exitRead = () => {};
-		this._enterWrite = () => {};
-		this._exitWrite = () => {};
+		this.#navigate = { enter: _, exit: _ };
+		this.#read = { enter: _, exit: _ };
+		this.#write = { enter: _, exit: _ };
+		this.#member = { enter: _, exit: _ };
+		this.#revoke = { enter: _, exit: _ };
+		this.#about = { enter: _, exit: _ };
+		this.#help = { enter: _, exit: _ };
 	}
 
-	enterRead (value) {
-		this._enterRead = value;
+	navigate (enter, exit=_) {
+		this.#navigate = { enter, exit };
 		return this;
 	}
 
-	enterWrite (value) {
-		this._enterWrite = value;
+	read (enter, exit=_) {
+		this.#read = { enter, exit };
 		return this;
 	}
 
-	exitRead (value) {
-		this._exitRead = value;
+	write (enter, exit=_) {
+		this.#read = { enter, exit };
 		return this;
 	}
 
-	exitWrite (value) {
-		this._exitWrite = value;
+	member (enter, exit=_) {
+		this.#member = { enter, exit };
+		return this;
+	}
+
+	revoke (enter, exit=_) {
+		this.#revoke = { enter, exit };
+		return this;
+	}
+
+	about (enter, exit=_) {
+		this.#about = { enter, exit };
+		return this;
+	}
+
+	help (enter, exit=_) {
+		this.#help = { enter, exit };
 		return this;
 	}
 
 	build () {
-		return new foo(this._enterRead, this._enterWrite, this._exitRead, this._exitWrite);
+		return FSM({
+			navigate: this.#navigate,
+			read: this.#read,
+			write: this.#write,
+			member: this.#member,
+			revoke: this.#revoke,
+			about: this.#about,
+			help: this.#help
+		});
 	}
 }
 
-module.exports = {
-	// HFSM: HFSMBuilder,
-	FSMBuilder: FSMBuilder,
-};
+module.exports = FSMBuilder;
