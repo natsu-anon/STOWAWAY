@@ -80,7 +80,7 @@ function init (BANNER, SCREEN_TITLE, DATABASE, API_TOKEN, PRIVATE_KEY, VERSION, 
 					cli.log('>{black-fg}{green-bg}STOWING AWAY!{/}');
 					setTimeout(() => {
 						cli.destroy();
-						res({ stowaway, client, key });
+						res({ stowaway, client, key, db });
 					}, 500);
 				})
 				.catch(err => {
