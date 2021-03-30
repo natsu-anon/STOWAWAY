@@ -332,8 +332,10 @@ class Stowaway extends EventEmitter {
 				})
 				.catch(err => {
 					if (err.message === ERR_ARMORED) {
+						// TODO
 					}
 					else {
+						// TODO
 					}
 				});
 			}
