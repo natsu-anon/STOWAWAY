@@ -41,7 +41,7 @@ class ChannelsMediator extends Mediator {
 				res.push(`{underline}${this.#model.data[i].serverName}{/underline}`);
 			}
 			if (i === this.#index) {
-				res.push(`\t{inverse}> ${displayChannel(this.#model.data[i])}{/inverse}`);
+				res.push(`\t{inverse}${displayChannel(this.#model.data[i])}{/inverse}`);
 			}
 			else {
 				res.push(`\t${displayChannel(this.#model.data[i])}`);
@@ -110,11 +110,14 @@ class ChannelsMediator extends Mediator {
 		if (this.#index === this.#model.data.length - 1) {
 			this.#index = 0;
 		}
-		else {
+		else if (this.#index != null) {
 			this.#index = this.#model.data.findIndex(({ serverId }) => {
 				return serverId !== this.#model.data[this.#index].serverId;
 			}, this.#index);
 			this.#index = this.#index > -1 ? this.#index : 0;
+		}
+		else {
+			this.#index = 0;
 		}
 		this.emit('update', this.text);
 	}
@@ -122,10 +125,10 @@ class ChannelsMediator extends Mediator {
 	prevServer () {
 		if (this.#index === 0) {
 			this.#index = this.#model.data.findIndex(({ serverId }) => {
-				return serverId === this.#model.data[this.#model.data.length - 1];
+				return serverId === this.#model.data[this.#model.data.length - 1].serverId;
 			});
 		}
-		else {
+		else if (this.#index != null) {
 			const serverId = this.#model.data[this.#index].serverId;
 			for (let i = this.#index - 1; i > -1; i--) {
 				if (this.#model.data[i].serverId !== serverId) {
@@ -137,6 +140,9 @@ class ChannelsMediator extends Mediator {
 				}
 			}
 			this.#index = this.#model.lastServer();
+		}
+		else {
+			this.#index = 0;
 		}
 		this.emit('update', this.text);
 	}
