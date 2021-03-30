@@ -1,12 +1,14 @@
 const fs = require('fs');
 const process = require('process');
 const { Client } = require('discord.js');
+
 const versionCheck = require('./version-check.js');
-
 const initialize = require('./initialization.js');
-
-const SingleCLI = require('./single-cli.js');
+const StowawayCLI = require('./stowaway-cli.js');
 const { FSMBuilder } = require('./state_machine/builder.js');
+const ChannelsMediator = require('./mediators/channels-mediator.js');
+const ChannelsModel = require('./models/channels-model.js');
+const MessagesModel = require('./models/messages-model.js');
 
 // NOTE update url to use main branch
 const VERSION_URL = 'https://raw.githubusercontent.com/natsu-anon/STOWAWAY/development/version.json';
@@ -18,8 +20,28 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 	.then(result => {
 		return initialize(BANNER, SCREEN_TITLE, DATABASE, API_TOKEN, PRIVATE_KEY, VERSION, REVOCATION_CERTIFICATE, result);
 	})
-	.then(({ stowaway, client, key }) => {
-		console.log('TODO MAIN');
+	.then(async ({ stowaway, client, key, db }) => {
+		cli = new StowawayCLI(SCREEN_TITLE, BANNER, 'foo', client.user.tag);
+		const chMediator = new ChannelsMediator(await (new ChannelsModel()).initialize(stowaway, client, db));
+		cli.navigationBox.setContent(chMediator.text);
+		cli.render();
+		chMediator.on('update', text => {
+			cli.navigationBox.setContent(text);
+			cli.render();
+		});
+		cli.screen.key(['w'], () => {
+			chMediator.prevChannel();
+		});
+		cli.screen.key(['s'], () => {
+			chMediator.nextChannel();
+		});
+		cli.screen.key(['d'], () => {
+			chMediator.nextServer();
+		});
+		cli.screen.key(['a'], () => {
+			chMediator.prevServer();
+		});
+		cli.render();
 		// const model = new SingleChannel();
 		// cli = new SingleCLI(SCREEN_TITLE, '{bold}[Ctrl-C] to quit{/bold}', `${channel.guild.name} {green-fg}#${channel.name}{/}`, client.user.tag);
 		// stowaway.on('message', model.message);
