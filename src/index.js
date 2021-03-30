@@ -24,7 +24,15 @@ else if (process.argv.length > 2 && (process.argv[2] === '--help' || process.arg
 	require('./help.js')();
 }
 else if (process.argv.length > 2 && process.arg[2] === '--revoke') {
-	console.log('todo');
+	console.log('todo'); // needs everything that Stowaway.revokeKey() needs
+}
+else if (process.argv.length > 2 && process.argv[2] === '--leave-server') {
+	if (process.argv.length > 3) {
+		console.log('todo'); // will require API_TOKEN & maybe the database
+	}
+	else {
+		console.log('must pass in a server id as a second argument');
+	}
 }
 else {
 	require('./main.js')(VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CERTIFICATE);
