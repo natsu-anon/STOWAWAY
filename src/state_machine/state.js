@@ -1,4 +1,4 @@
-const EventEmitter = require('events')
+const EventEmitter = require('events');
 
 class State extends EventEmitter {
 	constructor () {
@@ -7,36 +7,99 @@ class State extends EventEmitter {
 			throw new TypeError('Abstract class "State" cannot be instantiated directly');
 		}
 		if (this.enter === undefined) {
-			throw new TypeError('Subclasses of "State" must implement this.enter')
+			throw new TypeError('Subclasses of "State" must implement this.enter');
 		}
 		if (this.exit === undefined) {
-			throw new TypeError('Subclasses of "State" must implement this.exit')
+			throw new TypeError('Subclasses of "State" must implement this.exit');
 		}
 	}
 
-	onCtrlC () {
+	get helpText () {
+		return 'FUG :DDDDDDDD';
+	}
+
+	ctrlC () {
 		// QUIT
 	}
 
-	onBacktick () {
-		// jump to news item
+	ctrlH () {
+		// help
 	}
 
-	onSpace () {}
+	ctrlA () {
+		// about
+	}
 
-	onEnter () {}
+	ctrlR () {
+		// revoke
+	}
 
-	onEsc () {}
+	backtick () {
+		// jump to latest notification item (if not writing)
+	}
 
-	onTab () {}
+	ctrlEnter () {}
 
-	onW () {}
+	enter () {}
 
-	onA () {}
+	space () {}
 
-	onS () {}
+	esc () {}
 
-	onD () {}
+	tab () {}
+
+	ctrlW () {}
+
+	ctrlS () {}
+
+	w () {}
+
+	s () {}
+
+	a () {}
+
+	d () {}
+
+	ctrl1 () {}
+
+	ctrl2 () {}
+
+	ctrl3 () {}
+
+	ctrl4 () {}
+
+	ctrl5 () {}
+
+	ctrl6 () {}
+
+	ctrl7 () {}
+
+	ctrl8 () {}
+
+	ctrl9 () {}
+
+	ctrl0 () {}
+
+	// jump to previously favorited channel (if not writing)
+	num1 () {}
+
+	num2 () {}
+
+	num3 () {}
+
+	num4 () {}
+
+	num5 () {}
+
+	num6 () {}
+
+	num7 () {}
+
+	num8 () {}
+
+	num9 () {}
+
+	num0 () {}
 }
 
 module.exports = State;
