@@ -2,6 +2,10 @@ const EventEmitter = require('events');
 const ReadState = require('./read-state.js');
 const WriteState = require('./write-state.js');
 const NavigateState = require('./navigate-state.js');
+const MemberState = require('./member-state.js');
+const RevokeState = require('./revoke-state.js');
+const AboutState = require('./about-state.js');
+const HelpState = require('./help-state.js');
 
 class FSM extends EventEmitter {
 	#current;
@@ -12,20 +16,52 @@ class FSM extends EventEmitter {
 	#revoke;
 	#about;
 	#help;
+	#noticeFunc;
 
 	constructor (args) {
 		super();
-		const navigateState = new NavigateState(args.navigate);
-		const readState = new ReadState(args.read);
-		const writeState = new WriteState(args.write);
-		this.#read.on('scroll', offset => { this.emit('scroll', offset); });
-		this.#read.on('to write', () => this.write());
-		this.#navigate.on('to read', enterSelected => {
-			if (enterSelected) {
-				this.emit('enter channel');
+		this.#navigate = new NavigateState(args.navigate);
+		this.#read = new ReadState(args.read);
+		this.#write = new WriteState(args.write);
+		this.#member = new MemberState(args.member);
+		this.#revoke = new RevokeState(args.revoke);
+		this.#about = new AboutState(args.about);
+		this.#help = new HelpState(args.help);
+		this.#current = this.#navigate;
+
+		/*  WELCOME TO HELL  */
+
+		// handle transitions
+		this.#current.on('to navigate', () => { this.navigate(); });
+		this.#current.on('to read', enterFlag => {
+			if (enterFlag) {
+				this.emit('enter selected channel');
 			}
 			this.read();
 		});
+		this.#current.on('to write', this.write);
+		this.#current.on('to member', () => { this.member(); });
+		this.#current.on('to revoke', this.revoke);
+		this.#current.on('to about', this.about);
+		this.#current.on('to help', this.help);
+		this.#current.on('to previous', this.#transition);
+		this.#current.on('to favorite', number => {
+			this.emit('to favorite', number, this.read);
+		});
+		this.#current.on('to notification', () => {
+			if (this.#noticeFunc != null) {
+				this.noticeFunc();
+			}
+		});
+		// event handling
+		this.#navigate.on('set favorite', number => { this.emit('set favorite', number); });
+		this.#navigate.on('scroll', offset => { this.emit('scroll channels', offset); });
+		this.#navigate.on('handshaked', offset => { this.emit('scroll handshaked', offset); });
+		this.#navigate.on('servers', offset => { this.emit('scroll servers', offset); });
+		this.#read.on('scroll', offset => { this.emit('scroll messages', offset); });
+		this.#read.on('scroll top', () => { this.emit('messages top'); });
+		this.#read.on('scroll bottom', () => { this.emit('messages bottom'); });
+		this.#read.on('handshake', () => { this.emit('repeat handshake'); });
 		this.#write.on('clear', () => {
 			this.emit('clear input');
 			this.read();
@@ -34,12 +70,7 @@ class FSM extends EventEmitter {
 			this.emit('send input');
 			this.read();
 		});
-		this.#navigate = navigateState;
-		this.#read = readState;
-		this.#write = writeState;
-		this.#current = navigateState;
-		this.#current.enter();
-		// WELCOME TO HELL
+		// keybind hookups
 		this.ctrlC = () => { this.emit('quit'); };
 		this.ctrlR = this.#current.ctrlR;
 		this.ctrlA = this.#current.ctrlA;
@@ -54,6 +85,8 @@ class FSM extends EventEmitter {
 		this.s = this.#current.s;
 		this.a = this.#current.a;
 		this.d = this.#current.d;
+		this.h = this.#current.h;
+		this.m = this.#current.m;
 		this.ctrl0 = this.#current.ctrl0;
 		this.ctrl1 = this.#current.ctrl1;
 		this.ctrl2 = this.#current.ctrl2;
@@ -74,6 +107,12 @@ class FSM extends EventEmitter {
 		this.num7 = this.#current.num7;
 		this.num8 = this.#current.num8;
 		this.num9 = this.#current.num9;
+		// schmood
+		this.#current.enter();
+	}
+
+	set notification (func) {
+		this.#noticeFunc = func;
 	}
 
 	navigate () {
@@ -94,16 +133,16 @@ class FSM extends EventEmitter {
 		this.#transition(this.#member);
 	}
 
-	help () {
-		this.#transition(this.#help.prevState(this.#current));
+	revoke (state) {
+		this.#transition(this.#revoke.prevState(state));
 	}
 
-	about () {
-		this.#transition(this.#about.prevState(this.#current));
+	about (state) {
+		this.#transition(this.#about.prevState(state));
 	}
 
-	revoke () {
-		this.#transition(this.#revoke.prevState(this.#current));
+	help (state) {
+		this.#transition(this.#help.prevState(state));
 	}
 
 	#transition (state) {
