@@ -8,9 +8,9 @@ class NavigateState extends State {
 		super();
 		this.#enter = args.enter;
 		this.#exit = args.exit;
-		this.ctrlR = () => { this.emit('to revoke', this); });
-		this.ctrlA = () => { this.emit('to about', this); });
-		this.ctrlH = () => { this.emit('to help', this); });
+		this.ctrlR = () => { this.emit('to revoke', this); };
+		this.ctrlA = () => { this.emit('to about', this); };
+		this.ctrlH = () => { this.emit('to help', this); };
 		this.ctrl0 = () => { this.emit('set favorite', 0); };
 		this.ctrl1 = () => { this.emit('set favorite', 1); };
 		this.ctrl2 = () => { this.emit('set favorite', 2); };
