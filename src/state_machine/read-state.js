@@ -32,18 +32,6 @@ class ReadState extends State {
 		this.#exit();
 	}
 
-	ctrlH () {
-		this.emit('help', this);
-	}
-
-	ctrlA () {
-		this.emit('about', this);
-	}
-
-	ctrlR () {
-		this.emit('revoke', this);
-	}
-
 	enter () {
 		this.emit('to write', true);
 	}
