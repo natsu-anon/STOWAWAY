@@ -67,11 +67,11 @@ class NavigateState extends State {
 	}
 
 	a () {
-		this.emit('server', -1);
+		this.emit('servers', -1);
 	}
 
 	d () {
-		this.emit('server', 1);
+		this.emit('servers', 1);
 	}
 }
 
