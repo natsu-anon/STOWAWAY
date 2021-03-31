@@ -71,6 +71,14 @@ class ReadState extends State {
 	s () {
 		this.emit('scroll', 1);
 	}
+
+	h () {
+		this.emit('handshake');
+	}
+
+	m () {
+		this.emit('to member');
+	}
 }
 
 module.exports = ReadState;
