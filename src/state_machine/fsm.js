@@ -1,7 +1,8 @@
 const EventEmitter = require('events');
+const NavigateState = require('./navigate-state.js');
+const HandshakeState = require('./handshake-state.js');
 const ReadState = require('./read-state.js');
 const WriteState = require('./write-state.js');
-const NavigateState = require('./navigate-state.js');
 const MemberState = require('./member-state.js');
 const RevokeState = require('./revoke-state.js');
 const AboutState = require('./about-state.js');
@@ -10,6 +11,7 @@ const HelpState = require('./help-state.js');
 class FSM extends EventEmitter {
 	#current;
 	#navigate;
+	#handshake;
 	#read;
 	#write;
 	#member;
@@ -21,6 +23,7 @@ class FSM extends EventEmitter {
 	constructor (args) {
 		super();
 		this.#navigate = new NavigateState(args.navigate);
+		this.#handshake = new HandshakeState(args.handshake);
 		this.#read = new ReadState(args.read);
 		this.#write = new WriteState(args.write);
 		this.#member = new MemberState(args.member);
@@ -55,9 +58,13 @@ class FSM extends EventEmitter {
 		});
 		// event handling
 		this.#navigate.on('set favorite', number => { this.emit('set favorite', number); });
-		this.#navigate.on('scroll', offset => { this.emit('scroll channels', offset); });
-		this.#navigate.on('handshaked', offset => { this.emit('scroll handshaked', offset); });
-		this.#navigate.on('servers', offset => { this.emit('scroll servers', offset); });
+		this.#navigate.on('channels', next => { this.emit('navigate channels', next); });
+		this.#navigate.on('servers', next => { this.emit('navigate servers', next); });
+		this.#handshake.on('channels', next => { this.emit('handshake channels', next); });
+		this.#handshake.on('servers', next => { this.emit('handshake servers', next); });
+		this.#handshake.on('handshake', () => {
+			this.emit('handshake channel');
+		});
 		this.#read.on('scroll', offset => { this.emit('scroll messages', offset); });
 		this.#read.on('scroll top', () => { this.emit('messages top'); });
 		this.#read.on('scroll bottom', () => { this.emit('messages bottom'); });
@@ -70,6 +77,8 @@ class FSM extends EventEmitter {
 			this.emit('send input');
 			this.read();
 		});
+		this.#member.on('scroll', offset => { this.emit('scroll members', offset); });
+		this.#member.on('sign member', () => { this.emit('sign member'); });
 		// keybind hookups
 		this.ctrlC = () => { this.emit('quit'); };
 		this.ctrlR = this.#current.ctrlR;

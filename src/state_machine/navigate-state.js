@@ -9,6 +9,7 @@ class NavigateState extends State {
 		this.#enter = args.enter;
 		this.#exit = args.exit;
 		this.backtick = () => { this.emit('to notification'); };
+		this.e = () => { this.emit('to handshake', this); };
 		this.ctrlR = () => { this.emit('to revoke', this); };
 		this.ctrlA = () => { this.emit('to about', this); };
 		this.ctrlH = () => { this.emit('to help', this); };
@@ -50,28 +51,20 @@ class NavigateState extends State {
 		this.emit('to read', false);
 	}
 
-	ctrlW () {
-		this.emit('handshaked', -1);
-	}
-
-	ctrlS () {
-		this.emit('handshaked', 1);
-	}
-
 	w () {
-		this.emit('scroll', -1);
+		this.emit('channels', false);
 	}
 
 	s () {
-		this.emit('scroll', 1);
+		this.emit('channels', true);
 	}
 
 	a () {
-		this.emit('servers', -1);
+		this.emit('servers', false);
 	}
 
 	d () {
-		this.emit('servers', 1);
+		this.emit('servers', true);
 	}
 }
 

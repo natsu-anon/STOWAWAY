@@ -10,6 +10,7 @@ class HelpState extends State {
 		this.#enter = args.enter;
 		this.#exit = args.exit;
 		this.backtick = () => { this.emit('to notification'); };
+		this.e = () => { this.emit('to handshake', this); };
 	}
 
 	get helpText () {

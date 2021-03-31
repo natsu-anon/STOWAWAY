@@ -4,6 +4,7 @@ function _ () {}
 
 class FSMBuilder {
 	#navigate;
+	#handshake;
 	#read;
 	#write;
 	#member;
@@ -13,6 +14,7 @@ class FSMBuilder {
 
 	constructor () {
 		this.#navigate = { enter: _, exit: _ };
+		this.#handshake = { enter: _, exit: _ };
 		this.#read = { enter: _, exit: _ };
 		this.#write = { enter: _, exit: _ };
 		this.#member = { enter: _, exit: _ };
@@ -23,6 +25,11 @@ class FSMBuilder {
 
 	navigate (enter, exit=_) {
 		this.#navigate = { enter, exit };
+		return this;
+	}
+
+	handshake (enter, exit=_) {
+		this.#handshake = { enter, exit };
 		return this;
 	}
 

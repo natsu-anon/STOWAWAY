@@ -12,6 +12,7 @@ class ReadState extends State {
 		this.ctrlA = () => { this.emit('to about', this); };
 		this.ctrlH = () => { this.emit('to help', this); };
 		this.backtick = () => { this.emit('to notification'); };
+		this.e = () => { this.emit('to handshake', this); };
 		this.num0 = () => { this.emit('to favorite', 0); };
 		this.num1 = () => { this.emit('to favorite', 1); };
 		this.num2 = () => { this.emit('to favorite', 2); };
@@ -44,20 +45,20 @@ class ReadState extends State {
 		this.emit('to navigate');
 	}
 
-	ctrlW () {
-		this.emit('scroll top');
-	}
-
-	ctrlS () {
-		this.emit('scroll bottom');
-	}
-
 	w () {
 		this.emit('scroll', -1);
 	}
 
 	s () {
 		this.emit('scroll', 1);
+	}
+
+	a () {
+		this.emit('scroll top');
+	}
+
+	d () {
+		this.emit('scroll bottom');
 	}
 
 	h () {
