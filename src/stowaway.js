@@ -41,7 +41,7 @@ const VIEW = 'VIEW_CHANNEL';
 const SEND = 'SEND_MESSAGES';
 const READ = 'READ_MESSAGE_HISTORY';
 
-function StowawayPermissions (channel, user) {
+function Permissible (channel, user) {
 	const permissions = channel.permissionsFor(user);
 	return permissions.has(VIEW) && permissions.has(SEND) && permissions.has(READ);
 }
@@ -942,4 +942,4 @@ class Stowaway extends EventEmitter {
 
 }
 
-module.exports = { Stowaway, StowawayPermissions };
+module.exports = { Stowaway, Permissible };
