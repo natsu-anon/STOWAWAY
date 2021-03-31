@@ -324,7 +324,6 @@ class ChannelsModel extends Model {
 			if (channel !== undefined) {
 				throw Error(`Error in Servers.#stowawaySubscriptions() on 'handhshake channel'; channelId argument: ${channelId}`);
 			}
-			channel.handhsaked = true;
 			this.emit('update');
 		});
 	}
