@@ -73,10 +73,6 @@ class NavigateState extends State {
 	d () {
 		this.emit('server', 1);
 	}
-
-	m () {
-		this.emit('to member');
-	}
 }
 
 module.exports = NavigateState;
