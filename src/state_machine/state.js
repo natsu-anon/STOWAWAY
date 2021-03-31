@@ -60,6 +60,10 @@ class State extends EventEmitter {
 
 	d () {}
 
+	h () {}
+
+	m () {}
+
 	ctrl0 () {}
 
 	ctrl1 () {}
@@ -82,7 +86,7 @@ class State extends EventEmitter {
 
 	// jump to previously favorited channel (if not writing)
 	num0 () {}
-	
+
 	num1 () {}
 
 	num2 () {}
