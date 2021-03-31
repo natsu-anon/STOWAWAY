@@ -1,33 +1,73 @@
 const State = require('./state.js');
 
 class ReadState extends State {
-	constructor (enter, exit) {
+	#enter;
+	#exit;
+
+	constructor (args) {
 		super();
-		this._enter = enter;
-		this._exit = exit;
+		this.#enter = args.enter;
+		this.#exit = args.exit;
+		this.num0 = () => { this.emit('to favorite', 0); };
+		this.num1 = () => { this.emit('to favorite', 1); };
+		this.num2 = () => { this.emit('to favorite', 2); };
+		this.num3 = () => { this.emit('to favorite', 3); };
+		this.num4 = () => { this.emit('to favorite', 4); };
+		this.num5 = () => { this.emit('to favorite', 5); };
+		this.num6 = () => { this.emit('to favorite', 6); };
+		this.num7 = () => { this.emit('to favorite', 7); };
+		this.num8 = () => { this.emit('to favorite', 8); };
+		this.num9 = () => { this.emit('to favorite', 9); };
+	}
+
+	Enter () {
+		this.#enter();
+	}
+
+	Exit () {
+		this.#exit();
+	}
+
+	ctrlH () {
+		this.emit('help', this);
+	}
+
+	ctrlA () {
+		this.emit('about', this);
+	}
+
+	ctrlR () {
+		this.emit('revoke', this);
+	}
+
+	backtick () {
 	}
 
 	enter () {
-		this._enter();
+		this.emit('to write', true);
 	}
 
-	exit () {
-		this._exit();
+	ctrlEnter () {
+		this.emit('to write', false);
 	}
 
-	onCtrlC () {
-		this.emit('quit');
+	tab () {
+		this.emit('to navigate');
 	}
 
-	onSpace () {
-		this.emit('to write');
+	ctrlW () {
+		this.emit('scroll top');
 	}
 
-	onW () {
+	ctrlS () {
+		this.emit('scroll bottom');
+	}
+
+	w () {
 		this.emit('scroll', -1);
 	}
 
-	onS () {
+	s () {
 		this.emit('scroll', 1);
 	}
 }

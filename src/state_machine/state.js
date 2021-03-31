@@ -6,10 +6,10 @@ class State extends EventEmitter {
 		if (new.target === State) {
 			throw new TypeError('Abstract class "State" cannot be instantiated directly');
 		}
-		if (this.enter === undefined) {
+		if (this.Enter === undefined) {
 			throw new TypeError('Subclasses of "State" must implement this.enter');
 		}
-		if (this.exit === undefined) {
+		if (this.Exit === undefined) {
 			throw new TypeError('Subclasses of "State" must implement this.exit');
 		}
 	}
@@ -44,7 +44,7 @@ class State extends EventEmitter {
 
 	space () {}
 
-	esc () {}
+	escape () {}
 
 	tab () {}
 
@@ -59,6 +59,8 @@ class State extends EventEmitter {
 	a () {}
 
 	d () {}
+
+	ctrl0 () {}
 
 	ctrl1 () {}
 
@@ -78,9 +80,9 @@ class State extends EventEmitter {
 
 	ctrl9 () {}
 
-	ctrl0 () {}
-
 	// jump to previously favorited channel (if not writing)
+	num0 () {}
+	
 	num1 () {}
 
 	num2 () {}
@@ -98,8 +100,6 @@ class State extends EventEmitter {
 	num8 () {}
 
 	num9 () {}
-
-	num0 () {}
 }
 
 module.exports = State;

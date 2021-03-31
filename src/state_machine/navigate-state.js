@@ -1,63 +1,80 @@
-const State = require('./state.js')
-const ServerState = require('/.servers-state.js');
-const DMState = require('/.dm-state.js');
+const State = require('./state.js');
 
 class NavigateState extends State {
-	constructor (serverModel, dmModel, updateFunc, subscriptions, onEsc) {
-		const server = new ServerState(serverModel, updateFunc);
-		server.on('enter', subscriptions.enterServer);
-		server.on('exit', subscriptions.exitServer);
-		this.server = server;
-		const dm = new DMState(dmModel, updateFunc);
-		dm.on('enter', subscriptions.enterDM);
-		dm.on('exit', subscriptions.exitDM);
-		this.dm = dm;
-		this.current = server;
-		this.serverFlag = true;
-		this.onTab = swap;
-		if (onEsc !== undefined) {
-			this.onEsc = onEsc
-		}
+	#enter;
+	#exit;
+
+	constructor (args) {
+		super();
+		this.#enter = args.enter;
+		this.#exit = args.exit;
+		this.ctrlR = () => { this.emit('to revoke', this); });
+		this.ctrlA = () => { this.emit('to about', this); });
+		this.ctrlH = () => { this.emit('to help', this); });
+		this.ctrl0 = () => { this.emit('set favorite', 0); };
+		this.ctrl1 = () => { this.emit('set favorite', 1); };
+		this.ctrl2 = () => { this.emit('set favorite', 2); };
+		this.ctrl3 = () => { this.emit('set favorite', 3); };
+		this.ctrl4 = () => { this.emit('set favorite', 4); };
+		this.ctrl5 = () => { this.emit('set favorite', 5); };
+		this.ctrl6 = () => { this.emit('set favorite', 6); };
+		this.ctrl7 = () => { this.emit('set favorite', 7); };
+		this.ctrl8 = () => { this.emit('set favorite', 8); };
+		this.ctrl9 = () => { this.emit('set favorite', 9); };
+		this.num0 = () => { this.emit('to favorite', 0); };
+		this.num1 = () => { this.emit('to favorite', 1); };
+		this.num2 = () => { this.emit('to favorite', 2); };
+		this.num3 = () => { this.emit('to favorite', 3); };
+		this.num4 = () => { this.emit('to favorite', 4); };
+		this.num5 = () => { this.emit('to favorite', 5); };
+		this.num6 = () => { this.emit('to favorite', 6); };
+		this.num7 = () => { this.emit('to favorite', 7); };
+		this.num8 = () => { this.emit('to favorite', 8); };
+		this.num9 = () => { this.emit('to favorite', 9); };
 	}
 
-	launch () {
-		this.current.enter();
-		enter();
+	Enter () {
+		this.#enter();
+	}
+
+	Exit () {
+		this.#exit();
+	}
+
+	backtick () {
+		this.emit('notification');
 	}
 
 	enter () {
-		this.emit('enter');
+		this.emit('to read', true);
 	}
 
-	exit () {
-		this.emit('exit');
+	tab () {
+		this.emit('to read', false);
 	}
 
-	swap () {
-		this.current.exit();
-		this.current = this.serverFlag ? this.dm : this.server;
-		this.serverFlag = !this.serverFlag;
-		this.current.enter();
+	ctrlW () {
+		this.emit('handshaked', -1);
 	}
 
-	onW () {
-		this.current.onW();
+	ctrlS () {
+		this.emit('handshaked', 1);
 	}
 
-	onA () {
-		this.current.onA();
+	w () {
+		this.emit('scroll', -1);
 	}
 
-	onS () {
-		this.current.onS();
+	s () {
+		this.emit('scroll', 1);
 	}
 
-	onD () {
-		this.current.onD();
+	a () {
+		this.emit('server', -1);
 	}
 
-	onSpace () {
-		this.current.onSpace();
+	d () {
+		this.emit('server', 1);
 	}
 }
 
