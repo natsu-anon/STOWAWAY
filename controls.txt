@@ -10,11 +10,9 @@ STATES:
 
 all states:
 	[Ctrl-C] quit
-	[Ctrl-A] about
 	[Ctrl-R] initiate revoke sequence
-	[Ctrl-H] to show controls/basic gestalt for current state
-	[`] to jump to notification item (unless writing)
-	[Number] jump to previously saved channel (if unavailable do nothing) & enter read state (unless writing)
+	[Ctrl-A] about
+	[Ctrl-H] to show controls/basic gestalt for current state (except help state)
 
 
 navigation state:
@@ -28,6 +26,8 @@ navigation state:
 	[A/D] navigate to first channel of prev/next server (loops)
 	[Ctrl + Number] to save a jump to curently selected channel
 	[Tab] enter read state
+	[Number] jump to previously saved channel (if unavailable do nothing) & enter read state
+	[`] to jump to notification item (if there is any)
 
 read state:
 	- NOTE: unverified messages are entirely yellow
@@ -39,6 +39,8 @@ read state:
 	[Enter] begin writing public message
 	[Ctrl-Enter] begin writing trusted message (only to signed keys)
 	[Tab] enter navigation state
+	[Number] jump to previously saved channel (if unavailable do nothing)
+	[`] to jump to notification item (if there is any)
 
 write state:
 	- NOTE: the write box element itself only appears when viewing a channel
@@ -55,8 +57,7 @@ member state
 	- NOTE: restrict to known members
 	[W/S] scroll up/down - show known signers in a sidebar, highlight those whose key you have also signed
 	[escape] return to previous state (read state)
-	[enter] change bot nickname (if possible)
-	[Ctrl-Enter] sign currently selected (unless already signed)
+	[enter] sign currently selected (unless already signed)
 		-- WARN THAT THIS IS IRREVOCABLE
 		-- make user enter random phrase to sign
 
