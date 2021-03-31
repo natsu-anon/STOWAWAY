@@ -6,7 +6,7 @@ const InitCLI = require('./init-cli.js');
 const dbInit = require('./database.js');
 const clientInit = require('./client.js');
 const keyInit = require('./key.js');
-const Stowaway = require('./stowaway.js');
+const { Stowaway } = require('./stowaway.js');
 
 const WARNING = `
 {black-fg}{yellow-bg}## {underline}WARNING{/underline} ##########################################{/}
