@@ -8,6 +8,7 @@ class NavigateState extends State {
 		super();
 		this.#enter = args.enter;
 		this.#exit = args.exit;
+		this.backtick = () => { this.emit('to notification'); };
 		this.ctrlR = () => { this.emit('to revoke', this); };
 		this.ctrlA = () => { this.emit('to about', this); };
 		this.ctrlH = () => { this.emit('to help', this); };
@@ -39,10 +40,6 @@ class NavigateState extends State {
 
 	Exit () {
 		this.#exit();
-	}
-
-	backtick () {
-		this.emit('notification');
 	}
 
 	enter () {

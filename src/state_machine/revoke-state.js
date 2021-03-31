@@ -9,6 +9,7 @@ class RevokeState extends State {
 		super();
 		this.#enter = args.enter;
 		this.#exit = args.exit;
+		this.backtick = () => { this.emit('to notification'); };
 	}
 
 	Enter () {

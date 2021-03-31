@@ -11,6 +11,7 @@ class ReadState extends State {
 		this.ctrlR = () => { this.emit('to revoke', this); };
 		this.ctrlA = () => { this.emit('to about', this); };
 		this.ctrlH = () => { this.emit('to help', this); };
+		this.backtick = () => { this.emit('to notification'); };
 		this.num0 = () => { this.emit('to favorite', 0); };
 		this.num1 = () => { this.emit('to favorite', 1); };
 		this.num2 = () => { this.emit('to favorite', 2); };
@@ -41,9 +42,6 @@ class ReadState extends State {
 
 	ctrlR () {
 		this.emit('revoke', this);
-	}
-
-	backtick () {
 	}
 
 	enter () {
