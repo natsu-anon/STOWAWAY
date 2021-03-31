@@ -36,6 +36,16 @@ const ERR_WRITE = 'Write Error';
 const ERR_REVOCATION_RGX = /^Could not find valid key revocation signature in key .+$/;
 const ERR_PASSPHRASE_RGX = /Private key is not decrypted\.$/;
 
+// permissions
+const VIEW = 'VIEW_CHANNEL';
+const SEND = 'SEND_MESSAGES';
+const READ = 'READ_MESSAGE_HISTORY';
+
+function StowawayPermissions (channel, user) {
+	const permissions = channel.permissionsFor(user);
+	return permissions.has(VIEW) && permissions.has(SEND) && permissions.has(READ);
+}
+
 function readAttached (url) {
 	return new Promise((resolve, reject) => {
 		https.get(url, response => {
@@ -932,4 +942,4 @@ class Stowaway extends EventEmitter {
 
 }
 
-module.exports = Stowaway;
+module.exports = { Stowaway, StowawayPermissions };

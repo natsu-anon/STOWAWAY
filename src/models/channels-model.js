@@ -1,13 +1,5 @@
 const Model = require('./model.js');
-
-const VIEW = 'VIEW_CHANNEL';
-const SEND = 'SEND_MESSAGES';
-const READ = 'READ_MESSAGE_HISTORY';
-
-function stowawayPermissions (channel, user) {
-	const permissions = channel.permissionsFor(user);
-	return permissions.has(VIEW) && permissions.has(SEND) && permissions.has(READ);
-}
+const { StowawayPermissions } = require('./stowaway.js');
 
 function channelData (channel) {
 	return {
@@ -274,7 +266,7 @@ class ChannelsModel extends Model {
 			if (channel0.type !== 'dm' && channel1.type !== 'dm') {
 				const i = this.getChannelIndex(channel0.id);
 				if (i > -1) {
-					if (stowawayPermissions(channel1, client.user)) {
+					if (StowawayPermissions(channel1, client.user)) {
 						this.#data[i].id = channel1.id;
 						this.#data[i].name = channel1.name;
 					}
@@ -300,7 +292,7 @@ class ChannelsModel extends Model {
 				Promise.all(channelIds.map(id => client.channels.fetch(id, false)))
 				.then(channels => {
 					let i;
-					channels.filter(channel => !stowawayPermissions(channel, user1))
+					channels.filter(channel => !StowawayPermissions(channel, user1))
 					.each(channel => {
 						i = this.getChannelIndex(channel.id);
 						if (i > -1) {
