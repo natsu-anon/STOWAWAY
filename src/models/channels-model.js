@@ -15,7 +15,6 @@ function channelData (channel) {
 		name: channel.name,
 		serverId: channel.guild.id,
 		serverName: channel.guild.name,
-		handshaked: false
 	};
 }
 
@@ -153,6 +152,7 @@ class ChannelsModel extends Model {
 		});
 	}
 
+	/* DEPRECATED
 	firstHandshaked () {
 		for (let i = 0; i < this.#data.length; i++) {
 			if (this.#data[i].handshaked) {
@@ -170,6 +170,7 @@ class ChannelsModel extends Model {
 		}
 		return this.#data.length - 1;
 	}
+	*/
 
 	// NOTE: firstServer() would just return the 0th index.  THINK ABOUT IT.
 
@@ -183,33 +184,40 @@ class ChannelsModel extends Model {
 	}
 
 	#initCache (client, db) {
-		client.guilds.cache.each(guild => {
-			guild.channels.cache.filter(channel => channel.isText())
-			.each(channel => {
-				if (stowawayPermissions(channel, client.user)) {
-					this.#data.push(channelData(channel));
-				}
-			});
-		});
+		// client.guilds.cache.each(guild => {
+		// 	guild.channels.cache.filter(channel => channel.isText())
+		// 	.each(channel => {
+		// 		if (stowawayPermissions(channel, client.user)) {
+		// 			this.#data.push(channelData(channel));
+		// 		}
+		// 	});
+		// });
 		return new Promise((resolve, reject) => {
-			let channel;
-			db.find({ channel_id: { $exists: true } }, (err, docs) => {
+			db.find({ channel_id: { $exists: true }, handshake_id: { $exists: true } }, (err, docs) => {
 				if (err != null) {
 					reject(err);
 				}
 				else {
-					docs.forEach(doc => {
-						channel = this.getChannel(doc.channel_id);
-						if (channel !== undefined) {
-							channel.handshaked = true;
-							if (doc.favorite_number != null) {
-								channel.favoriteNumber = doc.favorite_number;
-							}
-						}
-						// o.w. don't sweat it
-					});
-					this.#sortChannels();
-					resolve();
+					let temp;
+					Promise.all(docs.map(x => {
+						return new Promise((res, rej) => {
+							client.channels.fetch(x.channel_id)
+							.then(channel => {
+								temp = channelData(channel);
+								if (x.favorite_number != null) {
+									temp.favoriteNumber = x.favorite_number;
+								}
+								this.#data.push(temp);
+								res();
+							})
+							.catch(rej);
+						});
+					}))
+					.then(() => {
+						this.#sortChannels();
+						resolve();
+					})
+					.catch(reject);
 				}
 			});
 		});

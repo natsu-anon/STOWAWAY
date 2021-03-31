@@ -76,6 +76,7 @@ class ChannelsMediator extends Mediator {
 		this.emit('update', this.text);
 	}
 
+	/* DEPRECATED
 	nextHandshaked () {
 		if (this.#index === this.#model.data.length - 1) {
 			this.#index = this.#model.firstHandshaked();
@@ -105,6 +106,7 @@ class ChannelsMediator extends Mediator {
 		}
 		this.emit('update', this.text);
 	}
+	*/
 
 	nextServer () {
 		if (this.#index === this.#model.data.length - 1) {
