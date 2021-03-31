@@ -10,30 +10,36 @@ STATES:
 
 all states:
 	[Ctrl-C] quit
-	[Ctrl-R] initiate revoke sequence
-	[Ctrl-A] about
-	[Ctrl-H] to show controls/basic gestalt for current state (except help state)
+	[Ctrl-R] initiate revoke sequence (except self)
+	[Ctrl-A] about (except self)
+	[Ctrl-H] to show controls/basic gestalt for current state (except self)
+	[E] enter handshake state (except write state)
+	[`] to jump to notification item (except write & if there is any
 
 
 navigation state:
-	- NOTE: just show available channels -- don't bother with category channels
-	- NOTE: channels you've handshaked in are white, unhandshaked channels are yellow
+	- NOTE: only show handshaked channels -- don't bother with category channels
 	- NOTE: saved channels are green w/ jump number to the side
 	- NOTE: currently selected channel is inverted w/ > to the side
-	[Enter] begin reading selected channel if already handshaken/o.w. ask if they want to really want to enter & handshake
+	[Enter] begin reading selected channel
 	[W/S] navigate to prev/next channel (or server if at first/last channel of current server)
-	[Ctrl-W/Ctrl-S] jump to prev/next handshaked channel (loops)
 	[A/D] navigate to first channel of prev/next server (loops)
 	[Ctrl + Number] to save a jump to curently selected channel
 	[Tab] enter read state
 	[Number] jump to previously saved channel (if unavailable do nothing) & enter read state
-	[`] to jump to notification item (if there is any)
+
+handshake state:
+	- NOTE: unavaible channels are shown in red w/ reason why in parens.  unable to handshake
+	[Enter] handshake selected channel, then enter read state w/ newly handshaked channel
+	[Escape] return to previous state
+	[W/S] scroll to prev/next channel (loops)
+	[A/D] scroll to first channel of prev/next server (loops)
 
 read state:
 	- NOTE: unverified messages are entirely yellow
 	- NOTE: messages from signed keys have sender & date underlined
 	[W/S] scroll up/down
-	[Ctrl-W/Ctrl-S] jump to top/bottom
+	[A/D] jump to top/bottom
 	[M] enter member view for channel
 	[H] to repeat handshake protocol.
 	[Enter] begin writing public message
@@ -58,9 +64,6 @@ member state
 	[W/S] scroll up/down - show known signers in a sidebar, highlight those whose key you have also signed
 	[escape] return to previous state (read state)
 	[enter] sign currently selected (unless already signed)
-		-- WARN THAT THIS IS IRREVOCABLE
-		-- make user enter random phrase to sign
-
 
 revoke sequence:
 	- NOTE: WARN THAT THIS IS IRREVOCABLE & SHOULD ONLY BE USED IF YOU:
