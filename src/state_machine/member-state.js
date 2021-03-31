@@ -8,6 +8,9 @@ class MemberState extends State {
 		super();
 		this.#enter = args.enter;
 		this.#exit = args.exit;
+		this.ctrlR = () => { this.emit('to revoke', this); };
+		this.ctrlA = () => { this.emit('to about', this); };
+		this.ctrlH = () => { this.emit('to help', this); };
 	}
 
 	Enter () {

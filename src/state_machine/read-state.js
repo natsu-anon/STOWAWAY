@@ -8,6 +8,9 @@ class ReadState extends State {
 		super();
 		this.#enter = args.enter;
 		this.#exit = args.exit;
+		this.ctrlR = () => { this.emit('to revoke', this); };
+		this.ctrlA = () => { this.emit('to about', this); };
+		this.ctrlH = () => { this.emit('to help', this); };
 		this.num0 = () => { this.emit('to favorite', 0); };
 		this.num1 = () => { this.emit('to favorite', 1); };
 		this.num2 = () => { this.emit('to favorite', 2); };
