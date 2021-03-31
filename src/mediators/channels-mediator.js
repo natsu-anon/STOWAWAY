@@ -4,11 +4,8 @@ function displayChannel (channel) {
 	if (channel.favoriteNumber != null) { // NOTE: channel cannot be
 		return `{green-fg}[${channel.favoriteNumber}] #${channel.name}{/green-fg}`;
 	}
-	else if (channel.handshaked) {
-		return `#${channel.name}`;
-	}
 	else {
-		return `{yellow-fg}#${channel.name}{/yellow-fg}`;
+		return `#${channel.name}`;
 	}
 }
 
@@ -41,7 +38,7 @@ class ChannelsMediator extends Mediator {
 				res.push(`{underline}${this.#model.data[i].serverName}{/underline}`);
 			}
 			if (i === this.#index) {
-				res.push(`\t{inverse}${displayChannel(this.#model.data[i])}{/inverse}`);
+				res.push(`\t> {inverse}${displayChannel(this.#model.data[i])}{/inverse}`);
 			}
 			else {
 				res.push(`\t${displayChannel(this.#model.data[i])}`);
