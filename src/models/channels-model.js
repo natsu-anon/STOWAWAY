@@ -224,14 +224,14 @@ class ChannelsModel extends Model {
 	}
 
 	#initClient (client, db) {
-		client.on('guildCreate', server => {
-			server.channels.cache.filter(channel => channel.isText() && stowawayPermissions(channel, client.user))
-			.each(channel => {
-				this.#data.push(channelData(channel));
-			});
-			this.#sortChannels();
-			this.emit('update');
-		});
+		// client.on('guildCreate', server => {
+		// 	server.channels.cache.filter(channel => channel.isText() && stowawayPermissions(channel, client.user))
+		// 	.each(channel => {
+		// 		this.#data.push(channelData(channel));
+		// 	});
+		// 	this.#sortChannels();
+		// 	this.emit('update');
+		// });
 		client.on('guildDelete', server => {
 			// RETVRN TO TRADITION
 			for (let i = this.#data.length - 1; i >= 0; i--) {
@@ -251,15 +251,15 @@ class ChannelsModel extends Model {
 			}
 			this.emit('update');
 		});
-		client.on('channelCreate', channel => {
-			if (channel.type !== 'dm') {
-				if (channel.isText() && stowawayPermissions(channel, client.user)) {
-					this.#data.push(channelData(channel));
-					this.#sortChannels();
-					this.emit('update');
-				}
-			}
-		});
+		// client.on('channelCreate', channel => {
+		// 	if (channel.type !== 'dm') {
+		// 		if (channel.isText() && stowawayPermissions(channel, client.user)) {
+		// 			this.#data.push(channelData(channel));
+		// 			this.#sortChannels();
+		// 			this.emit('update');
+		// 		}
+		// 	}
+		// });
 		client.on('channelDelete', channel => {
 			if (channel.type !== 'dm') {
 				const i = this.getChannelIndex(channel.id);
