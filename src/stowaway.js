@@ -167,7 +167,7 @@ class Stowaway extends EventEmitter {
 			this.db.remove({ channel_id: channel.id });
 		});
 		client.on('channelUpdate', (ch0, ch1) => {
-			if (Permissible(ch1, client.user)) {
+			if (Permissions(ch1, client.user).valid) {
 				this.db.update({ channel_id: ch0.id }, { $set: { channel_id: ch1.id } });
 			}
 			else {
@@ -284,7 +284,7 @@ class Stowaway extends EventEmitter {
 							last_id: message.id,
 							last_ts: message.createdTimestamp,
 						}, () => {
-							this.emit('handshake channel', channel.guild.id, channel.id);
+							this.emit('handshake channel', channel.id);
 							this.emit('handshake', channel.id, message.createdTimestamp, message.createdAt, message.author);
 							this.db.update({ last_channel: { $exists: true }}, { last_channel: channel.id }, { upsert: true });
 							resolve();
@@ -971,4 +971,4 @@ class Stowaway extends EventEmitter {
 
 }
 
-module.exports = { Stowaway, Permissible };
+module.exports = { Stowaway, Permissions };
