@@ -79,7 +79,7 @@ class ChannelsModel extends Model {
 	clearFavorite (channelId) {
 		return new Promise((resolve, reject) => {
 			const channel = this.getChannel(channelId);
-			if (channel !== undefined) {
+			if (channel !== undefined && channel.favoriteNumber !== undefined) {
 				channel.favoriteNumber = undefined;
 				this.db.remove({ favorite_id: channelId }, {}, err => {
 					if (err != null) {
