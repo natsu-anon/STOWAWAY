@@ -151,15 +151,20 @@ class Stowaway extends EventEmitter {
 					message.reply("dm me 'about' to learn about what I do");
 				}
 			}
-			else  {
+			else {
 				this.#handleMessage(message);
 			}
 		});
 		client.on('channelDelete', channel => {
-			// TODO remove channel from db if in db
+			this.db.remove({ channel_id: channel.id });
 		});
 		client.on('channelUpdate', (ch0, ch1) => {
-			// TODO set channel id of ch0 matches
+			if (Permissible(ch1, client.user)) {
+				this.db.update({ channel_id: ch0.id }, { $set: { channel_id: ch1.id } });
+			}
+			else {
+				this.db.remove({ channel_id: ch0.id });
+			}
 		});
 		this.#sendKeyUpdate = armoredPublicKey => {
 			const updateJSON = {
@@ -789,7 +794,7 @@ class Stowaway extends EventEmitter {
 			})
 			.then(res => {
 				if (res != null && res.valid) {
-					this.#updatePrivateKey(publicKey, sender);
+					this.#updatePrivateKey(publicKey, message.author);
 					this.emit('signed key', message);
 				}
 				else {
@@ -849,7 +854,7 @@ class Stowaway extends EventEmitter {
 		.then(publicKey1 => {
 			this.#findUser(message.author.id, (err, doc) => {
 				if (err) {
-					this.emit('database error', `Stowaway.#keyUpdate(), userId: ${userId}`);
+					this.emit('database error', `Stowaway.#keyUpdate(), userId: ${message.author.id}`);
 				}
 				if (doc != null) {
 					openpgp.readKey({ armoredKey: doc.public_key })
