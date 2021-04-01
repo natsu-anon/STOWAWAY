@@ -1,5 +1,5 @@
 const Model = require('./model.js');
-const { Permissible } = require('./stowaway.js');
+const { Permissions } = require('./stowaway.js');
 
 function channelData (channel) {
 	return {
@@ -10,7 +10,7 @@ function channelData (channel) {
 	};
 }
 
-class ChannelsModel extends Model {
+class HandshakedModel extends Model {
 	#data;
 	#launchChannel;
 
@@ -268,7 +268,7 @@ class ChannelsModel extends Model {
 			if (channel0.type !== 'dm' && channel1.type !== 'dm') {
 				const i = this.getChannelIndex(channel0.id);
 				if (i > -1) {
-					if (Permissible(channel1, client.user)) {
+					if (Permissions(channel1, client.user).valid) {
 						this.#data[i].id = channel1.id;
 						this.#data[i].name = channel1.name;
 					}
@@ -294,7 +294,7 @@ class ChannelsModel extends Model {
 				Promise.all(channelIds.map(id => client.channels.fetch(id, false)))
 				.then(channels => {
 					let i;
-					channels.filter(channel => !Permissible(channel, user1))
+					channels.filter(channel => !Permissions(channel, user1).valid)
 					.each(channel => {
 						i = this.getChannelIndex(channel.id);
 						if (i > -1) {
@@ -337,4 +337,4 @@ class ChannelsModel extends Model {
 	}
 }
 
-module.exports = ChannelsModel;
+module.exports = HandshakedModel;
