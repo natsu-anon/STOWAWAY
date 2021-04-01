@@ -51,9 +51,10 @@ class FSM extends EventEmitter {
 				this.noticeFunc();
 			}
 		});
-		this.#current.on('clear favorite', () => { this.emit('clear favorite'); });
+
 		// event handling
-		this.#navigate.on('set favorite', number => { this.emit('set favorite', number); });
+		this.#current.on('clear favorite', () => { this.emit('clear favorite'); });
+		this.#current.on('set favorite', number => { this.emit('set favorite', number); });
 		this.#navigate.on('channels', next => { this.emit('navigate channels', next); });
 		this.#navigate.on('servers', next => { this.emit('navigate servers', next); });
 		this.#handshake.on('channels', next => { this.emit('handshake channels', next); });
