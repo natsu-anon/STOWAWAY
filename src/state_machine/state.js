@@ -76,25 +76,25 @@ class State extends EventEmitter {
 
 	m () {}
 
-	ctrl0 () {}
+	shift0 () {}
 
-	ctrl1 () {}
+	shift1 () {}
 
-	ctrl2 () {}
+	shift2 () {}
 
-	ctrl3 () {}
+	shift3 () {}
 
-	ctrl4 () {}
+	shift4 () {}
 
-	ctrl5 () {}
+	shift5 () {}
 
-	ctrl6 () {}
+	shift6 () {}
 
-	ctrl7 () {}
+	shift7 () {}
 
-	ctrl8 () {}
+	shift8 () {}
 
-	ctrl9 () {}
+	shift9 () {}
 
 	// jump to previously favorited channel (if not writing)
 	num0 () {}
