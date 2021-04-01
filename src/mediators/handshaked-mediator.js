@@ -1,4 +1,4 @@
-const Mediator = require('./mediator.js');
+const { Mediator } = require('./mediator.js');
 
 function displayChannel (channel) {
 	if (channel.favoriteNumber != null) { // NOTE: channel cannot be
@@ -10,7 +10,7 @@ function displayChannel (channel) {
 }
 
 // really more of a wrapper but w/e
-class ChannelsMediator extends Mediator {
+class HandshakedMediator extends Mediator {
 	#model;
 	#index;
 
@@ -54,6 +54,10 @@ class ChannelsMediator extends Mediator {
 
 	get channelId () {
 		return this.#index != null ? this.#model.data[this.#index].id : null;
+	}
+
+	get validChannel () {
+		return this.#model.data.length > 0;
 	}
 
 	jumpToFavorite (number) {
@@ -181,4 +185,4 @@ class ChannelsMediator extends Mediator {
 	}
 }
 
-module.exports = ChannelsMediator;
+module.exports = HandshakedMediator;

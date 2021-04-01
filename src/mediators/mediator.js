@@ -9,4 +9,8 @@ class Mediator extends EventEmitter {
 	}
 }
 
-module.exports = Mediator;
+module.exports = {
+	Mediator,
+	ChannelsMediator: require('./channels-mediator.js'),
+	HandshakedModel: require('./handshaked-mediator.js')
+};

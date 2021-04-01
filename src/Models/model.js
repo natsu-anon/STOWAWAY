@@ -9,4 +9,9 @@ class Model extends EventEmitter {
 	}
 }
 
-module.exports = Model;
+module.exports = {
+	Model,
+	ChannelsModel: require('./channels-model.js'),
+	HandshakedModel: require('./handshaked-model.js')
+	MessagesModel: require('./messages-model.js')
+};

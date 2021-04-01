@@ -1,4 +1,4 @@
-const Model = require('./model.js');
+const { Model } = require('./model.js');
 const { Permissions } = require('./stowaway.js');
 
 function channelData (channel) {
