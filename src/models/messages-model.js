@@ -115,6 +115,7 @@ class MessagesModel extends Model {
 	listen (channelId) {
 		this.#messages = [];
 		this.channelId = channelId;
+		this.emit('update', '');
 	}
 
 	get oldestTs () {
@@ -191,7 +192,7 @@ class MessagesModel extends Model {
 
 	#sortThenUpdate() {
 		this.#messages.sort((a, b) => { return a.timestamp - b.timestamp; });
-		this.emit('update');
+		this.emit('update', this.text());
 	}
 }
 
