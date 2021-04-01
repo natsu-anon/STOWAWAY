@@ -1,11 +1,11 @@
-const fs = require('fs');
 const process = require('process');
-const { Client } = require('discord.js');
 
 const versionCheck = require('./version-check.js');
 const initialize = require('./initialization.js');
 const StowawayCLI = require('./stowaway-cli.js');
-const { FSMBuilder } = require('./state_machine/builder.js');
+const { Permissible } = require('./stowaway.js');
+const { NavigateColor, ReadColor, WriteColor, MemberColor } = require('./state_machine/state-colors.js');
+const FSMBuilder = require('./state_machine/fsm-builder.js');
 const ChannelsMediator = require('./mediators/channels-mediator.js');
 const ChannelsModel = require('./models/channels-model.js');
 const MessagesModel = require('./models/messages-model.js');
@@ -21,27 +21,115 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 		return initialize(BANNER, SCREEN_TITLE, DATABASE, API_TOKEN, PRIVATE_KEY, VERSION, REVOCATION_CERTIFICATE, result);
 	})
 	.then(async ({ stowaway, client, key, db }) => {
-		cli = new StowawayCLI(SCREEN_TITLE, BANNER, 'foo', client.user.tag);
-		const chMediator = new ChannelsMediator(await (new ChannelsModel()).initialize(stowaway, client, db));
-		cli.navigationBox.setContent(chMediator.text);
-		cli.render();
-		chMediator.on('update', text => {
+		let allowTab = false; // block tabbing into read state until navigated away from the landing page & to a proper channel
+		stowaway.launch(client, key);
+		const mediator = new ChannelsMediator(await (new ChannelsModel()).initialize(stowaway, client, db));
+		cli = new StowawayCLI(SCREEN_TITLE, BANNER, mediator.text, client.user.tag);
+
+		/*  UPDATE LISTENING TO RENDER */
+
+		mediator.on('update', text => {
 			cli.navigationBox.setContent(text);
 			cli.render();
 		});
-		cli.screen.key(['w'], () => {
-			chMediator.prevChannel();
-		});
-		cli.screen.key(['s'], () => {
-			chMediator.nextChannel();
-		});
-		cli.screen.key(['d'], () => {
-			chMediator.nextServer();
-		});
-		cli.screen.key(['a'], () => {
-			chMediator.prevServer();
-		});
 		cli.render();
+		const model = MessagesModel(stowaway);
+		model.on('update',text => {
+			cli.messages = text;
+			if (cli.channelScrollPerc === 100 || cli.channelHeight >= cli.channelScrollHeight) {
+				cli.scrollChannelPerc(100);
+			}
+			cli.render();
+		});
+
+		/*  FSM BUILDER  */
+
+		const fsm = new FSMBuilder()
+			.navigate(() => {
+				cli.stateText = `{bold}NAVIGATE{/bold}`;
+				cli.stateBG = NavigateColor;
+				cli.render();
+			})
+			.handshake(prevState => {
+				cli.stateText = `{black-fg}${prevState.name}>{/black-fg}{bold}HANDSHAKE{/bold}`;
+				cli.stateBG = prevState.color;
+				cli.render();
+			})
+			.read(() => {
+				cli.stateText = `{bold}READ{/bold}`;
+				cli.stateBG = ReadColor;
+				cli.render();
+			})
+			.writing(() => {
+				cli.stateText = '{bold}WRITE{/bold}';
+				cli.stateBG = WriteColor;
+				cli.render();
+			})
+			.member(() => {
+				cli.stateText = '{bold}MEMBERS{/bold}';
+				cli.stateBG = MemberColor;
+				cli.render();
+			})
+			.revoke(prevState => {
+				cli.stateText = `{black-fg}${prevState.name}>{black-fg}{bold}REVOKE{/bold}`;
+				cli.stateBG = prevState.color;
+				cli.render();
+			})
+			.about(prevState => {
+				cli.stateText = `{black-fg}${prevState.name}>{black-fg}{bold}ABOUT{/bold}`;
+				cli.stateBG = prevState.color;
+				cli.render();
+			})
+			.help(prevState => {
+				cli.stateText = `{black-fg}${prevState.name}>{black-fg}{bold}HELP{/bold}`;
+				cli.stateBG = prevState.color;
+				cli.render();
+			})
+			.build();
+
+		/*  FSM EVENT LISTENING  */
+
+		fsm.on('read channel', async enterFlag => {
+			if (enterFlag) {
+				const chId = mediator.channelId;
+				if (chId != null) {
+					const channel = await client.channels.fetch(chId);
+					allowTab = true;
+					cli.channelLabel = ` #${channel.name} ${channel.topic != null ? channel.topic : ''}`;
+					model.listen(chId);
+				}
+			}
+			if (allowTab) {
+				fsm.read(); // this calls cli.render()
+			}
+		});
+		fsm.on('navigate channels', mediator.scrollChannels);
+		fsm.on('navigate servers', mediator.scrollServers);
+		fsm.on('set favorite', number => {
+			if (mediator.channelId != null) {
+				mediator.setFavorite(number);
+			}
+		});
+		fsm.on('clear favorite', () => {
+			if (mediator.channelId != null) {
+				mediator.clearFavorite();
+			}
+		});
+		fsm.on('handshake channel', () => { /*  TODO  */ });
+
+		fsm.on('quit', () => {
+			client.destroy();
+			db.persistence.compactDatafile();
+			return process.exit(0);
+		});
+
+		/*  STOWAWAY EVENT LISTENING  */
+
+
+		/*  KEYBINDING  */
+
+		cli.screen.onceKey('C-c', () => { fsm.CtrlC(); });
+		cli.inputBox.onceKey('C-c', () => { fsm.CtrlC(); });
 		// const model = new SingleChannel();
 		// cli = new SingleCLI(SCREEN_TITLE, '{bold}[Ctrl-C] to quit{/bold}', `${channel.guild.name} {green-fg}#${channel.name}{/}`, client.user.tag);
 		// stowaway.on('message', model.message);
