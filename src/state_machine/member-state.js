@@ -1,4 +1,5 @@
 const State = require('./state.js');
+const { MemberColor } = require('./state-colors.js');
 
 class MemberState extends State {
 	#enter;
@@ -13,6 +14,14 @@ class MemberState extends State {
 		this.ctrlH = () => { this.emit('to help', this); };
 		this.backtick = () => { this.emit('to notification'); };
 		this.e = () => { this.emit('to handshake', this); };
+	}
+
+	get name () {
+		return 'MEMBERS';
+	}
+
+	get color () {
+		return MemberColor;
 	}
 
 	Enter () {

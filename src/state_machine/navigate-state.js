@@ -1,4 +1,5 @@
 const State = require('./state.js');
+const { NavigateColor } = require('./state-colors.js');
 
 class NavigateState extends State {
 	#enter;
@@ -33,6 +34,14 @@ class NavigateState extends State {
 		this.num7 = () => { this.emit('to favorite', 7); };
 		this.num8 = () => { this.emit('to favorite', 8); };
 		this.num9 = () => { this.emit('to favorite', 9); };
+	}
+
+	get name () {
+		return 'NAVIGATE';
+	}
+
+	get color () {
+		return NavigateColor;
 	}
 
 	Enter () {

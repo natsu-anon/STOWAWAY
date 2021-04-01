@@ -14,6 +14,14 @@ class State extends EventEmitter {
 		}
 	}
 
+	get name () {
+		return 'BENIS';
+	}
+
+	get color () {
+		return 'green';
+	}
+
 	get helpText () {
 		return 'FUG :DDDDDDDD';
 	}

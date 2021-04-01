@@ -1,4 +1,5 @@
 const State = require('./state.js');
+const { ReadColor } = require('./stae-colors.js');
 
 class ReadState extends State {
 	#enter;
@@ -23,6 +24,14 @@ class ReadState extends State {
 		this.num7 = () => { this.emit('to favorite', 7); };
 		this.num8 = () => { this.emit('to favorite', 8); };
 		this.num9 = () => { this.emit('to favorite', 9); };
+	}
+
+	get name () {
+		return 'READ';
+	}
+
+	get color () {
+		return ReadColor;
 	}
 
 	Enter () {

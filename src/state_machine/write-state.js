@@ -1,4 +1,5 @@
 const State = require('./state.js');
+const { WriteColor } = require('./state-colors.js');
 
 class WriteState extends State {
 	#enter;
@@ -13,8 +14,16 @@ class WriteState extends State {
 		this.ctrlH = () => { this.emit('to help', this); };
 	}
 
-	Enter (publicFlag) {
-		this.#enter(publicFlag);
+	get name () {
+		return 'WRITE';
+	}
+
+	get color () {
+		return WriteColor;
+	}
+
+	Enter () {
+		this.#enter();
 	}
 
 	Exit () {
