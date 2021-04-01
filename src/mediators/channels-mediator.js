@@ -53,7 +53,7 @@ class ChannelsMediator extends Mediator {
 	}
 
 	get channelId () {
-		return this.#model.data[this.#index].id;
+		return this.#index != null ? this.#model.data[this.#index].id : null;
 	}
 
 	jumpToFavorite (number) {
@@ -66,6 +66,15 @@ class ChannelsMediator extends Mediator {
 			})
 			.catch(reject);
 		});
+	}
+
+	scrollChannels (nextFlag) {
+		if (nextFlag) {
+			this.nextChannel();
+		}
+		else {
+			this.prevChannel();
+		}
 	}
 
 	nextChannel () {
@@ -110,6 +119,15 @@ class ChannelsMediator extends Mediator {
 	}
 	*/
 
+	scrollServers (nextFlag) {
+		if (nextFlag) {
+			this.nextServer();
+		}
+		else {
+			this.prevServer();
+		}
+	}
+
 	nextServer () {
 		if (this.#index === this.#model.data.length - 1) {
 			this.#index = 0;
@@ -151,12 +169,15 @@ class ChannelsMediator extends Mediator {
 		this.emit('update', this.text);
 	}
 
-	setFavorite (number) {
-		return this.#model.setFavorite(this.channelId, number);
+	async setFavorite (number) {
+		await this.#model.setFavorite(this.channelId, number);
+		this.emit('update', this.text);
 	}
 
-	clearFavorite() {
-		return this.#model.clearFavorite(this.channelId);
+	// do I use this???
+	async clearFavorite() {
+		await this.#model.clearFavorite(this.channelId);
+		this.emit('update', this.text);
 	}
 }
 
