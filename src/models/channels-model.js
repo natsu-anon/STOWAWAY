@@ -195,11 +195,13 @@ class ChannelsModel extends Model {
 						return new Promise((res, rej) => {
 							client.channels.fetch(x.channel_id)
 							.then(channel => {
-								temp = channelData(channel);
-								if (x.favorite_number != null) {
-									temp.favoriteNumber = x.favorite_number;
+								if (!channel.deleted) {
+									temp = channelData(channel);
+									if (x.favorite_number != null) {
+										temp.favoriteNumber = x.favorite_number;
+									}
+									this.#data.push(temp);
 								}
-								this.#data.push(temp);
 								res();
 							})
 							.catch(rej);
