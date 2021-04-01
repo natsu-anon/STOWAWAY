@@ -215,7 +215,7 @@ class StowawayCLI {
 	}
 
 	set channelLabel (text) {
-		this._channelLabel = text;
+		this.channelBox.label = text;
 	}
 
 	set stateText (text) {
