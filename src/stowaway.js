@@ -41,9 +41,17 @@ const VIEW = 'VIEW_CHANNEL';
 const SEND = 'SEND_MESSAGES';
 const READ = 'READ_MESSAGE_HISTORY';
 
-function Permissible (channel, user) {
+function Permissions (channel, user) {
 	const permissions = channel.permissionsFor(user);
-	return permissions.has(VIEW) && permissions.has(SEND) && permissions.has(READ);
+	const viewable = permissions.has(VIEW);
+	const sendable = permissions.has(SEND);
+	const readable = permissions.has(READ);
+	return {
+		valid: viewable && sendable && readable,
+		viewable,
+		sendable,
+		readable,
+	};
 }
 
 function readAttached (url) {
