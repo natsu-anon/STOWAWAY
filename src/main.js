@@ -6,9 +6,8 @@ const StowawayCLI = require('./stowaway-cli.js');
 const { Permissible } = require('./stowaway.js');
 const { NavigateColor, ReadColor, WriteColor, MemberColor } = require('./state_machine/state-colors.js');
 const FSMBuilder = require('./state_machine/fsm-builder.js');
-const ChannelsMediator = require('./mediators/channels-mediator.js');
-const ChannelsModel = require('./models/channels-model.js');
-const MessagesModel = require('./models/messages-model.js');
+const { ChannelsMediator, HandshakedMediator } = require('./mediators/mediator.js');
+const { ChannelsModel, HandshakedModel, MessagesModel } = require('./models/model.js');
 
 // NOTE update url to use main branch
 const VERSION_URL = 'https://raw.githubusercontent.com/natsu-anon/STOWAWAY/development/version.json';
@@ -23,7 +22,7 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 	.then(async ({ stowaway, client, key, db }) => {
 		let allowTab = false; // block tabbing into read state until navigated away from the landing page & to a proper channel
 		stowaway.launch(client, key);
-		const mediator = new ChannelsMediator(await (new ChannelsModel()).initialize(stowaway, client, db));
+		const mediator = new HandshakedMediator(await (new HandshakedModel()).initialize(stowaway, client, db));
 		cli = new StowawayCLI(SCREEN_TITLE, BANNER, mediator.text, client.user.tag);
 
 		/*  UPDATE LISTENING TO RENDER */
@@ -116,8 +115,9 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 			}
 		});
 		fsm.on('handshake channel', () => { /*  TODO  */ });
-
+		// etc.
 		fsm.on('quit', () => {
+			cli.destroy();
 			client.destroy();
 			db.persistence.compactDatafile();
 			return process.exit(0);
@@ -128,8 +128,10 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 
 		/*  KEYBINDING  */
 
-		cli.screen.onceKey('C-c', () => { fsm.CtrlC(); });
-		cli.inputBox.onceKey('C-c', () => { fsm.CtrlC(); });
+		cli.screen.onceKey('C-c', () => { fsm.ctrlC(); });
+		cli.inputBox.onceKey('C-c', () => { fsm.ctrlC(); });
+		cli.screen.key('linefeed', () => { fsm.ctrlEnter(); }); // linefeed is ctrl-enter
+		cli.screen.key(['backspace', 'delete' ], () => { fsm.backspace(); });
 		// const model = new SingleChannel();
 		// cli = new SingleCLI(SCREEN_TITLE, '{bold}[Ctrl-C] to quit{/bold}', `${channel.guild.name} {green-fg}#${channel.name}{/}`, client.user.tag);
 		// stowaway.on('message', model.message);
