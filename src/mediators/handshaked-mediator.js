@@ -14,13 +14,13 @@ class HandshakedMediator extends Mediator {
 	#model;
 	#index;
 
-	constructor(model) {
+	constructor (model) {
 		super();
 		this.#model = model;
 		this.#index = model.data.findIndex(({ id }) => id === model.launchChannel);
 		model.on('update', () => {
-			if (this.#index > this.#model.data.length - 1) {
-				this.#index = this.#model.data.length - 1;
+			if (this.#index > this.#data().length - 1) {
+				this.#index = this.#data().length - 1;
 			}
 			this.emit('update', this.text);
 		});
@@ -32,17 +32,17 @@ class HandshakedMediator extends Mediator {
 
 	// since the model sorts its data by serverId then channelId you can relax.
 	get text () {
-		if (this.#model.data.length > 0) {
+		if (this.#data().length > 0) {
 			const res = [];
-			for (let i = 0; i < this.#model.data.length; i++) {
-				if (i === 0 || this.#model.data[i - 1 ].serverId !== this.#model.data[i].serverId) {
-					res.push(`{underline}${this.#model.data[i].serverName}{/underline}`);
+			for (let i = 0; i < this.#data().length; i++) {
+				if (i === 0 || this.#data()[i - 1 ].serverId !== this.#data()[i].serverId) {
+					res.push(`{underline}${this.#data()[i].serverName}{/underline}`);
 				}
 				if (i === this.#index) {
-					res.push(`\t> {inverse}${displayChannel(this.#model.data[i])}{/inverse}`);
+					res.push(`\t> {inverse}${displayChannel(this.#data()[i])}{/inverse}`);
 				}
 				else {
-					res.push(`\t${displayChannel(this.#model.data[i])}`);
+					res.push(`\t${displayChannel(this.#data()[i])}`);
 				}
 			}
 			return res.join('\n');
@@ -53,11 +53,11 @@ class HandshakedMediator extends Mediator {
 	}
 
 	get channelId () {
-		return this.#index != null ? this.#model.data[this.#index].id : null;
+		return this.#index != null ? this.#data()[this.#index].id : null;
 	}
 
-	get validChannel () {
-		return this.#model.data.length > 0;
+	get hasChannels () {
+		return this.#data().length > 0;
 	}
 
 	jumpToFavorite (number) {
@@ -82,22 +82,22 @@ class HandshakedMediator extends Mediator {
 	}
 
 	nextChannel () {
-		this.#index = ++this.#index % this.#model.data.length;
+		this.#index = ++this.#index % this.#data().length;
 		this.emit('update', this.text);
 	}
 
 	prevChannel () {
-		this.#index = --this.#index > -1 ? this.#index : this.#model.data.length - 1;
+		this.#index = --this.#index > -1 ? this.#index : this.#data().length - 1;
 		this.emit('update', this.text);
 	}
 
 	/* DEPRECATED
 	nextHandshaked () {
-		if (this.#index === this.#model.data.length - 1) {
+		if (this.#index === this.#data().length - 1) {
 			this.#index = this.#model.firstHandshaked();
 		}
 		else {
-			this.#index = this.#model.data.findIndex(({ handshaked }) => handshaked, this.#index);
+			this.#index = this.#data().findIndex(({ handshaked }) => handshaked, this.#index);
 			this.#index = this.#index > -1 ? this.#index : this.#model.firstHandshaked();
 		}
 		this.emit('update', this.text);
@@ -111,7 +111,7 @@ class HandshakedMediator extends Mediator {
 		else {
 			// RETVRN TO FOR LOOPS
 			for (let i = this.#index - 1; i > -1; i--) {
-				if (this.#model.data[i].handshaked) {
+				if (this.#data()[i].handshaked) {
 					this.#index = i;
 					this.emit('update', this.text);
 					return;
@@ -133,12 +133,12 @@ class HandshakedMediator extends Mediator {
 	}
 
 	nextServer () {
-		if (this.#index === this.#model.data.length - 1) {
+		if (this.#index === this.#data().length - 1) {
 			this.#index = 0;
 		}
 		else if (this.#index != null) {
-			this.#index = this.#model.data.findIndex(({ serverId }) => {
-				return serverId !== this.#model.data[this.#index].serverId;
+			this.#index = this.#data().findIndex(({ serverId }) => {
+				return serverId !== this.#data()[this.#index].serverId;
 			}, this.#index);
 			this.#index = this.#index > -1 ? this.#index : 0;
 		}
@@ -150,16 +150,16 @@ class HandshakedMediator extends Mediator {
 
 	prevServer () {
 		if (this.#index === 0) {
-			this.#index = this.#model.data.findIndex(({ serverId }) => {
-				return serverId === this.#model.data[this.#model.data.length - 1].serverId;
+			this.#index = this.#data().findIndex(({ serverId }) => {
+				return serverId === this.#data()[this.#data().length - 1].serverId;
 			});
 		}
 		else if (this.#index != null) {
-			const serverId = this.#model.data[this.#index].serverId;
+			const serverId = this.#data()[this.#index].serverId;
 			for (let i = this.#index - 1; i > -1; i--) {
-				if (this.#model.data[i].serverId !== serverId) {
-					this.#index = this.#model.data.findIndex(({ serverId }) => {
-						return serverId === this.#model.data[i].serverId;
+				if (this.#data()[i].serverId !== serverId) {
+					this.#index = this.#data().findIndex(({ serverId }) => {
+						return serverId === this.#data()[i].serverId;
 					});
 					this.emit('update', this.text);
 					return;
@@ -182,6 +182,10 @@ class HandshakedMediator extends Mediator {
 	async clearFavorite() {
 		await this.#model.clearFavorite(this.channelId);
 		this.emit('update', this.text);
+	}
+
+	#data () {
+		return this.#model.data;
 	}
 }
 
