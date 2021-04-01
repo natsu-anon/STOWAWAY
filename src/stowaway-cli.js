@@ -223,7 +223,7 @@ class StowawayCLI {
 	}
 
 	set stateBG (color) {
-		this.state.style = { fg: 'black', bg: color };
+		this.state.style = { fg: 'white', bg: color };
 	}
 
 	submitInput () {
