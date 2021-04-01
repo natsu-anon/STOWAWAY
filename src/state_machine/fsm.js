@@ -128,14 +128,16 @@ class FSM extends EventEmitter {
 		this.#transition(this.#navigate);
 	}
 
+	handshake (state) {
+		this.#transition(this.#handshake.prevState(state));
+	}
+
 	read () {
 		this.#transition(this.#read);
 	}
 
-	write (publicFlag) {
-		this.#current.Exit();
-		this.#current = this.#write;
-		this.#current.Enter(publicFlag);
+	write () {
+		this.#transition(this.#write);
 	}
 
 	member () {
@@ -143,21 +145,27 @@ class FSM extends EventEmitter {
 	}
 
 	revoke (state) {
-		this.#transition(this.#revoke.prevState(state));
+		this.#transition(this.#revoke, state);
 	}
 
 	about (state) {
-		this.#transition(this.#about.prevState(state));
+		this.#transition(this.#about, state);
 	}
 
 	help (state) {
-		this.#transition(this.#help.prevState(state));
+		this.#transition(this.#help, state);
 	}
 
-	#transition (state) {
+	#transition (state0, state1=null) {
 		this.#current.Exit();
-		this.#current = state;
-		this.#current.Enter();
+		if (state1 != null) {
+			this.#current = state1.prevState(state0);
+			this.#current.Enter(state0);
+		}
+		else {
+			this.#current = state0;
+			this.#current.Enter();
+		}
 	}
 }
 
