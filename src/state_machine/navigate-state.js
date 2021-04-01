@@ -13,7 +13,7 @@ class NavigateState extends State {
 		this.e = () => { this.emit('to handshake', this); };
 		this.ctrlR = () => { this.emit('to revoke', this); };
 		this.ctrlA = () => { this.emit('to about', this); };
-		this.ctrlH = () => { this.emit('to help', this); };
+		this.ctrlQ = () => { this.emit('to help', this); };
 		this.ctrl0 = () => { this.emit('set favorite', 0); };
 		this.ctrl1 = () => { this.emit('set favorite', 1); };
 		this.ctrl2 = () => { this.emit('set favorite', 2); };
@@ -54,6 +54,10 @@ class NavigateState extends State {
 
 	enter () {
 		this.emit('to read', true);
+	}
+
+	backspace () {
+		this.emit('clear favorite');
 	}
 
 	tab () {

@@ -78,9 +78,10 @@ class FSM extends EventEmitter {
 		this.ctrlC = () => { this.emit('quit'); };
 		this.ctrlR = this.#current.ctrlR;
 		this.ctrlA = this.#current.ctrlA;
-		this.ctrlH = this.#current.ctrlH;
+		this.ctrlQ = this.#current.ctrlH;
 		this.backtick = this.#current.backtick;
 		this.ctrlEnter = this.#current.ctrlEnter;
+		this.backspace = this.#current.backspace;
 		this.enter = this.#current.enter;
 		this.tab = this.#current.tab;
 		this.ctrlW = this.#current.ctrlW;

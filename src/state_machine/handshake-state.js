@@ -32,7 +32,7 @@ class HandshakeState extends State {
 		}
 	}
 
-	ctrlH () {
+	ctrlQ () {
 		if (this.#prevState != null) {
 			this.emit('to help', this.#prevState);
 		}

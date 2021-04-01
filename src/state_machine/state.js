@@ -30,7 +30,7 @@ class State extends EventEmitter {
 		// QUIT
 	}
 
-	ctrlH () {
+	ctrlQ () {
 		// help
 	}
 
@@ -51,6 +51,8 @@ class State extends EventEmitter {
 	enter () {}
 
 	space () {}
+
+	backspace () {}
 
 	escape () {}
 
