@@ -195,6 +195,22 @@ class Stowaway extends EventEmitter {
 			},
 			status: 'online'
 		});
+		// remove deleted channels from database (channels model checks independently)
+		this.db.find({ channel_id: { $exists: true }, handshake_id: { $exists: true } }, (err, docs) => {
+			if (err != null) {
+				throw err;
+			}
+			else {
+				docs.forEach(doc => {
+					client.fetch(doc.channel_id)
+					.then(channel => {
+						if (channel.deleted) {
+							this.db.remove({ channel_id: doc.channel_id });
+						}
+					});
+				});
+			}
+		});
 	}
 
 	fetchOlder (channel, messageID) {
