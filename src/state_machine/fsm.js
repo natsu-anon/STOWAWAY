@@ -36,12 +36,7 @@ class FSM extends EventEmitter {
 
 		// handle transitions
 		this.#current.on('to navigate', () => { this.navigate(); });
-		this.#current.on('to read', enterFlag => {
-			if (enterFlag) {
-				this.emit('enter selected channel');
-			}
-			this.read();
-		});
+		this.#current.on('to read', enterFlag => { this.emit('read channel', enterFlag); });
 		this.#current.on('to write', this.write);
 		this.#current.on('to member', () => { this.member(); });
 		this.#current.on('to revoke', this.revoke);
