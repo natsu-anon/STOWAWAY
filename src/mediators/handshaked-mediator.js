@@ -1,4 +1,5 @@
 const { Mediator } = require('./mediator.js');
+const ChannelNavigator = require('./channel-navigator.js');
 
 function displayChannel (channel) {
 	if (channel.favoriteNumber != null) { // NOTE: channel cannot be
@@ -12,37 +13,41 @@ function displayChannel (channel) {
 // really more of a wrapper but w/e
 class HandshakedMediator extends Mediator {
 	#model;
-	#index;
+	#navigator;
 
 	constructor (model) {
 		super();
 		this.#model = model;
-		this.#index = model.data.findIndex(({ id }) => id === model.launchChannel);
+		this.#navigator = new ChannelNavigator(model, () => {
+			const res = model.data.findIndex(({ id }) => id === model.launchChannel);
+			if (res === -1) {
+				return null;
+			}
+			else {
+				return res;
+			}
+		});
 		model.on('update', () => {
-			if (this.#index > this.#data().length - 1) {
-				this.#index = this.#data().length - 1;
+			if (this.#navigator.index > model.data.length - 1) {
+				this.#navigator.index = model.data.length - 1;
 			}
 			this.emit('update', this.text);
 		});
 	}
 
-	get index () {
-		return this.#index;
-	}
-
 	// since the model sorts its data by serverId then channelId you can relax.
 	get text () {
-		if (this.#data().length > 0) {
+		if (this.#model.data.length > 0) {
 			const res = [];
-			for (let i = 0; i < this.#data().length; i++) {
-				if (i === 0 || this.#data()[i - 1 ].serverId !== this.#data()[i].serverId) {
-					res.push(`{underline}${this.#data()[i].serverName}{/underline}`);
+			for (let i = 0; i < this.#model.data.length; i++) {
+				if (i === 0 || this.#model.data[i - 1 ].serverId !== this.#model.data[i].serverId) {
+					res.push(`{underline}${this.#model.data[i].serverName}{/underline}`);
 				}
-				if (i === this.#index) {
-					res.push(`\t> {inverse}${displayChannel(this.#data()[i])}{/inverse}`);
+				if (i === this.#navigator.index) {
+					res.push(`\t> {inverse}${displayChannel(this.#model.data[i])}{/inverse}`);
 				}
 				else {
-					res.push(`\t${displayChannel(this.#data()[i])}`);
+					res.push(`\t${displayChannel(this.#model.data[i])}`);
 				}
 			}
 			return res.join('\n');
@@ -52,140 +57,50 @@ class HandshakedMediator extends Mediator {
 		}
 	}
 
-	get channelId () {
-		return this.#index != null ? this.#data()[this.#index].id : null;
-	}
-
 	get hasChannels () {
-		return this.#data().length > 0;
+		return this.#model.data.length > 0;
 	}
 
-	jumpToFavorite (number) {
+	channelId () {
+		const data = this.#navigator.channel;
+		if (data != null) {
+			return data.id;
+		}
+	}
+
+	toFavorite (number) {
 		return new Promise((resolve, reject) => {
 			this.#model.getFavorite(number)
 			.then(channelId => {
-				this.#index = this.#model.getChannelIndex(channelId);
-				this.emit('update', this.text);
-				resolve(channelId);
+				if (this.#navigator.find(channelId)) {
+					this.emit('update', this.text);
+					resolve(channelId);
+				}
+				else {
+					throw Error(`Channel navigator could not find channelId ${channelId}`);
+				}
 			})
 			.catch(reject);
 		});
 	}
 
 	scrollChannels (nextFlag) {
-		if (nextFlag) {
-			this.nextChannel();
-		}
-		else {
-			this.prevChannel();
+		if (this.#navigator.scrollChannels(nextFlag)) {
+			this.emit('update', this.text);
 		}
 	}
-
-	nextChannel () {
-		this.#index = ++this.#index % this.#data().length;
-		this.emit('update', this.text);
-	}
-
-	prevChannel () {
-		this.#index = --this.#index > -1 ? this.#index : this.#data().length - 1;
-		this.emit('update', this.text);
-	}
-
-	/* DEPRECATED
-	nextHandshaked () {
-		if (this.#index === this.#data().length - 1) {
-			this.#index = this.#model.firstHandshaked();
-		}
-		else {
-			this.#index = this.#data().findIndex(({ handshaked }) => handshaked, this.#index);
-			this.#index = this.#index > -1 ? this.#index : this.#model.firstHandshaked();
-		}
-		this.emit('update', this.text);
-	}
-
-	// NOTE array reversal is NOT divinely inspired.
-	prevHandshaked () {
-		if (this.#index === 0) {
-			this.#index = this.#model.lastHandshaked();
-		}
-		else {
-			// RETVRN TO FOR LOOPS
-			for (let i = this.#index - 1; i > -1; i--) {
-				if (this.#data()[i].handshaked) {
-					this.#index = i;
-					this.emit('update', this.text);
-					return;
-				}
-			}
-			this.#index = this.#model.lastHandshaked();
-		}
-		this.emit('update', this.text);
-	}
-	*/
 
 	scrollServers (nextFlag) {
-		if (nextFlag) {
-			this.nextServer();
-		}
-		else {
-			this.prevServer();
+		if (this.#navigator.scrollServers(nextFlag)) {
+			this.emit('update', this.text);
 		}
 	}
-
-	nextServer () {
-		if (this.#index === this.#data().length - 1) {
-			this.#index = 0;
-		}
-		else if (this.#index != null) {
-			this.#index = this.#data().findIndex(({ serverId }) => {
-				return serverId !== this.#data()[this.#index].serverId;
-			}, this.#index);
-			this.#index = this.#index > -1 ? this.#index : 0;
-		}
-		else {
-			this.#index = 0;
-		}
-		this.emit('update', this.text);
+	setFavorite (number) {
+		this.#model.setFavorite(this.channelId, number);
 	}
 
-	prevServer () {
-		if (this.#index === 0) {
-			this.#index = this.#data().findIndex(({ serverId }) => {
-				return serverId === this.#data()[this.#data().length - 1].serverId;
-			});
-		}
-		else if (this.#index != null) {
-			const serverId = this.#data()[this.#index].serverId;
-			for (let i = this.#index - 1; i > -1; i--) {
-				if (this.#data()[i].serverId !== serverId) {
-					this.#index = this.#data().findIndex(({ serverId }) => {
-						return serverId === this.#data()[i].serverId;
-					});
-					this.emit('update', this.text);
-					return;
-				}
-			}
-			this.#index = this.#model.lastServer();
-		}
-		else {
-			this.#index = 0;
-		}
-		this.emit('update', this.text);
-	}
-
-	async setFavorite (number) {
-		await this.#model.setFavorite(this.channelId, number);
-		this.emit('update', this.text);
-	}
-
-	// do I use this???
-	async clearFavorite() {
-		await this.#model.clearFavorite(this.channelId);
-		this.emit('update', this.text);
-	}
-
-	#data () {
-		return this.#model.data;
+	clearFavorite() {
+		this.#model.clearFavorite(this.channelId);
 	}
 }
 
