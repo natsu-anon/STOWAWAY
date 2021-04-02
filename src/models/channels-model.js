@@ -65,7 +65,8 @@ class ChannelsModel extends Model {
 					reject(err);
 				}
 				else {
-					this.#data = client.channels.cache.filter(ch => ch.type !== 'dm')
+					this.#data = client.channels.cache.filter(ch => ch.isText())
+					.filter(ch => ch.type !== 'dm')
 					.filter(ch => {
 						return docs.findIndex(({ channel_id }) => ch.id === channel_id) === -1;
 					}).map(ch => channelData(ch, client.user));
