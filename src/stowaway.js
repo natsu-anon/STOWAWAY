@@ -390,7 +390,7 @@ class Stowaway extends EventEmitter {
 				public: true,
 				encrypted: armoredText
 			}));
-		)
+		})
 		.catch(err => { this.emit('failed encrypt', plainText, err); });
 	}
 
