@@ -99,8 +99,8 @@ class HandshakedMediator extends Mediator {
 		this.#model.setFavorite(this.channelId, number);
 	}
 
-	clearFavorite() {
-		this.#model.clearFavorite(this.channelId);
+	clearFavorite (channelId) {
+		this.#model.clearFavorite(channelId);
 	}
 }
 
