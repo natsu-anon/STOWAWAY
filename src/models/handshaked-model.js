@@ -166,6 +166,7 @@ class HandshakedModel extends Model {
 
 	// NOTE: firstServer() would just return the 0th index.  THINK ABOUT IT.
 
+	/* DEPRECATED
 	lastServer () {
 		for (let i = this.#data.length - 2; i > -1; i--) {
 			if (this.#data[i + 1].serverId !== this.#data[i].serverId) {
@@ -174,6 +175,7 @@ class HandshakedModel extends Model {
 		}
 		return 0;
 	}
+	*/
 
 	#initCache (client, db) {
 		// client.guilds.cache.each(guild => {
