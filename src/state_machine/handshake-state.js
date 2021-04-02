@@ -15,6 +15,14 @@ class HandshakeState extends State {
 		this.ctrlH = () => { this.emit('to help', this); };
 	}
 
+	Enter () {
+		this.#enter();
+	}
+
+	Exit () {
+		this.#exit();
+	}
+
 	prevState (state) {
 		this.#prevState = state;
 		return this;
