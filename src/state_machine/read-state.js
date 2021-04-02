@@ -1,5 +1,5 @@
 const State = require('./state.js');
-const { ReadColor } = require('./stae-colors.js');
+const { ReadColor } = require('./state-colors.js');
 
 class ReadState extends State {
 	#enter;
