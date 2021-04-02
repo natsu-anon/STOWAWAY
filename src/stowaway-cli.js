@@ -189,8 +189,6 @@ class StowawayCLI {
 			},
 			fg: 'yellow',
 		});
-		// NOTE remove this
-		this.screen.onceKey(['C-c'], () => { process.exit(0); });
 	}
 
 	get channelScrollPerc () {
