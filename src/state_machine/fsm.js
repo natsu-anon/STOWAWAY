@@ -60,7 +60,7 @@ class FSM extends EventEmitter {
 		this.#handshake.on('channels', next => { this.emit('handshake channels', next); });
 		this.#handshake.on('servers', next => { this.emit('handshake servers', next); });
 		this.#handshake.on('handshake', () => {
-			this.emit('handshake channel');
+			this.emit('perform handshake');
 		});
 		this.#read.on('scroll', offset => { this.emit('scroll messages', offset); });
 		this.#read.on('scroll top', () => { this.emit('messages top'); });
