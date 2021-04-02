@@ -359,16 +359,12 @@ class Stowaway extends EventEmitter {
 			}
 			else if (doc != null) {
 				openpgp.readKey({ armoredKey: doc.public_key })
-				.then(publicKey => {
-					return publicKey.signPrimaryUser([ this.key ]);
-				})
-				.then(signedKey => {
-					return this.#send(channel, attachJSON({
-						type: SIGNED_KEY,
-						recipient: userId,
-						publicKey: signedKey
-					}));
-				})
+				.then(publicKey => publicKey.signPrimaryUser([ this.key ]))
+				.then(signedKey => this.#send(channel, attachJSON({
+					type: SIGNED_KEY,
+					recipient: userId,
+					publicKey: signedKey
+				})))
 				.catch(err => {
 					if (err.message === ERR_ARMORED) {
 						// TODO
@@ -383,20 +379,18 @@ class Stowaway extends EventEmitter {
 
 	messagePublic (channel, plainText) {
 		this.#publicKeys(channel)
-		.then(publicKeys => {
-			return openpgp.encrypt({
-				message: openpgp.Message.fromText(plainText),
-				publicKeys: publicKeys.concat(this.key.toPublic()),
-				privateKeys: this.key
-			});
-		})
+		.then(publicKeys => openpgp.encrypt({
+			message: openpgp.Message.fromText(plainText),
+			publicKeys: publicKeys.concat(this.key.toPublic()),
+			privateKeys: this.key
+		}))
 		.then(armoredText => {
 			this.#send(channel, attachJSON({
 				type: CHANNEL_MESSAGE,
 				public: true,
 				encrypted: armoredText
 			}));
-		})
+		)
 		.catch(err => { this.emit('failed encrypt', plainText, err); });
 	}
 
@@ -417,13 +411,11 @@ class Stowaway extends EventEmitter {
 				});
 			});
 		})
-		.then(signedKeys => {
-			return openpgp.encrypt({
-				message: openpgp.Message.fromText(plainText),
-				publicKeys: signedKeys.concat(this.key.toPublic()),
-				privateKeys: this.key
-			});
-		})
+		.then(signedKeys => openpgp.encrypt({
+			message: openpgp.Message.fromText(plainText),
+			publicKeys: signedKeys.concat(this.key.toPublic()),
+			privateKeys: this.key
+		}))
 		.then(armoredText => {
 			this.#send(channel, attachJSON({
 				type: CHANNEL_MESSAGE,
@@ -507,14 +499,10 @@ class Stowaway extends EventEmitter {
 					});
 				});
 			}))
-			.then(values => {
-				return values.filter(x => x.status === 'fulfilled').map(x => x.value);
-			})
-			.then(armoredKeys => {
-				return Promise.all(armoredKeys.map(armoredKey => {
-					return openpgp.readKey({ armoredKey });
-				}));
-			})
+			.then(values => values.filter(x => x.status === 'fulfilled').map(x => x.value))
+			.then(armoredKeys => Promise.all(armoredKeys.map(armoredKey => {
+				return openpgp.readKey({ armoredKey });
+			})))
 			.then(resolve); // think about it
 		});
 	}
@@ -686,16 +674,12 @@ class Stowaway extends EventEmitter {
 	// OK
 	#decrypt (publicKey, armoredMessage, message) {
 		openpgp.readMessage({ armoredMessage })
-		.then(message => {
-			return openpgp.decrypt({
-				message: message,
-				publicKeys: publicKey,
-				privateKey: [ this.key ].concat(this.oldKeys)
-			});
-		})
-		.then(decrypted => {
-			return this.#verifyMessage(decrypted, publicKey);
-		})
+		.then(message => openpgp.decrypt({
+			message: message,
+			publicKeys: publicKey,
+			privateKey: [ this.key ].concat(this.oldKeys)
+		}))
+		.then(decrypted => this.#verifyMessage(decrypted, publicKey))
 		.then(result => {
 			this.emit('channel message', message, result);
 			this.#updateLatests(message.channel.id, message.id, message.createdTimestamp);
@@ -755,7 +739,7 @@ class Stowaway extends EventEmitter {
 				}
 				else if (doc == null) {
 					openpgp.readKey({ armoredKey }) // do this just to check it's armored key is actually a key
-					.then(_ => {
+					.then(() => {
 						this.db.insert({ user_id: message.author.id, public_key: armoredKey });
 						if (plsRespond) {
 							this.#sendHandshake(message.channel, HANDSHAKE);
@@ -810,9 +794,7 @@ class Stowaway extends EventEmitter {
 		openpgp.readKey({ armoredKey })
 		.then(publicKey => {
 			this.#publicKey(message.author.id)
-			.then(userKey => {
-				return publicKey.verifyPrimaryUser([ userKey ]);
-			})
+			.then(userKey => publicKey.verifyPrimaryUser([ userKey ]))
 			.then(bonafides => {
 				return bonafides.find(x => x.valid);
 			})
@@ -840,9 +822,7 @@ class Stowaway extends EventEmitter {
 	// OK -- do error handling
 	#updatePrivateKey (publicKey, sender) {
 		this.key.update(publicKey)
-		.then(() => {
-			return this.#writeKey(this.key.armor());
-		})
+		.then(() => this.#writeKey(this.key.armor()))
 		.then(() => {
 			this.#sendKeyUpdate(this.key.toPublic().armor());
 		})
