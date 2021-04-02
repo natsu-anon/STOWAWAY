@@ -1,5 +1,5 @@
-const { Model } = require('./model.js');
-const { Permissions } = require('./stowaway.js');
+const Model = require('./model.js');
+const { Permissions } = require('../stowaway.js');
 
 function channelData (channel) {
 	return {
@@ -28,20 +28,11 @@ class HandshakedModel extends Model {
 	}
 
 	async initialize (stowaway, client, db, verbose=false) {
-		if (verbose) {
-			console.log('initializing channels model');
-		}
+		this.db = db;
 		await this.#initCache(client, db);
-		if (verbose) {
-			console.log('cache initialized');
-		}
 		this.#initClient(client, db);
 		this.#initStowaway(stowaway);
 		this.#launchChannel = await this.#getLaunchChannel(db);
-		this.db = db;
-		if (verbose) {
-			console.log('launch channel set');
-		}
 		return this;
 	}
 
@@ -118,11 +109,12 @@ class HandshakedModel extends Model {
 		return this.#data.findIndex(({ id }) => id === channelId);
 	}
 
+	// should not be this class's responsibility to determine the launch channel... but I'm making it
 	#getLaunchChannel (db) {
 		return new Promise((resolve, reject) => {
 			db.findOne({ last_channel: { $exists: true } }, (err, doc) => {
 				if (err != null) {
-					reject();
+					reject(err);
 				}
 				else if (doc != null) {
 					const channel = this.getChannel(doc.last_channel);
@@ -133,12 +125,8 @@ class HandshakedModel extends Model {
 						reject(Error('Unexpected error in ChannelsModel.#getLaunchChannel()'));
 					}
 				}
-				else if (this.#data.length > 0) {
-					const channel = this.#data.find(x => x.handshaked);
-					resolve(channel !== undefined ? channel.id : this.#data[0].id);
-				}
 				else {
-					reject();
+					resolve(this.#data.length > 0 ? 0 : null);
 				}
 			});
 		});

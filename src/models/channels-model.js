@@ -1,5 +1,5 @@
-const { Model } = require('./model.js');
-const { Permissions } = require('./stowaway.js');
+const Model = require('./model.js');
+const { Permissions } = require('../stowaway.js');
 
 function channelData (channel, user) {
 	return {
@@ -34,7 +34,7 @@ class ChannelsModel extends Model {
 
 	initialize (client, db) {
 		// make sure db doesn't have
-		return Promise((resolve, reject) => {
+		return new Promise((resolve, reject) => {
 			client.on('channelCreate', channel => {
 				if (channel.type !== 'dm') {
 					this.#data.push(channelData(channel));

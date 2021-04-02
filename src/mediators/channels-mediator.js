@@ -1,4 +1,4 @@
-const { Mediator } = require('./mediator.js');
+const Mediator = require('./mediator.js');
 const ChannelNavigator = require('./channel-navigator.js');
 
 function displayChannel (channel) {
