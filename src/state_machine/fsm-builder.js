@@ -64,8 +64,9 @@ class FSMBuilder {
 	}
 
 	build () {
-		return FSM({
+		return new FSM({
 			navigate: this.#navigate,
+			handshake: this.#handshake,
 			read: this.#read,
 			write: this.#write,
 			member: this.#member,
