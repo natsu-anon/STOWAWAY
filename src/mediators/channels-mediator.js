@@ -8,13 +8,13 @@ function displayChannel (channel) {
 	else {
 		let res = `{red-fg}#${channel.name}{/red-fg}`;
 		if (!channel.permissions.viewable) {
-			res += '\n\t- CANNOT VIEW CHANNEL';
+			res += '\n\t\t{red-fg}- CANNOT VIEW CHANNEL{/red-fg}';
 		}
 		if (!channel.permissions.sendable) {
-			res += '\n\t- CANNOT MESSAGE CHANNEL';
+			res += '\n\t\t{red-fg}- CANNOT MESSAGE CHANNEL{/red-fg}';
 		}
 		if (!channel.permissions.readable) {
-			res += '\n\t- CANNOT READ MESSAGE HISTORY';
+			res += '\n\t\t{red-fg}- CANNOT READ MESSAGE HISTORY{/red-fg}';
 		}
 		return res;
 	}
@@ -50,7 +50,7 @@ class ChannelsMediator extends Mediator {
 					res.push(`\t> {inverse}${displayChannel(this.#model.data[i])}{/inverse}`);
 				}
 				else {
-					res.push(`\t${displayChannel(this.#model.data[i])}{/inverse}`);
+					res.push(`\t${displayChannel(this.#model.data[i])}`);
 				}
 			}
 			return res.join('\n');
