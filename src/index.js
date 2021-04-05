@@ -18,7 +18,7 @@ else if (process.argv.length > 2 && (process.argv[2] === '--version' || process.
 	console.log(VERSION);
 }
 else if (process.argv.length > 2 && (process.argv[2] === '--about' || process.argv[2] === '-a')) {
-	require('./about.js')(BANNER);
+	console.log(require('./about.js')(BANNER));
 }
 else if (process.argv.length > 2 && (process.argv[2] === '--help' || process.argv[2] === '-h')) {
 	require('./help.js')();
@@ -27,8 +27,8 @@ else if (process.argv.length > 2 && process.arg[2] === '--revoke') {
 	console.log('todo'); // needs everything that Stowaway.revokeKey() needs
 }
 else if (process.argv.length > 2 && process.argv[2] === '--leave-server') {
-	if (process.argv.length > 3) {
-		console.log('todo'); // will require API_TOKEN & maybe the database
+	if (process.argv.length > 3) { // also check if process.argv[2] is an int
+		console.log('todo'); // will require API_TOKEN & probably the database
 	}
 	else {
 		console.log('must pass in a server id as a second argument');
