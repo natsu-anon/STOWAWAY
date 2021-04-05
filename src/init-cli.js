@@ -230,17 +230,17 @@ class BlessedInit {
 			height: chars.length + 4,
 			valign: 'middle',
 			padding: 1,
-			label: 'Press [Enter] to continue',
+			label: ' Press [Enter] to continue ',
 			content: text,
 			border: { type: 'line' },
 		});
 		box.focus();
 		this.screen.render();
-		box.onceKey(['C-c'], () => {
+		box.onceKey('C-c', () => {
 			return process.exit(0);
 		});
 		return new Promise(resolve => {
-			box.key(['enter'], () => {
+			box.key('enter', () => {
 				box.destroy();
 				this.screen.render();
 				resolve();
