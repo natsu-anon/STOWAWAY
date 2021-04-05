@@ -148,15 +148,15 @@ class Stowaway extends EventEmitter {
 		this.key = key;
 		this.fingerprint = key.getFingerprint();
 		client.on('message', message => {
-			if (message.channel.type === 'dm') {
-				if (message.content.toLowerCase() === 'about') {
-					let about = `Hello ${message.author.username}, I'm a STOWAWAY bot!`;
-					about += 'That means I allow my user to send & receive encrypted messages with ease.  ';
+			if (message.channel.type === 'dm' && message.author.id !== this.id) {
+				if (message.content.toLowerCase() === 'about stowaway') {
+					let about = `Hello ${message.author.username}, I'm a STOWAWAY bot!  `;
+					about += 'That means I allow my user to send & receive PGP encrypted messages with ease.  ';
 					about += 'You can learn more about STOWAWAY and get your own at: https://github.com/natsu-anon/STOWAWAY';
 					message.reply(about);
 				}
 				else {
-					message.reply("dm me 'about' to learn about what I do");
+					message.reply("dm me 'about STOWAWAY' to learn about what I do");
 				}
 			}
 			else {
@@ -199,7 +199,7 @@ class Stowaway extends EventEmitter {
 		client.user.setPresence({
 			activity: {
 				type: 'LISTENING',
-				name: ' dms for "about"'
+				name: ' dms for "about STOWAWAY"'
 			},
 			status: 'online'
 		});
