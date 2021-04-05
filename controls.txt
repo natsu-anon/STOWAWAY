@@ -12,7 +12,7 @@ all states:
 	[Ctrl-C] quit
 	[Ctrl-R] initiate revoke sequence (except self)
 	[Ctrl-A] about (except self)
-	[Ctrl-Q] to show controls/basic gestalt for current state (except self) -- CTRL-H is BACKSPACE -- GONNA BE USING THAT
+	[Ctrl-K] to show controls/basic gestalt for current state (except self) -- CTRL-H is BACKSPACE -- GONNA BE USING THAT
 	[E] enter handshake state (except write state)
 	[`] to jump to notification item (except write & if there is any
 
@@ -57,7 +57,12 @@ write state:
 	[escape] stop writing & clearout the text
 	[enter] send message
 
-help state:
+keybind state:
+	- NOTE: popup window that covers majority (but not all) of screen
+	[W/S] scroll up/down (if needed)
+	[escape] return to previous state
+
+about state:
 	- NOTE: popup window that covers majority (but not all) of screen
 	[W/S] scroll up/down (if needed)
 	[escape] return to previous state
