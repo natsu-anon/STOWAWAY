@@ -33,8 +33,7 @@ const spinner = [
 	'[ @              ]',
 ];
 
-const LANDING = `
-\nThis message will vanish when you begin reading a channel.
+const LANDING = `This message will vanish when you begin reading a channel.
 
 If there are no channels in the navigation box to your right you must add your bot to a server & make sure it has the proper permissionsin order use said channels.
 	- see: {underline}https://github.com/natsu-anon/STOWAWAY#add-your-bot-to-a-server{/underline} for how to add your bot to a server.
@@ -55,49 +54,42 @@ Thanks for downloading & I hope you find this software useful
 
 class StowawayCLI {
 
-	constructor (title, BANNER, channelLabel, userTag) {
+	constructor (title, userTag, navigationContent) {
 		this.screen = blessed.screen({
 			smartcsr: true,
 			autopadding: true,
 			tabSize: 2,
-			// debug: true,
 			dockborders: true,
 			fullunicode: true, // allows for meme double-wide characters
 		});
 		this.screen.title = title;
-		this._channelLabel = ` ${channelLabel} `;
-		this._inputLabel = ` Logged in as: ${userTag} `;
 		blessed.box({
 			parent: this.screen,
-			content: '[Ctrl-C] to quit; [Ctrl-H] for help',
+			content: '[Ctrl-C] to close; [Ctrl-R] to revoke key; [Ctrl-A] for about; [Ctrl-K] for keybinds',
 			left: 0,
 			top: 0,
-			width: 40,
+			width: 86,
 			height: 1,
 			padding : {
-				top: 0,
 				right: 1,
-				bottom: 0,
 				left: 1,
 			},
 		});
-		this.notificationBox = blessed.box({
+		this.notification = blessed.box({
 			parent: this.screen,
 			tags:true,
-			left: 40,
+			right: 0,
 			top: 0,
-			width: '100%-40',
+			width: '100%-86',
 			height: 1,
 			align: 'right',
-			content: this._notice,
+			content: 'Notifications will appear here',
 			padding : {
-				top: 0,
 				right: 1,
-				bottom: 0,
 				left: 1,
 			},
 		});
-		this.navigationBox = blessed.box({
+		this.navigation = blessed.box({
 			parent: this.screen,
 			tags: true,
 			top: 1,
@@ -116,9 +108,9 @@ class StowawayCLI {
 			border: {
 				type: 'line',
 			},
-			content: 'loading...',
+			content: navigationContent,
 		});
-		this.channelBox = blessed.box({
+		this.messages = blessed.box({
 			parent: this.screen,
 			tags: true,
 			left:40,
@@ -129,7 +121,7 @@ class StowawayCLI {
 			scrollable: true,
 			alwaysScroll: true,
 			scrollbar: {
-				ch: '#',
+				ch: '@',
 				fg: 'black',
 				bg: 'cyan',
 			},
@@ -137,9 +129,9 @@ class StowawayCLI {
 			border: {
 				type: 'line',
 			},
-			content: `{cyan-fg}${BANNER}{/}${LANDING}`
+			content: LANDING,
 		});
-		this.inputBox = blessed.textbox({
+		this.input = blessed.textbox({
 			parent: this.screen,
 			hidden: true,
 			tags: true,
@@ -154,10 +146,9 @@ class StowawayCLI {
 			},
 			padding : 1,
 		});
-		this.state = blessed.box({
+		this.stateLine = blessed.box({
 			parent: this.screen,
-			tags: true,
-			// align: 'center',
+			bold: true,
 			height: 1,
 			width: '100%',
 			top: '100%-1',
@@ -165,17 +156,75 @@ class StowawayCLI {
 			fg: 'black',
 			bg: 'white',
 			padding : {
-				top: 0,
 				right: 1,
-				bottom: 0,
 				left: 1,
 			},
 		});
-		this.loadingBox = blessed.box({
+		this.popup = blessed.box({ // used for help & about
+			parent: this.screen,
+			hidden: true,
+			tags: true,
+			height: '80%',
+			width: '50%', // lmao golden ratio
+			label: ' FUG ',
+			left: 'center',
+			top: 'center',
+			content: ':-D',
+			scrollable: true,
+			alwaysScroll: true,
+			scrollbar: {
+				ch: '@',
+				fg: 'black',
+				bg: 'cyan',
+			},
+			padding: 1,
+			border: {
+				type: 'line'
+			}
+		});
+		this.revoke = blessed.textbox({
 			parent: this.screen,
 			tags: true,
+			inputOnFocus: true,
 			hidden: true,
-			label: 'fugggg',
+			width: 80, // width changes based on label
+			height: 5,
+			label: '{red-bg}{black-fg} INITIALIZING... {/}',
+			left: 'center',
+			top: 'center',
+			bg: 'red',
+			fg: 'black',
+			padding: 1,
+			border: {
+				type: 'line',
+				bg: 'red',
+				fg: 'black'
+			}
+		});
+	}
+
+	set revokeLabel (label) {
+		this.revoke.setLabel(`{red-bg}{black-fg} ${label} {/}`);
+		this.revoke.width = label.length + 8;
+	}
+
+	set stateText (text) {
+		this.stateLine.setText(text);
+	}
+
+	set stateColor (color) {
+		this.stateLine.style = { fg: 'white', bg: color };
+	}
+
+	setPopup (label, content) {
+		this.popup.setLabel(` ${label} `);
+		this.popup.setContent(content);
+	}
+
+	spin (label) {
+		const spinBox = blessed.box({
+			parent: this.screen,
+			label: ` ${label} `,
 			left: 'center',
 			top: 'center',
 			height: 5,
@@ -189,111 +238,10 @@ class StowawayCLI {
 			},
 			fg: 'yellow',
 		});
-	}
-
-	get channelScrollPerc () {
-		return this.channelBox.getScrollPerc();
-	}
-
-	get channelHeight () {
-		return this.channelBox.height - 4; // account for padding & label
-	}
-
-	get channelScrollHeight () {
-		return this.channelBox.getScrollHeight();
-	}
-
-	set messages (text) {
-		this.channelBox.setContent(text);
-		this.screen.render();
-	}
-
-	set notice (text) {
-		this._notice = text;
-	}
-
-	set channelLabel (text) {
-		this.channelBox.label = text;
-	}
-
-	set stateText (text) {
-		this.state.setContent(text);
-	}
-
-	set stateBG (color) {
-		this.state.style = { fg: 'white', bg: color };
-	}
-
-	submitInput () {
-		const text = this.inputBox.getValue();
-		this.inputBox.submit();
-		this.inputBox.clearValue();
-		return text;
-	}
-
-	/*
-	pauseInput () {
-		this.inputBox.submit();
-	}
-
-	cancelInput () {
-		this.inputBox.submit();
-		this.inputBox.clearValue();
-	}
-
-	focusChannel () {
-		this.channelBox.setLabel(`{green-fg}${this._channelLabel}{/}`);
-		this.channelBox.border = {
-			type: 'line',
-			fg: 'green',
-		};
-		this.screen.render();
-	}
-
-	focusInput () {
-		if (!this.inputBox.focused) {
-			this.inputBox.setLabel(`{green-fg}[Enter] to send the message, [Escape] to stop writing{/}`);
-			this.inputBox.border = {
-				type: 'line',
-				fg: 'green',
-			};
-			unfocusChannel();
-			this.inputBox.focus();
-			this.screen.render();
-		}
-	}
-
-	unfocusChannel () {
-		this.channelBox.setLabel(this._channelLabel);
-		this.channelBox.border = { type: 'line' };
-	}
-
-	unfocusInput () {
-		this.inputBox.setLabel(_this.inputLabel);
-		this.inputBox.border = {
-			type: 'line',
-		};
-	}
-	*/
-
-	focusInput () {
-		this.inputBox.focus();
-	}
-
-	cancelInput () {
-		this.inputBox.submit();
-		this.inputBox.clearValue();
-		this.screen.render();
-	}
-
-	loading (label) {
-		this.loadingBox.show();
-		this.loadingBox.setLabel(`{yellow-fg}${label}{/}`);
-		this.loadingBox.setFront();
 		let timeout;
 		const cycle = i => {
-			this.loadingBox.setContent(spinner[i++]);
-			this.screen.render();
+			spinBox.setContent(spinner[i++]);
+			this.render();
 			timeout = setTimeout(() => {
 				cycle(i % spinner.length);
 			}, 40);
@@ -301,170 +249,11 @@ class StowawayCLI {
 		cycle(0);
 		return () => {
 			clearTimeout(timeout);
-			this.loadingBox.hide();
-			this.screen.render();
+			spinBox.destroy();
+			this.render();
 		};
 	}
 
-	question (text, yCallback, nCallback) {
-		const box = blessed.box({
-			parent: this.screen,
-			tags: true,
-			label: '{green-fg}[Y]{yellow-fg}es or {red-fg}[N]{yellow-fg}o?{/}',
-			content: text,
-			left: 'center',
-			top: 'center',
-			height: 5,
-			width:30,
-			padding:1,
-			fg: 'yellow',
-			border : {
-				type: 'line',
-				fg: 'yellow'
-			},
-		});
-		cleanup = () => {
-			this.screen.focusPop();
-			box.destroy();
-			this.screen.render();
-		};
-		box.key(['y'], () => {
-			cleanup();
-			yCallback();
-		});
-		box.key(['n'], () => {
-			cleanup();
-			nCallback();
-		});
-		box.setFront();
-		this.screen.focusPush(box);
-		this.screen.render();
-	}
-
-	popup (text, callback=undefined) {
-		const box = blessed.box({
-			parent: this.screen,
-			tags: true,
-			label: '{cyan-fg}[Enter]{yellow-fg} to continue{/}',
-			content: text,
-			left: 'center',
-			top: 'center',
-			height: 5,
-			width:30,
-			padding:1,
-			fg: 'yellow',
-			border : {
-				type: 'line',
-				fg: 'yellow'
-			},
-		});
-		box.key(['enter'], () => {
-			this.screen.focusPop();
-			box.destroy();
-			this.screen.render();
-			if (callback != undefined) {
-				callback();
-			}
-		});
-		box.setFront();
-		this.screen.focusPush(box);
-		this.screen.render();
-	}
-
-	handshake (text) {
-		this._notify(text, 'cyan');
-	}
-
-	encrypted (text) {
-		this._notify(text, 'green');
-	}
-
-	error (text) {
-		this._notify(text, 'red');
-	}
-
-	warning (text) {
-		this._notify(text, 'yellow');
-	}
-
-	notify (text) {
-		this._notify(text, 'white');
-	}
-
-	_notify (text, color) {
-		this.notificationBox.setContent(text);
-		this.notificationBox.style = {
-			fg: 'black',
-			bg: color,
-		};
-		this.screen.render();
-		new Promise(resolve => {
-			setTimeout(() => {
-				this.notificationBox.style = {
-					fg: color,
-					bg: 'black',
-				};
-				this.screen.render();
-				resolve();
-			}, 100);
-		})
-		.then(() => {
-			return new Promise(resolve => {
-				setTimeout(() => {
-					this.notificationBox.style = {
-						fg: 'black',
-						bg: color,
-					};
-					this.screen.render();
-					resolve();
-				}, 100);
-			});
-		})
-		.then(() => {
-			return new Promise(resolve => {
-				setTimeout(() => {
-					this.notificationBox.style = {
-						fg: color,
-						bg: 'black',
-					};
-					this.render();
-					resolve();
-				}, 100);
-			});
-		})
-		.then(() => {
-			return new Promise(resolve => {
-				setTimeout(() => {
-					this.notificationBox.style = {
-						fg: 'black',
-						bg: color,
-					};
-					this.screen.render();
-					resolve();
-				}, 100);
-			});
-		})
-		.finally(() => {
-			setTimeout(() => {
-				this.notificationBox.setContent(this._notice);
-				this.notificationBox.style = {
-					fg: 'white',
-					bg: 'black'
-				};
-				this.screen.render();
-			}, 3000);
-		});
-	}
-
-	scrollChannel (offset) {
-		this.channelBox.scroll(offset);
-		this.screen.render();
-	}
-
-	scrollChannelPerc (percentage) {
-		this.channelBox.setScrollPerc(percentage);
-		this.screen.render();
-	}
 
 	render () {
 		this.screen.render();
@@ -473,10 +262,6 @@ class StowawayCLI {
 	destroy () {
 		this.screen.destroy();
 	}
-}
-
-function init (stowaway, cli) {
-	cli.render();
 }
 
 module.exports = StowawayCLI;
