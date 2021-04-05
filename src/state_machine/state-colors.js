@@ -1,6 +1,6 @@
 module.exports = {
-	NavigateState: 'blue',
-	ReadState: 'magenta',
-	WriteState: 'green',
-	MemberState: 'red'
+	NavigateColor: 'blue',
+	ReadColor: 'magenta',
+	WriteColor: 'green',
+	MemberColor: 'red'
 };

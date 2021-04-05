@@ -12,7 +12,7 @@ class HandshakeState extends State {
 		this.backtick = () => { this.emit('to notification'); };
 		this.ctrlR = () => { this.emit('to revoke', this); };
 		this.ctrlA = () => { this.emit('to about', this); };
-		this.ctrlH = () => { this.emit('to help', this); };
+		this.ctrlH = () => { this.emit('to keybinds', this); };
 	}
 
 	Enter () {
@@ -42,7 +42,7 @@ class HandshakeState extends State {
 
 	ctrlQ () {
 		if (this.#prevState != null) {
-			this.emit('to help', this.#prevState);
+			this.emit('to keybinds', this.#prevState);
 		}
 	}
 

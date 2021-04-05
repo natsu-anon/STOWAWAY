@@ -13,8 +13,8 @@ class RevokeState extends State {
 		this.e = () => { this.emit('to handshake', this); };
 	}
 
-	Enter () {
-		this.#enter();
+	Enter (state) {
+		this.#enter(state);
 	}
 
 	Exit () {
@@ -32,9 +32,9 @@ class RevokeState extends State {
 		}
 	}
 
-	ctrlQ () {
+	ctrlK () {
 		if (this.#prevState != null) {
-			this.emit('to help', this.#prevState);
+			this.emit('to keybinds', this.#prevState);
 		}
 	}
 

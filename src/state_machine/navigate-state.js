@@ -13,7 +13,7 @@ class NavigateState extends State {
 		this.e = () => { this.emit('to handshake', this); };
 		this.ctrlR = () => { this.emit('to revoke', this); };
 		this.ctrlA = () => { this.emit('to about', this); };
-		this.ctrlQ = () => { this.emit('to help', this); };
+		this.ctrlK = () => { this.emit('to keybinds', this); };
 		this.shift0 = () => { this.emit('set favorite', 0); };
 		this.shift1 = () => { this.emit('set favorite', 1); };
 		this.shift2 = () => { this.emit('set favorite', 2); };
@@ -37,7 +37,7 @@ class NavigateState extends State {
 	}
 
 	get name () {
-		return 'NAVIGATE';
+		return 'Navigate';
 	}
 
 	get color () {

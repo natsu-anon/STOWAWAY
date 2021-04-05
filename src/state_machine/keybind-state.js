@@ -1,6 +1,6 @@
 const State = require('./state.js');
 
-class HelpState extends State {
+class KeybindState extends State {
 	#enter;
 	#exit;
 	#prevState
@@ -13,17 +13,13 @@ class HelpState extends State {
 		this.e = () => { this.emit('to handshake', this); };
 	}
 
-	get helpText () {
-		return this.state != null ? this.state.helpText : super.helpText;
-	}
-
 	prevState (state) {
 		this.#prevState = state;
 		return this;
 	}
 
-	Enter () {
-		this.#enter();
+	Enter (state) {
+		this.#enter(state);
 	}
 
 	Exit () {
@@ -49,4 +45,4 @@ class HelpState extends State {
 	}
 }
 
-module.exports = HelpState;
+module.exports = KeybindState;

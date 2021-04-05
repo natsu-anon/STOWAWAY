@@ -11,13 +11,13 @@ class MemberState extends State {
 		this.#exit = args.exit;
 		this.ctrlR = () => { this.emit('to revoke', this); };
 		this.ctrlA = () => { this.emit('to about', this); };
-		this.ctrlQ = () => { this.emit('to help', this); };
+		this.ctrlK = () => { this.emit('to keybinds', this); };
 		this.backtick = () => { this.emit('to notification'); };
 		this.e = () => { this.emit('to handshake', this); };
 	}
 
 	get name () {
-		return 'MEMBERS';
+		return 'Members';
 	}
 
 	get color () {

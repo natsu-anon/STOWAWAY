@@ -11,11 +11,11 @@ class WriteState extends State {
 		this.#exit = args.exit;
 		this.ctrlR = () => { this.emit('to revoke', this); };
 		this.ctrlA = () => { this.emit('to about', this); };
-		this.ctrlQ = () => { this.emit('to help', this); };
+		this.ctrlK = () => { this.emit('to keybinds', this); };
 	}
 
 	get name () {
-		return 'WRITE';
+		return 'Write';
 	}
 
 	get color () {

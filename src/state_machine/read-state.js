@@ -11,7 +11,7 @@ class ReadState extends State {
 		this.#exit = args.exit;
 		this.ctrlR = () => { this.emit('to revoke', this); };
 		this.ctrlA = () => { this.emit('to about', this); };
-		this.ctrlQ = () => { this.emit('to help', this); };
+		this.ctrlK = () => { this.emit('to keybinds', this); };
 		this.backtick = () => { this.emit('to notification'); };
 		this.e = () => { this.emit('to handshake', this); };
 		this.num0 = () => { this.emit('to favorite', 0); };
@@ -37,7 +37,7 @@ class ReadState extends State {
 	}
 
 	get name () {
-		return 'READ';
+		return 'Read';
 	}
 
 	get color () {

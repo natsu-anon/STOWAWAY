@@ -22,7 +22,7 @@ class State extends EventEmitter {
 		return 'green';
 	}
 
-	get helpText () {
+	get help () {
 		return 'FUG :DDDDDDDD';
 	}
 
@@ -30,7 +30,7 @@ class State extends EventEmitter {
 		// QUIT
 	}
 
-	ctrlQ () {
+	ctrlK () {
 		// help
 	}
 
