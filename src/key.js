@@ -5,12 +5,13 @@ const crypto = require('crypto');
 const phrase = require('./nato-phrase.js');
 
 let BEST_PRACTICES = '{underline}STOWAWAY BEST PRACTICES{/underline}\n\n';
-BEST_PRACTICES += '1. NEVER SHARE NEITHER YOUR PRIVATE KEY, YOUR PASSPHRASE, NOR YOUR REVOCATION CERTIFICATE WITH ANYONE.\n';
-BEST_PRACTICES += '2. Write down your passphrase on a piece of paper DO NOT SAVE IT ON ANY NETWORKED DEVICE.\n';
-BEST_PRACTICES += "3. Move the newly generated 'stowaway.revoke' to an offline storage device (e.g. USB flash drive); ";
+BEST_PRACTICES += '1. Always check that your key\'s nickname & fingerprint match what you remember.\n';
+BEST_PRACTICES += '2. NEVER SHARE NEITHER YOUR PRIVATE KEY, YOUR PASSPHRASE, NOR YOUR REVOCATION CERTIFICATE WITH ANYONE.\n';
+BEST_PRACTICES += '3. Write down your passphrase on a piece of paper DO NOT SAVE IT ON ANY NETWORKED DEVICE.\n';
+BEST_PRACTICES += "4. Move the newly generated 'stowaway.revoke' to an offline storage device (e.g. USB flash drive) & ";
 BEST_PRACTICES += 'delete any local copies left on your computer.\n';
-BEST_PRACTICES += '4. If you ever lose or forget your passphrase you MUST revoke your current private key in order to use STOWAWAY (see README.txt).\n';
-BEST_PRACTICES += '5. IMMEADIATELY REVOKE YOUR PRIVATE KEY if you think anyone has your private key (with or without the passphrase).';
+// BEST_PRACTICES += '5. If you ever lose or forget your passphrase you MUST revoke your current private key in order to use STOWAWAY (see README.txt).\n';
+BEST_PRACTICES += '5. IMMEADIATELY REVOKE YOUR PRIVATE KEY if you think anyone has your private key with or without the passphrase (see README.txt).';
 
 function writeFile (file, data, encoding='utf8') {
 	return new Promise((resolve, reject) => {
@@ -92,81 +93,87 @@ function existingKey (lockedKey, keyPath, revocationPath, stowaway, client, cli)
 
 function generateKey (keyPath, revocationPath, userId, cli, writeFlag) {
 	return new Promise((resolve, reject) => {
-		cli.question('Enter a passphrase to encrypt your key with then press [Enter] to continue', true)
-		.then(phrase0 => {
-			cli.question('Re-enter the passphrase then press [Enter] to continue', true)
-			.then(phrase1 => {
-				if (phrase0 === phrase1) {
-					if (phrase0 === '') {
-						cli.notify('Must enter a valid passphrase!  Trying again!')
+		cli.question('Enter a nickname for your key then press [Enter] to continue')
+		.then(nickname => {
+			cli.question('Enter a passphrase to encrypt your key with then press [Enter] to continue', true)
+			.then(phrase0 => {
+				cli.question('Re-enter the passphrase then press [Enter] to continue', true)
+				.then(phrase1 => {
+					if (phrase0 === phrase1) {
+						if (phrase0 === '') {
+							cli.notify('Must enter a valid passphrase!  Trying again!')
+							.then(() => {
+								return generateKey(keyPath, revocationPath, userId, cli, writeFlag);
+							})
+							.then(resolve)
+							.catch(reject);
+						}
+						else {
+							openpgp.generateKey({
+								type: 'ecc',
+								curve: 'curve25519',
+								passphrase: phrase0,
+								userIds: [{
+									name: nickname,
+								}]
+							})
+							.then(({ key, revocationCertificate }) => {
+								cli.log(`\t- Key nickanme: {underline}${nickname}{/}, key fingerprint: {underline}${key.getFingerprint()}{/}`);
+								if (writeFlag) {
+									cli.log('\t- waiting to write to disk... ');
+								}
+								cli.notify(BEST_PRACTICES)
+								.then(() => {
+									if (writeFlag) {
+										return Promise.all([
+											writeFile(keyPath, key.armor()),
+											writeFile(revocationPath, revocationCertificate)
+										])
+										.then(() => {
+											return openpgp.decryptKey({
+												privateKey: key,
+												passphrase: phrase0
+											});
+										})
+										.then(unlockedKey => {
+											resolve({
+												key: unlockedKey,
+												passphrase: phrase0,
+												revocationCertificate
+											});
+										})
+										.catch(reject);
+									}
+									else {
+										openpgp.decryptKey({
+											privateKey: key,
+											passphrase: phrase0
+										})
+										.then(unlockedKey => {
+											resolve({
+												key: unlockedKey,
+												passphrase: phrase0,
+												revocationCertificate
+											});
+										})
+										.catch(reject);
+									}
+								})
+								.catch(reject);
+							})
+							.catch(reject);
+						}
+					}
+					else {
+						cli.notify('Passphrases do not match!  Trying again!')
 						.then(() => {
 							return generateKey(keyPath, revocationPath, userId, cli, writeFlag);
 						})
 						.then(resolve)
 						.catch(reject);
 					}
-					else {
-						openpgp.generateKey({
-							type: 'ecc',
-							curve: 'curve25519',
-							passphrase: phrase0,
-							userIds: [{
-								name: crypto.createHash('sha256').update(userId).digest('base64'),
-								comment: 'STOWAWAY'
-							}]
-						})
-						.then(({ key, revocationCertificate }) => {
-							cli.log(`\t- new key fingerprint: {underline}${key.getFingerprint()}{/} `);
-							cli.notify(BEST_PRACTICES)
-							.then(() => {
-								if (writeFlag) {
-									return Promise.all([
-										writeFile(keyPath, key.armor()),
-										writeFile(revocationPath, revocationCertificate)
-									])
-									.then(() => {
-										return openpgp.decryptKey({
-											privateKey: key,
-											passphrase: phrase0
-										});
-									})
-									.then(unlockedKey => {
-										resolve({
-											key: unlockedKey,
-											passphrase: phrase0,
-											revocationCertificate
-										});
-									})
-									.catch(reject);
-								}
-								else {
-									openpgp.decryptKey({
-										privateKey: key,
-										passphrase: phrase0
-									})
-									.then(unlockedKey => {
-										resolve({
-											key: unlockedKey,
-											passphrase: phrase0,
-											revocationCertificate
-										});
-									})
-									.catch(reject);
-								}
-							})
-							.catch(reject);
-						})
-						.catch(reject);
-					}
-				}
-				else {
-					cli.notify('Passphrases do not match!  Trying again!')
-					.then(() => {
-						return generateKey(keyPath, revocationPath, userId, cli, writeFlag);
-					})
-					.then(resolve)
-					.catch(reject);
-				}
+				})
+				.catch(reject);
 			})
 			.catch(reject);
 		})
@@ -187,7 +194,8 @@ function init (keyPath, revocationPath, stowaway, client, cli) {
 						openpgp.readKey({ armoredKey: data })
 						.then(key => {
 							cli.cat('{green-fg}Found a key file!{/}');
-							cli.log(`\t- old key fingerprint: {underline}${key.getFingerprint()}{/} `);
+							// cli.log(`\t- old key fingerprint: {underline}${key.getFingerprint()}{/} `);
+							cli.log(`\t- key nickname: {underline}${key.getUserIds()}{/}, key fingerprint: {underline}${key.getFingerprint()}{/} `);
 							return existingKey(key, keyPath, revocationPath, stowaway, client, cli);
 						})
 						.then(resolve)
@@ -197,7 +205,7 @@ function init (keyPath, revocationPath, stowaway, client, cli) {
 			}
 			else {
 				cli.cat('{yellow-fg}No existing keys found!{/}');
-				cli.log('\t- Generating new private key...');
+				cli.log('\t- Generating new private key... ');
 				generateKey(keyPath, revocationPath, client.user.id, cli, true)
 				.then(({ key }) => { resolve(key); })
 				.catch(reject);
