@@ -60,8 +60,8 @@ class ChannelsMediator extends Mediator {
 		}
 	}
 
-	get hasChannels () {
-		return this.#model.data.length > 0;
+	get length () {
+		return this.#model.data.length;
 	}
 
 	channelData () {

@@ -61,6 +61,10 @@ class HandshakedMediator extends Mediator {
 		return this.#model.data.length > 0;
 	}
 
+	get length () {
+		return this.#model.data.length;
+	}
+
 	channelId () {
 		const data = this.#navigator.channel;
 		if (data != null) {
