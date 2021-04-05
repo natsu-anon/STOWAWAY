@@ -18,8 +18,8 @@ class AboutState extends State {
 		return this;
 	}
 
-	Enter () {
-		this.#enter();
+	Enter (state) {
+		this.#enter(state);
 	}
 
 	Exit () {
@@ -32,9 +32,9 @@ class AboutState extends State {
 		}
 	}
 
-	ctrlQ () {
+	ctrlK () {
 		if (this.#prevState != null) {
-			this.emit('to help', this.#prevState);
+			this.emit('to keybinds', this.#prevState);
 		}
 	}
 
