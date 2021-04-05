@@ -6,7 +6,7 @@ const WriteState = require('./write-state.js');
 const MemberState = require('./member-state.js');
 const RevokeState = require('./revoke-state.js');
 const AboutState = require('./about-state.js');
-const HelpState = require('./help-state.js');
+const KeybindState = require('./help-state.js');
 
 class FSM extends EventEmitter {
 	#current;
@@ -29,7 +29,7 @@ class FSM extends EventEmitter {
 		this.#member = new MemberState(args.member);
 		this.#revoke = new RevokeState(args.revoke);
 		this.#about = new AboutState(args.about);
-		this.#help = new HelpState(args.help);
+		this.#help = new KeybindState(args.help);
 		this.#current = this.#navigate;
 
 		/*  WELCOME TO HELL  */
@@ -41,7 +41,7 @@ class FSM extends EventEmitter {
 		this.#current.on('to member', () => { this.member(); });
 		this.#current.on('to revoke', this.revoke);
 		this.#current.on('to about', this.about);
-		this.#current.on('to help', this.help);
+		this.#current.on('to keybinds', this.help);
 		this.#current.on('to previous', this.#transition);
 		this.#current.on('to favorite', number => {
 			this.emit('to favorite', number, this.read);
@@ -80,8 +80,8 @@ class FSM extends EventEmitter {
 		this.ctrlC = () => { this.emit('quit'); };
 		this.ctrlR = this.#current.ctrlR;
 		this.ctrlA = this.#current.ctrlA;
-		this.ctrlQ = this.#current.ctrlH;
-		this.backtick = this.#current.backtick;
+		this.ctrlK = this.#current.ctrlK;
+		this.backtick = this.#current.backtick; // also used by delete
 		this.ctrlEnter = this.#current.ctrlEnter;
 		this.backspace = this.#current.backspace;
 		this.enter = this.#current.enter;
@@ -116,7 +116,11 @@ class FSM extends EventEmitter {
 		this.num8 = this.#current.num8;
 		this.num9 = this.#current.num9;
 		// schmood
-		this.#current.enter();
+		this.#current.Enter();
+	}
+
+	get current () {
+		return this.#current;
 	}
 
 	set notification (func) {
@@ -155,14 +159,14 @@ class FSM extends EventEmitter {
 		this.#transition(this.#help, state);
 	}
 
-	#transition (state0, state1=null) {
+	#transition (target, previous) {
 		this.#current.Exit();
-		if (state1 != null) {
-			this.#current = state1.prevState(state0);
-			this.#current.Enter(state0);
+		if (previous != null) {
+			this.#current = target.prevState(previous);
+			this.#current.Enter(previous);
 		}
 		else {
-			this.#current = state0;
+			this.#current = target;
 			this.#current.Enter();
 		}
 	}
