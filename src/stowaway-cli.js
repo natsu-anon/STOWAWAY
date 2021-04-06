@@ -160,6 +160,42 @@ class StowawayCLI {
 				left: 1,
 			},
 		});
+		this.selector = blessed.box({ // used to select a channel to handshake & members
+			parent: this.screen,
+			tags: true,
+			hidden: true,
+			height: '80%',
+			width: 80,
+			top: 'center',
+			left: 'center',
+			content: ' Loading... ',
+			padding: 1,
+			border: { type: 'line' }
+
+		});
+		this.selector.display = (index, content) => {
+			if (this.selectorHeight <= 1) {
+				this.selector.setContent(content[index]);
+			}
+			else {
+				const halfHeight = Math.floor(this.selectorHeight / 2);
+				const contentHeight = content.length;
+				if (contentHeight > this.selectorHeight) {
+					if (index <= halfHeight) {
+						this.selector.setContent(content.slice(0, this.selectorHeight).join('\n'));
+					}
+					else if (index >= contentHeight - halfHeight) {
+						this.selector.setContent(content.slice(contentHeight - this.selectorHeight, contentHeight).join('\n'));
+					}
+					else {
+						this.selector.setContent(content.slice(index - halfHeight, index + halfHeight).join('\n'));
+					}
+				}
+				else {
+					this.selector.setContent(content.join('\n'));
+				}
+			}
+		};
 		this.popup = blessed.box({ // used for help & about
 			parent: this.screen,
 			hidden: true,
@@ -216,9 +252,21 @@ class StowawayCLI {
 		this.stateLine.style = { fg: 'white', bg: color };
 	}
 
+	get selectorHeight () {
+		return this.selector.height - 4;
+	}
+
+	select (setup) {
+		setup(this.selector);
+		this.selector.show();
+		this.selector.setFront();
+	}
+
 	setPopup (label, content) {
 		this.popup.setLabel(` ${label} `);
 		this.popup.setContent(content);
+		this.popup.show();
+		this.popup.setFront();
 	}
 
 	spin (label) {
@@ -253,7 +301,6 @@ class StowawayCLI {
 			this.render();
 		};
 	}
-
 
 	render () {
 		this.screen.render();

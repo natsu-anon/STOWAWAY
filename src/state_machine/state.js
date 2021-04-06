@@ -26,35 +26,23 @@ class State extends EventEmitter {
 		return 'FUG :DDDDDDDD';
 	}
 
-	ctrlC () {
-		// QUIT
-	}
+	ctrlC () {}
 
-	ctrlK () {
-		// help
-	}
+	ctrlR () {}
 
-	ctrlA () {
-		// about
-	}
+	ctrlA () {}
 
-	ctrlR () {
-		// revoke
-	}
+	ctrlK () {}
 
-	backtick () {
-		// jump to latest notification item (if not writing)
-	}
+	escape () {}
 
-	ctrlEnter () {}
+	backtick () {}
+
+	ctrlEnter () {} // this is the 'linefeed' sequence
 
 	enter () {}
 
-	space () {}
-
 	backspace () {}
-
-	escape () {}
 
 	tab () {}
 

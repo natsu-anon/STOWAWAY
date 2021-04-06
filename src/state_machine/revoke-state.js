@@ -3,7 +3,6 @@ const State = require('./state.js');
 class RevokeState extends State {
 	#enter;
 	#exit;
-	#prevState
 
 	constructor (args) {
 		super();
@@ -21,26 +20,21 @@ class RevokeState extends State {
 		this.#exit();
 	}
 
-	prevState (state) {
-		this.#prevState = state;
-		return this;
-	}
-
 	ctrlA () {
-		if (this.#prevState != null) {
-			this.emit('to about', this.#prevState);
+		if (this.previousState != null) {
+			this.emit('to about', this.previousState);
 		}
 	}
 
 	ctrlK () {
-		if (this.#prevState != null) {
-			this.emit('to keybinds', this.#prevState);
+		if (this.previousState != null) {
+			this.emit('to keybinds', this.previousState);
 		}
 	}
 
 	escape () {
-		if (this.#prevState != null) {
-			this.emit('to previous', this.#prevState);
+		if (this.previousState != null) {
+			this.emit('to previous', this.previousState);
 		}
 	}
 }

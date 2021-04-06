@@ -35,22 +35,26 @@ class HandshakedMediator extends Mediator {
 		});
 	}
 
+	get content () {
+		const res = [];
+		for (let i = 0; i < this.#model.data.length; i++) {
+			if (i === 0 || this.#model.data[i - 1 ].serverId !== this.#model.data[i].serverId) {
+				res.push(`{underline}${this.#model.data[i].serverName}{/underline}`);
+			}
+			if (i === this.#navigator.index) {
+				res.push(`\t> {inverse}${displayChannel(this.#model.data[i])}{/inverse}`);
+			}
+			else {
+				res.push(`\t${displayChannel(this.#model.data[i])}`);
+			}
+		}
+		return res;
+	}
+
 	// since the model sorts its data by serverId then channelId you can relax.
 	get text () {
 		if (this.#model.data.length > 0) {
-			const res = [];
-			for (let i = 0; i < this.#model.data.length; i++) {
-				if (i === 0 || this.#model.data[i - 1 ].serverId !== this.#model.data[i].serverId) {
-					res.push(`{underline}${this.#model.data[i].serverName}{/underline}`);
-				}
-				if (i === this.#navigator.index) {
-					res.push(`\t> {inverse}${displayChannel(this.#model.data[i])}{/inverse}`);
-				}
-				else {
-					res.push(`\t${displayChannel(this.#model.data[i])}`);
-				}
-			}
-			return res.join('\n');
+			return this.content.join('\n');
 		}
 		else {
 			return 'Press [E] to handshake a channel';

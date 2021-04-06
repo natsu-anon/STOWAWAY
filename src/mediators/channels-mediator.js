@@ -6,16 +6,17 @@ function displayChannel (channel) {
 		return `#${channel.name}`;
 	}
 	else {
-		let res = `{red-fg}#${channel.name}{/red-fg}`;
+		let res = `{red-fg}#${channel.name}; LACKING PERMISSIONS:`;
 		if (!channel.permissions.viewable) {
-			res += '\n\t\t{red-fg}- CANNOT VIEW CHANNEL{/red-fg}';
+			res += ' {underline}VIEW CHANNEL{/underline}';
 		}
 		if (!channel.permissions.sendable) {
-			res += '\n\t\t{red-fg}- CANNOT MESSAGE CHANNEL{/red-fg}';
+			res += ' {underline}MESSAGE CHANNEL{/underline}';
 		}
 		if (!channel.permissions.readable) {
-			res += '\n\t\t{red-fg}- CANNOT READ MESSAGE HISTORY{/red-fg}';
+			res += ' {underline}READ MESSAGE HISTORY{/underline}';
 		}
+		res += '{/}';
 		return res;
 	}
 
@@ -39,21 +40,29 @@ class ChannelsMediator extends Mediator {
 		});
 	}
 
+	get content () {
+		const res = [];
+		for (let i = 0; i < this.#model.data.length; i++) {
+			if (i === 0 || this.#model.data[i - 1 ].serverId !== this.#model.data[i].serverId) {
+				res.push(`{underline}${this.#model.data[i].serverName}{/underline}`);
+			}
+			if (i === this.#navigator.index) {
+				res.push(`\t> {inverse}${displayChannel(this.#model.data[i])}{/inverse}`);
+			}
+			else {
+				res.push(`\t${displayChannel(this.#model.data[i])}`);
+			}
+		}
+		return res;
+	}
+
+	get index () {
+		return this.#navigator.index;
+	}
+
 	get text () {
 		if (this.#model.data.length > 0) {
-			const res = [];
-			for (let i = 0; i < this.#model.data.length; i++) {
-				if (i === 0 || this.#model.data[i - 1 ].serverId !== this.#model.data[i].serverId) {
-					res.push(`{underline}${this.#model.data[i].serverName}{/underline}`);
-				}
-				if (i === this.#navigator.index) {
-					res.push(`\t> {inverse}${displayChannel(this.#model.data[i])}{/inverse}`);
-				}
-				else {
-					res.push(`\t${displayChannel(this.#model.data[i])}`);
-				}
-			}
-			return res.join('\n');
+			return this.content.join('\n');
 		}
 		else {
 			return 'No channels available!  Add your bot to a server!';

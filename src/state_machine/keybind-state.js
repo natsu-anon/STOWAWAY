@@ -3,7 +3,6 @@ const State = require('./state.js');
 class KeybindState extends State {
 	#enter;
 	#exit;
-	#prevState
 
 	constructor (args) {
 		super();
@@ -11,11 +10,6 @@ class KeybindState extends State {
 		this.#exit = args.exit;
 		this.backtick = () => { this.emit('to notification'); };
 		this.e = () => { this.emit('to handshake', this); };
-	}
-
-	prevState (state) {
-		this.#prevState = state;
-		return this;
 	}
 
 	Enter (state) {
@@ -27,20 +21,20 @@ class KeybindState extends State {
 	}
 
 	ctrlR () {
-		if (this.#prevState != null) {
-			this.emit('to revoke', this.#prevState);
+		if (this.previousState != null) {
+			this.emit('to revoke', this.previousState);
 		}
 	}
 
 	ctrlA () {
-		if (this.#prevState != null) {
-			this.emit('to about', this.#prevState);
+		if (this.previousState != null) {
+			this.emit('to about', this.previousState);
 		}
 	}
 
 	escape () {
-		if (this.#prevState != null) {
-			this.emit('to previous', this.#prevState);
+		if (this.previousState != null) {
+			this.emit('to previous', this.previousState);
 		}
 	}
 }

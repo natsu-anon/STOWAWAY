@@ -6,7 +6,7 @@ const WriteState = require('./write-state.js');
 const MemberState = require('./member-state.js');
 const RevokeState = require('./revoke-state.js');
 const AboutState = require('./about-state.js');
-const KeybindState = require('./help-state.js');
+const KeybindState = require('./keybind-state.js');
 
 class FSM extends EventEmitter {
 	#current;
@@ -17,7 +17,7 @@ class FSM extends EventEmitter {
 	#member;
 	#revoke;
 	#about;
-	#help;
+	#keybinds;
 	#noticeFunc;
 
 	constructor (args) {
@@ -29,32 +29,43 @@ class FSM extends EventEmitter {
 		this.#member = new MemberState(args.member);
 		this.#revoke = new RevokeState(args.revoke);
 		this.#about = new AboutState(args.about);
-		this.#help = new KeybindState(args.help);
-		this.#current = this.#navigate;
+		this.#keybinds = new KeybindState(args.keybinds);
 
 		/*  WELCOME TO HELL  */
 
-		// handle transitions
-		this.#current.on('to navigate', () => { this.navigate(); });
-		this.#current.on('to read', enterFlag => { this.emit('read channel', enterFlag); });
-		this.#current.on('to write', this.write);
-		this.#current.on('to member', () => { this.member(); });
-		this.#current.on('to revoke', this.revoke);
-		this.#current.on('to about', this.about);
-		this.#current.on('to keybinds', this.help);
-		this.#current.on('to previous', this.#transition);
-		this.#current.on('to favorite', number => {
-			this.emit('to favorite', number, this.read);
+		const states = [
+			this.#navigate,
+			this.#handshake,
+			this.#read,
+			this.#write,
+			this.#member,
+			this.#revoke,
+			this.#about,
+			this.#keybinds
+		];
+		// these work for all states (except for the last 3 but w/e)
+		states.forEach(state => {
+			state.on('to navigate', () => { this.navigate(); });
+			state.on('to handshake', s => { this.handshake(s); });
+			state.on('to read', enterFlag => { this.emit('read channel', enterFlag); });
+			state.on('to write', () => { this.write(); });
+			state.on('to member', () => { this.member(); });
+			state.on('to revoke', s => { this.revoke(s); });
+			state.on('to about', s => { this.about(s); });
+			state.on('to keybinds', s => { this.keybind(s); });
+			state.on('to previous', s => { this.#transition(s); });
+			state.on('to favorite', number => {
+				this.emit('to favorite', number, this.read);
+			});
+			state.on('to notification', () => {
+				if (this.#noticeFunc != null) {
+					this.noticeFunc();
+				}
+			});
+			// event handling
+			state.on('clear favorite', () => { this.emit('clear favorite'); });
+			state.on('set favorite', number => { this.emit('set favorite', number); });
 		});
-		this.#current.on('to notification', () => {
-			if (this.#noticeFunc != null) {
-				this.noticeFunc();
-			}
-		});
-
-		// event handling
-		this.#current.on('clear favorite', () => { this.emit('clear favorite'); });
-		this.#current.on('set favorite', number => { this.emit('set favorite', number); });
 		this.#navigate.on('channels', next => { this.emit('navigate channels', next); });
 		this.#navigate.on('servers', next => { this.emit('navigate servers', next); });
 		this.#handshake.on('channels', next => { this.emit('handshake channels', next); });
@@ -76,46 +87,7 @@ class FSM extends EventEmitter {
 		});
 		this.#member.on('scroll', offset => { this.emit('scroll members', offset); });
 		this.#member.on('sign member', () => { this.emit('sign member'); });
-		// keybind hookups
-		this.ctrlC = () => { this.emit('quit'); };
-		this.ctrlR = this.#current.ctrlR;
-		this.ctrlA = this.#current.ctrlA;
-		this.ctrlK = this.#current.ctrlK;
-		this.backtick = this.#current.backtick; // also used by delete
-		this.ctrlEnter = this.#current.ctrlEnter;
-		this.backspace = this.#current.backspace;
-		this.enter = this.#current.enter;
-		this.tab = this.#current.tab;
-		this.ctrlW = this.#current.ctrlW;
-		this.ctrlS = this.#current.ctrlS;
-		this.w = this.#current.w;
-		this.s = this.#current.s;
-		this.a = this.#current.a;
-		this.d = this.#current.d;
-		this.h = this.#current.h;
-		this.m = this.#current.m;
-		this.e = this.#current.e;
-		this.shift0 = this.#current.ctrl0;
-		this.shift1 = this.#current.ctrl1;
-		this.shift2 = this.#current.ctrl2;
-		this.shift3 = this.#current.ctrl3;
-		this.shift4 = this.#current.ctrl4;
-		this.shift5 = this.#current.ctrl5;
-		this.shift6 = this.#current.ctrl6;
-		this.shift7 = this.#current.ctrl7;
-		this.shift8 = this.#current.ctrl8;
-		this.shift9 = this.#current.ctrl9;
-		this.num0 = this.#current.num0;
-		this.num1 = this.#current.num1;
-		this.num2 = this.#current.num2;
-		this.num3 = this.#current.num3;
-		this.num4 = this.#current.num4;
-		this.num5 = this.#current.num5;
-		this.num6 = this.#current.num6;
-		this.num7 = this.#current.num7;
-		this.num8 = this.#current.num8;
-		this.num9 = this.#current.num9;
-		// schmood
+		this.#current = this.#navigate;
 		this.#current.Enter();
 	}
 
@@ -132,7 +104,7 @@ class FSM extends EventEmitter {
 	}
 
 	handshake (state) {
-		this.#transition(this.#handshake.prevState(state));
+		this.#transition(this.#handshake, state);
 	}
 
 	read () {
@@ -155,14 +127,93 @@ class FSM extends EventEmitter {
 		this.#transition(this.#about, state);
 	}
 
-	help (state) {
-		this.#transition(this.#help, state);
+	keybind (state) {
+		this.#transition(this.#keybinds, state);
 	}
+
+	ctrlC () { this.emit('quit'); }
+
+	ctrlR () { this.#current.ctrlR(); }
+
+	ctrlA () { this.#current.ctrlA(); }
+
+	ctrlK () { this.#current.ctrlK(); }
+
+	escape () { this.#current.escape(); }
+
+	backtick () { this.#current.backtick(); }
+
+	ctrlEnter() { this.#current.ctrlEnter(); }
+
+	enter () { this.#current.enter(); }
+
+	backspace () { this.#current.backspace(); }
+
+	tab () { this.#current.tab(); }
+
+	ctrlW () { this.#current.ctrlW(); }
+
+	ctrlS () { this.#current.ctrlS(); }
+
+	w () { this.#current.w(); }
+
+	s () { this.#current.s(); }
+
+	a () { this.#current.a(); }
+
+	d () { this.#current.d(); }
+
+	e () { this.#current.e(); }
+
+	h () { this.#current.h(); }
+
+	m () { this.#current.m(); }
+
+	shift0 () { this.#current.shift0(); }
+
+	shift1 () { this.#current.shift1(); }
+
+	shift2 () { this.#current.shift2(); }
+
+	shift3 () { this.#current.shift3(); }
+
+	shift4 () { this.#current.shift4(); }
+
+	shift5 () { this.#current.shift5(); }
+
+	shift6 () { this.#current.shift6(); }
+
+	shift7 () { this.#current.shift7(); }
+
+	shift8 () { this.#current.shift8(); }
+
+	shift9 () { this.#current.shift9(); }
+
+	num0 () { this.#current.num0(); }
+
+	num1 () { this.#current.num1(); }
+
+	num2 () { this.#current.num2(); }
+
+	num3 () { this.#current.num3(); }
+
+	num4 () { this.#current.num4(); }
+
+	num5 () { this.#current.num5(); }
+
+	num6 () { this.#current.num6(); }
+
+	num7 () { this.#current.num7(); }
+
+	num8 () { this.#current.num8(); }
+
+	num9 () { this.#current.num9(); }
 
 	#transition (target, previous) {
 		this.#current.Exit();
 		if (previous != null) {
-			this.#current = target.prevState(previous);
+			target.previousState = previous;
+			this.#current = target;
 			this.#current.Enter(previous);
 		}
 		else {

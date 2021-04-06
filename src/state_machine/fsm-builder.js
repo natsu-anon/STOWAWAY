@@ -10,7 +10,7 @@ class FSMBuilder {
 	#member;
 	#revoke;
 	#about;
-	#help;
+	#keybinds;
 
 	constructor () {
 		this.#navigate = { enter: _, exit: _ };
@@ -20,7 +20,7 @@ class FSMBuilder {
 		this.#member = { enter: _, exit: _ };
 		this.#revoke = { enter: _, exit: _ };
 		this.#about = { enter: _, exit: _ };
-		this.#help = { enter: _, exit: _ };
+		this.#keybinds = { enter: _, exit: _ };
 	}
 
 	navigate (enter, exit=_) {
@@ -58,8 +58,8 @@ class FSMBuilder {
 		return this;
 	}
 
-	help (enter, exit=_) {
-		this.#help = { enter, exit };
+	keybinds (enter, exit=_) {
+		this.#keybinds = { enter, exit };
 		return this;
 	}
 
@@ -72,7 +72,7 @@ class FSMBuilder {
 			member: this.#member,
 			revoke: this.#revoke,
 			about: this.#about,
-			help: this.#help
+			keybinds: this.#keybinds
 		});
 	}
 }

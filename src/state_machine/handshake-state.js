@@ -3,7 +3,6 @@ const State = require('./state.js');
 class HandshakeState extends State {
 	#enter;
 	#exit;
-	#prevState;
 
 	constructor (args) {
 		super();
@@ -15,40 +14,35 @@ class HandshakeState extends State {
 		this.ctrlH = () => { this.emit('to keybinds', this); };
 	}
 
-	Enter () {
-		this.#enter();
+	Enter (state) {
+		this.#enter(state);
 	}
 
 	Exit () {
 		this.#exit();
 	}
 
-	prevState (state) {
-		this.#prevState = state;
-		return this;
-	}
-
 	ctrlR () {
-		if (this.#prevState != null) {
-			this.emit('to revoke', this.#prevState);
+		if (this.previousState != null) {
+			this.emit('to revoke', this.prevState);
 		}
 	}
 
 	ctrlA () {
-		if (this.#prevState != null) {
-			this.emit('to about', this.#prevState);
+		if (this.previousState != null) {
+			this.emit('to about', this.prevState);
 		}
 	}
 
 	ctrlQ () {
-		if (this.#prevState != null) {
-			this.emit('to keybinds', this.#prevState);
+		if (this.previousState != null) {
+			this.emit('to keybinds', this.prevState);
 		}
 	}
 
 	escape () {
-		if (this.#prevState != null) {
-			this.emit('to previous', this.#prevState);
+		if (this.previousState != null) {
+			this.emit('to previous', this.previousState);
 		}
 	}
 

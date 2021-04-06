@@ -1,13 +1,14 @@
 const process = require('process');
 
+const phrase = require('./nato-phrase.js');
 const versionCheck = require('./version-check.js');
 const initialize = require('./initialization.js');
 const StowawayCLI = require('./stowaway-cli.js');
 const { Permissible } = require('./stowaway.js');
 const { NavigateColor, ReadColor, WriteColor, MemberColor } = require('./state_machine/state-colors.js');
 const FSMBuilder = require('./state_machine/fsm-builder.js');
-const { ChannelsMediator, HandshakedMediator } = require('./mediators/mediator.js');
-const { ChannelsModel, HandshakedModel, MessagesModel } = require('./models/model.js');
+const { ChannelsMediator, HandshakedMediator } = require('./mediators.js');
+const { ChannelsModel, HandshakedModel, MessagesModel } = require('./models.js');
 
 // NOTE update url to use main branch
 const VERSION_URL = 'https://raw.githubusercontent.com/natsu-anon/STOWAWAY/development/version.json';
@@ -20,102 +21,157 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 		return initialize(BANNER, SCREEN_TITLE, DATABASE, API_TOKEN, PRIVATE_KEY, VERSION, REVOCATION_CERTIFICATE, result);
 	})
 	.then(async ({ stowaway, client, key, db }) => {
+		const ABOUT = require('./about.js')(BANNER);
 		let allowTab = false; // block tabbing into read state until navigated away from the landing page & to a proper channel
 		stowaway.launch(client, key);
-		const mediator = new HandshakedMediator(await (new HandshakedModel()).initialize(stowaway, client, db));
-		cli = new StowawayCLI(SCREEN_TITLE, BANNER, mediator.text, client.user.tag);
+		// both mediators are ok
+		const hMediator = new HandshakedMediator(await (new HandshakedModel()).initialize(stowaway, client, db));
+		const cMediator = new ChannelsMediator(await (new ChannelsModel()).initialize(client, db));
+		const cMediatorBox = (box, text) => { // this allows the display box to be naturally scrollable
+			if (cMediator.length > 0) {
+				box.display(cMediator.index, cMediator.content);
+			}
+			else {
+				box.setContent(text);
+			}
+		};
+		cli = new StowawayCLI(SCREEN_TITLE, client.user.tag, hMediator.text);
 
-		/*  UPDATE LISTENING TO RENDER */
+		//  UPDATE LISTENING TO RENDER //
 
-		mediator.on('update', text => {
+		hMediator.on('update', text => {
 			cli.navigationBox.setContent(text);
 			cli.render();
 		});
-		cli.render();
-		const model = MessagesModel(stowaway);
-		model.on('update',text => {
-			cli.messages = text;
-			if (cli.channelScrollPerc === 100 || cli.channelHeight >= cli.channelScrollHeight) {
-				cli.scrollChannelPerc(100);
-			}
-			cli.render();
-		});
+		// const mModel = new MessagesModel(stowaway);
+		// mModel.on('update',text => {
+		// 	cli.messages = text;
+		// 	if (cli.channelScrollPerc === 100 || cli.channelHeight >= cli.channelScrollHeight) {
+		// 		cli.scrollChannelPerc(100);
+		// 	}
+		// 	cli.render();
+		// });
 
-		/*  FSM BUILDER  */
+		//  FSM BUILDER  //
 
 		const fsm = new FSMBuilder()
 			.navigate(() => {
-				cli.stateText = `{bold}NAVIGATE{/bold}`;
-				cli.stateBG = NavigateColor;
+				cli.stateText = `NAVIGATE | ${hMediator.length} handshaked channels`;
+				cli.stateColor = NavigateColor;
 				cli.render();
 			})
 			.handshake(prevState => {
-				cli.stateText = `{black-fg}${prevState.name}>{/black-fg}{bold}HANDSHAKE{/bold}`;
-				cli.stateBG = prevState.color;
+				cli.stateText = `${prevState.name} | HANDSHAKE | ${cMediator.length} text channels`;
+				cli.stateColor = prevState.color;
+				cli.select(box => {
+					box.label = ' Select an available server to handshake ';
+					cMediatorBox(box, cMediator.text);
+					box.on('resize', () => {
+						cMediatorBox(box, cMediator.text);
+						cli.render();
+					});
+					cMediator.on('update', text => {
+						cMediatorBox(box, text);
+						cli.render();
+					});
+				});
 				cli.render();
+			},
+			() => {
+				cMediator.removeAllListeners('update');
+				cli.selector.removeAllListeners('resize');
+				cli.selector.hide();
 			})
 			.read(() => {
-				cli.stateText = `{bold}READ{/bold}`;
-				cli.stateBG = ReadColor;
+				cli.stateText = 'READ | initializing...'; // eventually specify session as well
+				cli.stateColor = ReadColor;
 				cli.render();
 			})
-			.writing(() => {
-				cli.stateText = '{bold}WRITE{/bold}';
+			.write(() => {
+				cli.stateText = 'WRITE | specify if public or private'; // eventually sepcify session as well
 				cli.stateBG = WriteColor;
 				cli.render();
 			})
 			.member(() => {
-				cli.stateText = '{bold}MEMBERS{/bold}';
+				cli.stateText = 'MEMBERS | initializing...';
 				cli.stateBG = MemberColor;
 				cli.render();
 			})
 			.revoke(prevState => {
-				cli.stateText = `{black-fg}${prevState.name}>{black-fg}{bold}REVOKE{/bold}`;
+				cli.stateText = `${prevState.name} | REVOKE | WARNING: revoking a key is irreversible!`;
 				cli.stateBG = prevState.color;
+				cli.revoke.show();
 				cli.render();
+			}, () => {
+				cli.revoke.hide();
 			})
 			.about(prevState => {
-				cli.stateText = `{black-fg}${prevState.name}>{black-fg}{bold}ABOUT{/bold}`;
+				cli.stateText = `${prevState.name} | ABOUT | STOWAWAY version: ${VERSION}`;
+				cli.setPopup('About STOWAWAY; [Escape] to return', ABOUT);
 				cli.stateBG = prevState.color;
 				cli.render();
+			}, () => {
+				cli.popup.hide();
 			})
-			.help(prevState => {
-				cli.stateText = `{black-fg}${prevState.name}>{black-fg}{bold}HELP{/bold}`;
+			.keybinds(prevState => {
+				cli.stateText = `${prevState.name} | KEYBINDS`;
 				cli.stateBG = prevState.color;
+				cli.setPopup(`Keybinds for ${prevState.name} state controls; [Escape] to return`, prevState.help);
 				cli.render();
+			}, () => {
+				cli.popup.hide();
 			})
 			.build();
 
-		/*  FSM EVENT LISTENING  */
+		// fsm.handshake(fsm.current);
 
+		//  FSM EVENT LISTENING  //
+
+		/*
 		fsm.on('read channel', async enterFlag => {
 			if (enterFlag) {
-				const chId = mediator.channelId;
-				if (chId != null) {
-					const channel = await client.channels.fetch(chId);
+				const id = hMediator.channelId();
+				if (id != null) {
+					const channel = await client.channels.fetch(id);
 					allowTab = true;
 					cli.channelLabel = ` #${channel.name} ${channel.topic != null ? channel.topic : ''}`;
-					model.listen(chId);
+					mModel.listen(id);
 				}
 			}
 			if (allowTab) {
 				fsm.read(); // this calls cli.render()
 			}
 		});
-		fsm.on('navigate channels', mediator.scrollChannels);
-		fsm.on('navigate servers', mediator.scrollServers);
-		fsm.on('set favorite', number => {
-			if (mediator.channelId != null) {
-				mediator.setFavorite(number);
+		fsm.on('navigate channels', hMediator.scrollChannels);
+		fsm.on('navigate servers', hMediator.scrollServers);
+		fsm.on('navigation set favorite', number => {
+			const id = hMediator.channelId();
+			if (id != null) {
+				hMediator.setFavorite(number, id);
 			}
 		});
-		fsm.on('clear favorite', () => {
-			if (mediator.channelId != null) {
-				mediator.clearFavorite();
+		fsm.on('navigation clear favorite', () => {
+			const id = hMediator.channelId();
+			if (id != null) {
+				hMediator.clearFavorite(id);
 			}
 		});
-		fsm.on('handshake channel', () => { /*  TODO  */ });
+		fsm.on('perform handshake', () => {
+			const data = cMediator.channelData();
+			if (data.valid) {
+				const stop = cli.loading('handshaking new channel');
+				client.channels.fetch(data.id)
+				.then(channel => stowaway.loadChannel(channel))
+				.then(() => {
+					mModel.listen(data.id);
+					stop();
+					fsm.navigate();
+				})
+				.catch(err => { throw err; });
+			}
+		});
 		// etc.
+		*/
 		fsm.on('quit', () => {
 			cli.destroy();
 			client.destroy();
@@ -123,15 +179,34 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 			return process.exit(0);
 		});
 
-		/*  STOWAWAY EVENT LISTENING  */
+		//  STOWAWAY EVENT LISTENING  //
 
+		fsm.on('handshake channels', next => { cMediator.scrollChannels(next); });
+		fsm.on('handshake servers', next => { cMediator.scrollServers(next); });
 
-		/*  KEYBINDING  */
+		//  KEYBINDING  //
 
+		// these work regardless of state
 		cli.screen.onceKey('C-c', () => { fsm.ctrlC(); });
-		cli.inputBox.onceKey('C-c', () => { fsm.ctrlC(); });
-		cli.screen.key('linefeed', () => { fsm.ctrlEnter(); }); // linefeed is ctrl-enter
-		cli.screen.key(['backspace', 'delete' ], () => { fsm.backspace(); });
+		cli.input.onceKey('C-c', () => { fsm.ctrlC(); });
+		cli.screen.key('C-r', () => { fsm.ctrlR(); });
+		cli.input.key('C-r', () => { fsm.ctrlR(); });
+		cli.screen.key('C-a', () => { fsm.ctrlA(); });
+		cli.input.key('C-a', () => { fsm.ctrlA(); });
+		cli.screen.key('C-k', () => { fsm.ctrlK(); });
+		cli.input.key('C-k', () => { fsm.ctrlK(); });
+		cli.screen.key('escape', () => { fsm.escape(); });
+		cli.input.key('escape', () => { fsm.escape(); });
+		// these work in all states but input
+		cli.screen.key(['e', 'S-e'], () => { fsm.e(); });
+		cli.screen.key(['`', '~'], () => { fsm.backtick(); });
+		// state specific
+		cli.screen.key(['w', 'S-w'], () => { fsm.w(); });
+		cli.screen.key(['s', 'S-s'], () => { fsm.s(); });
+		cli.screen.key(['a', 'S-a'], () => { fsm.a(); });
+		cli.screen.key(['d', 'S-d'], () => { fsm.d(); });
+		// cli.screen.key('linefeed', () => { fsm.ctrlEnter(); }); // linefeed is ctrl-enter
+		// cli.screen.key(['backspace', 'delete' ], () => { fsm.backspace(); });
 		// const model = new SingleChannel();
 		// cli = new SingleCLI(SCREEN_TITLE, '{bold}[Ctrl-C] to quit{/bold}', `${channel.guild.name} {green-fg}#${channel.name}{/}`, client.user.tag);
 		// stowaway.on('message', model.message);
