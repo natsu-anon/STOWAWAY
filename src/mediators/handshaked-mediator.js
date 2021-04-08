@@ -22,7 +22,7 @@ class HandshakedMediator extends Mediator {
 			for (let i = 0; i < model.struct.data.length; i++) {
 				index++;
 				for (let j = 0; j < model.struct.data[i].channels.length; j++) {
-					if (model.struct.data[i].channels.id === model.launchChannel) {
+					if (model.struct.data[i].channels[j].id === model.launchChannel) {
 						navigator.setPosition(i, j);
 						return index;
 					}
@@ -33,9 +33,7 @@ class HandshakedMediator extends Mediator {
 			}
 		});
 		model.on('update', () => {
-			if (this.#navigator.index > model.data.length - 1) {
-				this.#navigator.scrollChannels(false);
-			}
+			this.#navigator.checkIndex();
 			this.emit('update', this.text);
 		});
 	}
@@ -44,7 +42,7 @@ class HandshakedMediator extends Mediator {
 		if (this.model.struct.numChannels() > 0) {
 			const res = [];
 			const data = this.model.struct.flatten();
-			for (let i = 0; i < this.data.length; i++) {
+			for (let i = 0; i < data.length; i++) {
 				if (data[i].server) {
 					res.push(`{underline}${data[i].name}{/underline}`);
 				}

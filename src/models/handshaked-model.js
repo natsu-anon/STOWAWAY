@@ -42,7 +42,7 @@ class HandshakedModel extends Model {
 			index: (channel, data) => {
 				const i = serverIndex(channel.guild, data);
 				if (i >= 0) {
-					return { i, j: data[i].findIndex(({ id }) => channel.id === id) };
+					return { i, j: data[i].channels.findIndex(({ id }) => channel.id === id) };
 				}
 				else {
 					return { i, j: -1 };
@@ -133,13 +133,23 @@ class HandshakedModel extends Model {
 				else if (doc != null) {
 					let fallback = true;
 					for (let i = 0; i < this.struct.data.length; i++) {
-						for (let j = 0; i < this.struct[i].channels.length; j++) {
-							if (this.struct[i].channels[j].id === doc.last_channel) {
-								resolve(doc.last_channel);
+						for (let j = 0; j < this.struct.data[i].channels.length; j++) {
+							if (this.struct.data[i].channels[j].id === doc.last_channel) {
+								// throw Error(this.struct.data[i].channels[j].id);
 								fallback = false;
+								resolve(doc.last_channel);
 							}
 						}
 					}
+					// resolve(this.struct.firstChannel());
+					// for (let i = 0; i < this.struct.data.length; i++) {
+					// 	for (let j = 0; i < this.struct.data[i].channels.length; j++) {
+					// 		if (this.struct.data[i].channels[j].id === doc.last_channel) {
+					// 			resolve(doc.last_channel);
+					// 			fallback = false;
+					// 		}
+					// 	}
+					// }
 					if (fallback) {
 						resolve(this.struct.firstChannel());
 					}

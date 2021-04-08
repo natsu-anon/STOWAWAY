@@ -39,7 +39,7 @@ class ChannelsModel extends Model {
 			index: (channel, data) => {
 				const i = serverIndex(channel.guild, data);
 				if (i >= 0) {
-					return { i, j: data[i].findIndex(({ id }) => channel.id === id) };
+					return { i, j: data[i].channels.findIndex(({ id }) => channel.id === id) };
 				}
 				else {
 					return { i, j: -1 };

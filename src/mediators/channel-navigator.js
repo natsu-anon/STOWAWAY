@@ -41,6 +41,35 @@ class ChannelNavigator {
 		this.#position = { server, channel };
 	}
 
+	checkIndex () {
+		if (this.#position === undefined) {
+			this.#firstChannel();
+		}
+		else {
+			const index = this.#position.server;
+			if (index >= this.data.length) {
+				this.#lastChannel();
+			}
+			else if (this.#position.channel >= this.data[index].channels.length) {
+				if (this.data[index].channels.length > 0) {
+					this.#index += (this.data[index].channels.length - 1) - this.#position.channel;
+					this.#position.channel = this.data[index].channels.length - 1;
+				}
+				else {
+					this.#firstChannel(); // KEEP IT SIMPLE
+				}
+			}
+			else {
+				let temp = 0;
+				for (let i = 0; i < this.#position.server; i++) {
+					temp += this.data[i].channels.length + 1;
+				}
+				temp += this.#position.channel + 1;
+				this.#index = temp;
+			}
+		}
+	}
+
 	find (channelId) {
 		let index = 0;
 		for (let i = 0; i < this.data.length; i++) {
@@ -109,18 +138,7 @@ class ChannelNavigator {
 						return true;
 					}
 				}
-				temp = 0;
-				for (let i = this.data.length - 1; i >= 0; i--) {
-					if (this.data[i].channels.length > 0) {
-						for (let j = 0; j < i; j++) {
-							temp += this.data[j].channels.length + 1;
-						}
-						this.#index = temp + this.data[i].channels.length;
-						this.setPosition(i, this.data[i].channels.length - 1);
-						return true;
-					}
-				}
-				return false;
+				return this.#lastChannel();
 			}
 		}
 		else {
@@ -197,6 +215,21 @@ class ChannelNavigator {
 			}
 			else {
 				temp++;
+			}
+		}
+		return false;
+	}
+
+	#lastChannel () {
+		let temp = 0;
+		for (let i = this.data.length - 1; i >= 0; i--) {
+			if (this.data[i].channels.length > 0) {
+				for (let j = 0; j < i; j++) {
+					temp += this.data[j].channels.length + 1;
+				}
+				this.#index = temp + this.data[i].channels.length;
+				this.setPosition(i, this.data[i].channels.length - 1);
+				return true;
 			}
 		}
 		return false;

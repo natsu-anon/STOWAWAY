@@ -37,9 +37,7 @@ class ChannelsMediator extends Mediator {
 			}
 		});
 		model.on('update', () => {
-			if (this.#navigator.index > model.data.length - 1) {
-				this.#navigator.scrollChannels(false);
-			}
+			this.#navigator.checkIndex();
 			this.emit('update', this.text);
 		});
 	}
