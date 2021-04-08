@@ -106,7 +106,7 @@ class MessagesModel extends Model {
 		super();
 		stowaway.on('channel message', this.#channelMessage);
 		stowaway.on('decryption failure', this.#decryptionFailure);
-		stowaway.on('handshake', this.#handshake);
+		stowaway.on('user handshake', this.#handshake);
 		stowaway.on('signed key', this.#signedKey);
 		stowaway.on('key update', this.#keyUpdate);
 		stowaway.on('revocation', this.#keyUpdate);

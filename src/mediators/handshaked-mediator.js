@@ -79,9 +79,15 @@ class HandshakedMediator extends Mediator {
 		const channelId = this.model.getFavorite(number);
 		if (channelId != null) {
 			if (this.#navigator.find(channelId)) {
-				this.emit('update');
+				this.emit('update', this.text);
 				return channelId;
 			}
+		}
+	}
+
+	toChannel (channelId) {
+		if (this.#navigator.find(channelId)) {
+			this.emit('update', this.text);
 		}
 	}
 

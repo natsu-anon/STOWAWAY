@@ -804,10 +804,10 @@ class Stowaway extends EventEmitter {
 		})
 		.then(flag => {
 			if (flag) {
-				this.emit('handshake', true, message);
+				this.emit('user handshake', true, message);
 			}
 		})
-		.catch(err => { this.emit('handshake', false, message); });
+		.catch(err => { this.emit('user handshake', false, message); });
 	}
 
 	// OK -- add proper emissions & error handling
