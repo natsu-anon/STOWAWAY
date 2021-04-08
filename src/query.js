@@ -7,8 +7,8 @@ const { Client } = require('discord.js');
 const ChannelsModel = require('./models/channels-model.js');
 const ChannelsMediator = require('./mediators/channels-mediator.js');
 const phrase = require('./nato-phrase.js');
-const API_TOKEN = './token DO NOT SHARE';
-const DATABASE = './stowaway.db';
+const API_TOKEN = './DO_NOT_SHARE/stowaway.token';
+const DATABASE = './DO_NOT_SHARE/stowaway.db';
 const REGEX = /^#{4} STOWAWAY #{4}$/m;
 
 /* lmao didn't work
@@ -49,9 +49,15 @@ return new Promise((resolve, reject) => {
 	// 	console.log(typeof message.createdTimestamp);
 	// 	console.log(message.createdTimestamp);
 	// });
-	https.get('https://raw.githubusercontent.com/natsu-anon/STOWAWAY/development/version.json', response => {
-		response.on('data', data => { console.log(JSON.parse(data.toString())); });
-		response.on('err', err => { throw err; });
+	// https.get('https://raw.githubusercontent.com/natsu-anon/STOWAWAY/development/version.json', response => {
+	// 	response.on('data', data => { console.log(JSON.parse(data.toString())); });
+	// 	response.on('err', err => { throw err; });
+	// });
+	client.on('guildDelete', guild => {
+		console.log(`${guild.name} deleted`);
+	});
+	client.on('channelDelete', channel => {
+		console.log(`${channel.name} deleted`);
 	});
 	// 	client.destroy();
 	// client.on('message', message => {
