@@ -6,71 +6,72 @@ function displayChannel (channel) {
 		return `#${channel.name}`;
 	}
 	else {
-		let res = `{red-fg}#${channel.name}; LACKING PERMISSIONS:`;
+		const channelName = `{red-fg}#${channel.name}; LACKING PERMISSIONS:`;
+		const permissions = [];
 		if (!channel.permissions.viewable) {
-			res += ' {underline}VIEW CHANNEL{/underline}';
+			permissions.push('{underline}VIEW CHANNEL{/underline}');
 		}
 		if (!channel.permissions.sendable) {
-			res += ' {underline}MESSAGE CHANNEL{/underline}';
+			permissions.push('{underline}MESSAGE CHANNEL{/underline}');
 		}
 		if (!channel.permissions.readable) {
-			res += ' {underline}READ MESSAGE HISTORY{/underline}';
+			permissions.push('{underline}READ MESSAGE HISTORY{/underline}');
 		}
-		res += '{/}';
-		return res;
+		return `${channelName} ${permissions.join(', ')}{/}`;
 	}
 
 }
 
 class ChannelsMediator extends Mediator {
-	#model;
 	#navigator;
 
 	constructor (model) {
 		super();
-		this.#model = model;
-		this.#navigator = new ChannelNavigator(model, () => {
-			return model.data.length > 0 ? 0 : null;
+		this.model = model;
+		this.#navigator = new ChannelNavigator(model.struct, navigator => {
+			for (let i = 0; i < model.struct.data.length; i++) {
+				if (model.struct.data[0].channels.length > 0) {
+					navigator.setPosition(i, 0);
+					return i + 1;
+				}
+			}
 		});
 		model.on('update', () => {
 			if (this.#navigator.index > model.data.length - 1) {
-				this.#navigator.index = model.data.length - 1;
+				this.#navigator.scrollChannels(false);
 			}
 			this.emit('update', this.text);
 		});
 	}
 
-	get content () {
-		const res = [];
-		for (let i = 0; i < this.#model.data.length; i++) {
-			if (i === 0 || this.#model.data[i - 1 ].serverId !== this.#model.data[i].serverId) {
-				res.push(`{underline}${this.#model.data[i].serverName}{/underline}`);
-			}
-			if (i === this.#navigator.index) {
-				res.push(`\t> {inverse}${displayChannel(this.#model.data[i])}{/inverse}`);
-			}
-			else {
-				res.push(`\t${displayChannel(this.#model.data[i])}`);
-			}
-		}
-		return res;
-	}
-
-	get index () {
-		return this.#navigator.index;
-	}
-
 	get text () {
-		if (this.#model.data.length > 0) {
-			return this.content.join('\n');
+		if (this.model.struct.numChannels() > 0) {
+			const res = [];
+			const data = this.model.struct.flatten();
+			for (let i = 0; i < data.length; i++) {
+				if (data[i].server) {
+					res.push(`{underline}${data[i].name}{/underline}`);
+				}
+				else if (i === this.#navigator.index) {
+					res.push(`\t> {inverse}${displayChannel(data[i])}{/inverse}`);
+				}
+				else {
+					res.push(`\t${displayChannel(data[i])}`);
+				}
+			}
+			return res.jon('\n');;
 		}
 		else {
-			return 'No channels available!  Add your bot to a server!';
+			return 'No text channels! Add your bot to a server!';
 		}
 	}
 
-	get length () {
-		return this.#model.data.length;
+	get percentage () {
+		return this.#navigator.percentage;
+	}
+
+	get numChannels () {
+		return this.model.struct.numChannels();
 	}
 
 	channelData () {
@@ -84,7 +85,7 @@ class ChannelsMediator extends Mediator {
 	}
 
 	removeChannel(channelId) {
-		this.#model.removeChannel(channelId);
+		this.model.removeChannel(channelId);
 	}
 
 	scrollChannels (nextFlag) {

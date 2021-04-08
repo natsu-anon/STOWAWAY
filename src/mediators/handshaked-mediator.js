@@ -12,61 +12,62 @@ function displayChannel (channel) {
 
 // really more of a wrapper but w/e
 class HandshakedMediator extends Mediator {
-	#model;
 	#navigator;
 
 	constructor (model) {
 		super();
-		this.#model = model;
-		this.#navigator = new ChannelNavigator(model, () => {
-			const res = model.data.findIndex(({ id }) => id === model.launchChannel);
-			if (res === -1) {
-				return null;
-			}
-			else {
-				return res;
+		this.model = model;
+		this.#navigator = new ChannelNavigator(model.struct, navigator => {
+			let index = 0;
+			for (let i = 0; i < model.struct.data.length; i++) {
+				index++;
+				for (let j = 0; j < model.struct.data[i].channels.length; j++) {
+					if (model.struct.data[i].channels.id === model.launchChannel) {
+						navigator.setPosition(i, j);
+						return index;
+					}
+					else {
+						index++;
+					}
+				}
 			}
 		});
 		model.on('update', () => {
 			if (this.#navigator.index > model.data.length - 1) {
-				this.#navigator.index = model.data.length - 1;
+				this.#navigator.scrollChannels(false);
 			}
 			this.emit('update', this.text);
 		});
 	}
 
-	get content () {
-		const res = [];
-		for (let i = 0; i < this.#model.data.length; i++) {
-			if (i === 0 || this.#model.data[i - 1 ].serverId !== this.#model.data[i].serverId) {
-				res.push(`{underline}${this.#model.data[i].serverName}{/underline}`);
-			}
-			if (i === this.#navigator.index) {
-				res.push(`\t> {inverse}${displayChannel(this.#model.data[i])}{/inverse}`);
-			}
-			else {
-				res.push(`\t${displayChannel(this.#model.data[i])}`);
-			}
-		}
-		return res;
-	}
-
-	// since the model sorts its data by serverId then channelId you can relax.
 	get text () {
-		if (this.#model.data.length > 0) {
-			return this.content.join('\n');
+		if (this.model.struct.numChannels() > 0) {
+			const res = [];
+			const data = this.model.struct.flatten();
+			for (let i = 0; i < this.data.length; i++) {
+				if (data[i].server) {
+					res.push(`{underline}${data[i].name}{/underline}`);
+				}
+				else if (i === this.#navigator.index) {
+					res.push(`\t> {inverse}${displayChannel(data[i])}{/inverse}`);
+				}
+				else {
+					res.push(`\t${displayChannel(data[i])}`);
+				}
+			}
+			return res.join('\n');
 		}
 		else {
-			return 'Press [E] to handshake a channel';
+			return 'Press [E] to handshake & add a channel';
 		}
 	}
 
-	get hasChannels () {
-		return this.#model.data.length > 0;
+	get percentage () {
+		return this.#navigator.percentage;
 	}
 
-	get length () {
-		return this.#model.data.length;
+	get numChannels () {
+		return this.model.struct.numChannels();
 	}
 
 	channelId () {
@@ -77,19 +78,13 @@ class HandshakedMediator extends Mediator {
 	}
 
 	toFavorite (number) {
-		return new Promise((resolve, reject) => {
-			this.#model.getFavorite(number)
-			.then(channelId => {
-				if (this.#navigator.find(channelId)) {
-					this.emit('update', this.text);
-					resolve(channelId);
-				}
-				else {
-					throw Error(`Channel navigator could not find channelId ${channelId}`);
-				}
-			})
-			.catch(reject);
-		});
+		const channelId = this.model.getFavorite(number);
+		if (channelId != null) {
+			if (this.#navigator.find(channelId)) {
+				this.emit('update');
+				return channelId;
+			}
+		}
 	}
 
 	scrollChannels (nextFlag) {
@@ -104,11 +99,11 @@ class HandshakedMediator extends Mediator {
 		}
 	}
 	setFavorite (number) {
-		this.#model.setFavorite(this.channelId, number);
+		this.model.setFavorite(this.channelId, number);
 	}
 
 	clearFavorite (channelId) {
-		this.#model.clearFavorite(channelId);
+		this.model.clearFavorite(channelId);
 	}
 }
 

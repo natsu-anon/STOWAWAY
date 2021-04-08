@@ -1,33 +1,62 @@
 const Model = require('./model.js');
 const { Permissions } = require('../stowaway.js');
+const ServerChannel = require('./server-channel-struct.js');
 
 function channelData (channel) {
 	return {
 		id: channel.id,
 		name: channel.name,
-		serverId: channel.guild.id,
-		serverName: channel.guild.name,
+		// guildId: channel.guild.id,
 	};
 }
 
+function serverData (guild) {
+	return {
+		id: guild.id,
+		name: guild.name,
+	};
+}
+
+function idSort (data) {
+	data.sort((a, b) => (a < b ? -1 : 1));
+}
+
+function serverIndex (guild, data) {
+	return data.findIndex(({ id }) => guild.id === id);
+}
+
 class HandshakedModel extends Model {
-	#data;
+	#favorites;
 	#launchChannel;
 
 	constructor () {
 		super();
-		this.#data = [];
+		this.#favorites = {};
+		this.struct = new ServerChannel({
+			data: serverData,
+			index: serverIndex,
+			sort: idSort
+		},
+		{
+			data: channelData,
+			index: (channel, data) => {
+				const i = serverIndex(channel.guild, data);
+				if (i >= 0) {
+					return { i, j: data[i].findIndex(({ id }) => channel.id === id) };
+				}
+				else {
+					return { i, j: -1 };
+				}
+			},
+			sort : idSort
+		});
 	}
 
 	get launchChannel () {
 		return this.#launchChannel;
 	}
 
-	get data () {
-		return this.#data;
-	}
-
-	async initialize (stowaway, client, db, verbose=false) {
+	async initialize (stowaway, client, db) {
 		this.db = db;
 		await this.#initCache(client, db);
 		this.#initClient(client, db);
@@ -37,79 +66,64 @@ class HandshakedModel extends Model {
 	}
 
 	setFavorite (channelId, number) {
-		return new Promise((resolve, reject) => {
-			let channel = this.#data.find(({ favoriteNumber }) => favoriteNumber === number);
-			if (channel !== undefined) {
-				channel.favoriteNumber = undefined;
-			}
-			channel = this.getChannel(channelId);
-			if (channel !== undefined) {
-				if (channel.handshaked) {
-					channel.favoriteNumber = number;
-					this.db.update({ favorite_number: number }, { $unset: { favorite_number: number } }, {}, err => {
-						if (err != null) {
-							reject(Error('database error in Servers.setFavorite()'));
-						}
-						else {
-							this.db.update({ channel_id: channelId }, { $set: { favorite_number: number } });
-						}
-					});
-					this.emit('update');
-					resolve();
+		if (this.#favorites[number] != null) {
+			this.struct.withChannel(this.#favorites[number], data => {
+				delete data.favoriteNumber;
+				return data;
+			});
+		}
+		const channel = this.struct.findChannel(channelId);
+		if (channel != null) {
+			this.#favorites[number] = channelId;
+			this.struct.withChannel(channelId, data => {
+				data.favoriteNumber = number;
+				return data;
+			});
+			this.db.update({ favorite_number: number }, { $unset: { favorite_number: true } }, {}, err => {
+				if (err != null) {
+					throw err;
 				}
 				else {
-					reject(Error(`Error in Servers.setFavorite(); Cannot favorite non-handshaked channel ${channelId}!`));
+					this.db.update({ channel_id: channelId }, { $set: { favorite_number: number } });
+					this.emit('update');
 				}
-			}
-			else {
-				reject(Error(`Error in Servers.setFavorite(): Unrecognized channel ${channelId}`));
-			}
-		});
+			});
+		}
 	}
 
 	clearFavorite (channelId) {
-		return new Promise((resolve, reject) => {
-			const channel = this.getChannel(channelId);
-			if (channel !== undefined && channel.favoriteNumber !== undefined) {
-				channel.favoriteNumber = undefined;
-				this.db.remove({ favorite_id: channelId }, {}, err => {
+		for (const number in this.#favorites) {
+			if (this.#favorites[number] === channelId) {
+				delete this.#favorites[number];
+				this.struct.withChannel(channelId, data => {
+					delete data.favoriteNumber;
+					return data;
+				});
+				this.db.update({ channel_id: channelId }, { $unset: { favorite_number: true } }, {}, err => {
 					if (err != null) {
-						reject(err);
+						throw err;
 					}
 					else {
 						this.emit('update');
-						resolve();
 					}
 				});
 			}
-			else {
-				resolve();
-				// channel DNE in #data... so mb everything is fine?
-			}
-		});
+		}
 	}
 
 	getFavorite (number) {
-		return new Promise((resolve, reject) => {
-			const channel = this.#data.find(({ favoriteNumber }) => favoriteNumber === number);
-			if (channel !== undefined) {
-				resolve(channel.id);
-			}
-			else {
-				reject(Error(`Error in Servers.getFavorite(): Unrecognized favorite: ${number}`));
-			}
-		});
+		return this.#favorites[number];
 	}
 
-	getChannel (channelId) {
-		return this.#data.find(({ id }) => id === channelId );
-	}
+	// getChannel (channelId) {
+	// 	return this.#data.find(({ id }) => id === channelId );
+	// }
 
-	getChannelIndex (channelId) {
-		return this.#data.findIndex(({ id }) => id === channelId);
-	}
+	// getChannelIndex (channelId) {
+	// 	return this.#data.findIndex(({ id }) => id === channelId);
+	// }
 
-	// should not be this class's responsibility to determine the launch channel... but I'm making it
+	// should not be this class's responsibility to determine the launch channel but here it is
 	#getLaunchChannel (db) {
 		return new Promise((resolve, reject) => {
 			db.findOne({ last_channel: { $exists: true } }, (err, doc) => {
@@ -117,80 +131,42 @@ class HandshakedModel extends Model {
 					reject(err);
 				}
 				else if (doc != null) {
-					const channel = this.getChannel(doc.last_channel);
-					if (channel !== undefined) {
-						resolve(channel.id);
+					let fallback = true;
+					for (let i = 0; i < this.struct.data.length; i++) {
+						for (let j = 0; i < this.struct[i].channels.length; j++) {
+							if (this.struct[i].channels[j].id === doc.last_channel) {
+								resolve(doc.last_channel);
+								fallback = false;
+							}
+						}
 					}
-					else {
-						reject(Error('Unexpected error in ChannelsModel.#getLaunchChannel()'));
+					if (fallback) {
+						resolve(this.struct.firstChannel());
 					}
 				}
 				else {
-					resolve(this.#data.length > 0 ? 0 : null);
+					resolve(this.struct.firstChannel());
 				}
 			});
 		});
 	}
 
-	/* DEPRECATED
-	firstHandshaked () {
-		for (let i = 0; i < this.#data.length; i++) {
-			if (this.#data[i].handshaked) {
-				return i;
-			}
-		}
-		return 0;
-	}
-
-	lastHandshaked () {
-		for (let i = this.#data.length - 1; i > -1; i--) {
-			if (this.#data[i].handshaked) {
-				return i;
-			}
-		}
-		return this.#data.length - 1;
-	}
-	*/
-
-	// NOTE: firstServer() would just return the 0th index.  THINK ABOUT IT.
-
-	/* DEPRECATED
-	lastServer () {
-		for (let i = this.#data.length - 2; i > -1; i--) {
-			if (this.#data[i + 1].serverId !== this.#data[i].serverId) {
-				return i + 1;
-			}
-		}
-		return 0;
-	}
-	*/
-
 	#initCache (client, db) {
-		// client.guilds.cache.each(guild => {
-		// 	guild.channels.cache.filter(channel => channel.isText())
-		// 	.each(channel => {
-		// 		if (stowawayPermissions(channel, client.user)) {
-		// 			this.#data.push(channelData(channel));
-		// 		}
-		// 	});
-		// });
 		return new Promise((resolve, reject) => {
 			db.find({ channel_id: { $exists: true }, handshake_id: { $exists: true } }, (err, docs) => {
 				if (err != null) {
 					reject(err);
 				}
 				else {
-					let temp;
 					Promise.all(docs.map(x => {
 						return new Promise((res, rej) => {
 							client.channels.fetch(x.channel_id)
 							.then(channel => {
-								if (!channel.deleted) {
-									temp = channelData(channel);
+								if (!channel.deleted && Permissions(channel, client.user).valid) {
+									this.struct.addChannel(channel);
 									if (x.favorite_number != null) {
-										temp.favoriteNumber = x.favorite_number;
+										this.favorites[x.favorite_number] = x.channel_id;
 									}
-									this.#data.push(temp);
 								}
 								res();
 							})
@@ -198,7 +174,6 @@ class HandshakedModel extends Model {
 						});
 					}))
 					.then(() => {
-						this.#sortChannels();
 						resolve();
 					})
 					.catch(reject);
@@ -208,121 +183,54 @@ class HandshakedModel extends Model {
 	}
 
 	#initClient (client, db) {
-		// client.on('guildCreate', server => {
-		// 	server.channels.cache.filter(channel => channel.isText() && stowawayPermissions(channel, client.user))
-		// 	.each(channel => {
-		// 		this.#data.push(channelData(channel));
-		// 	});
-		// 	this.#sortChannels();
-		// 	this.emit('update');
-		// });
-		client.on('guildDelete', server => {
-			// RETVRN TO TRADITION
-			for (let i = this.#data.length - 1; i >= 0; i--) {
-				if (this.#data[i].serverId === server.id) {
-					db.remove({ favorite_id: this.#data[i].id });
-					this.#data.splice(i, 1);
-				}
+		client.on('guildDelete', guild => {
+			if (this.struct.removeServer(guild)) {
+				this.emit('update');
 			}
-			this.emit('update');
 		});
-		client.on('guildUpdate', (server0, server1) => {
-			for (let i = 0; i < this.#data.length; i++) {
-				if (this.#data[i].serverId === server0.id) {
-					this.#data[i].serverId = server1.id;
-					this.#data[i].serverName = server1.name;
-				}
+		client.on('guildUpdate', (guild0, guild1) => {
+			if (this.struct.guildUpdate(guild0, guild1)) {
+				this.emit('update');
 			}
-			this.emit('update');
 		});
-		// client.on('channelCreate', channel => {
-		// 	if (channel.type !== 'dm') {
-		// 		if (channel.isText() && stowawayPermissions(channel, client.user)) {
-		// 			this.#data.push(channelData(channel));
-		// 			this.#sortChannels();
-		// 			this.emit('update');
-		// 		}
-		// 	}
-		// });
 		client.on('channelDelete', channel => {
-			if (channel.type !== 'dm') {
-				const i = this.getChannelIndex(channel.id);
-				if (i >= 0) {
-					db.remove({ favorite_id: this.#data[i].id });
-					this.#data.splice(i, 1);
-					this.emit('update');
-				}
+			if (this.struct.removeChannel(channel)) {
+				this.emit('update');
 			}
 		});
 		client.on('channelUpdate', (channel0, channel1) => {
-			if (channel0.type !== 'dm' && channel1.type !== 'dm') {
-				const i = this.getChannelIndex(channel0.id);
-				if (i > -1) {
+			if (channel0.type !== 'dm' && channel0.isText()) {
+				if (this.struct.containsChannel(channel0)) {
 					if (Permissions(channel1, client.user).valid) {
-						this.#data[i].id = channel1.id;
-						this.#data[i].name = channel1.name;
+						if (this.struct.updateChannel(channel0, channel1)) {
+							this.emit('update');
+						}
 					}
 					else {
-						db.remove({ favorite_id: this.#data[i].id });
-						this.#data.splice(i, 1);
+						// NOTE Stowaway does the db work
+						if (this.struct.removeChannel(channel0)) {
+							this.emit('update');
+						}
 					}
-					this.emit('update');
-				}
-			}
-			else if (channel0.type !== 'dm') {
-				const i = this.getChannelIndex(channel0.id);
-				if (i > -1) {
-					db.remove({ favorite_id: this.#data[i].id });
-					this.#data.splice(i, 1);
-					this.emit('update');
 				}
 			}
 		});
 		client.on('guildMemberUpdate', (user0, user1) => {
 			if (user0.id === client.user.id) {
-				const channelIds = this.#data.filter(({ serverId }) => serverId === user0.guild.id).map(x => x.id);
-				Promise.all(channelIds.map(id => client.channels.fetch(id, false)))
-				.then(channels => {
-					let i;
-					channels.filter(channel => !Permissions(channel, user1).valid)
-					.each(channel => {
-						i = this.getChannelIndex(channel.id);
-						if (i > -1) {
-							db.remove({ favorite_id: this.#data[i].id });
-							this.#data.splice(i, 1);
-						}
-					});
-					this.emit('update');
+				user1.guild.channels.cache.each(channel => {
+					if (!Permissions(channel, user1).valid) {
+						this.db.update({ channel_id: channel.id }, { $unset: { favorite_number: true } });
+					}
 				});
+				this.emit('update');
 			}
 		});
 	}
 
 	#initStowaway (stowaway) {
-		stowaway.on('handshake channel', (serverId, channelId) => {
-			const server = this.#data.find(({ id }) => id === serverId);
-			if (server === undefined) {
-				throw Error(`Error in Servers.#stowawaySubscriptions() on 'handhshake channel'; serverId argument: ${serverId}`);
-			}
-			const channel = server.find(({ id }) => id === channelId);
-			if (channel !== undefined) {
-				throw Error(`Error in Servers.#stowawaySubscriptions() on 'handhshake channel'; channelId argument: ${channelId}`);
-			}
+		stowaway.on('handshake channel', channel => {
+			this.struct.addChannel(channel);
 			this.emit('update');
-		});
-	}
-
-	#sortChannels () {
-		this.#data.sort((a, b) => {
-			if (a.serverId < b.serverId) {
-				return -1;
-			}
-			else if (a.serverId > b.serverId) {
-				return 1;
-			}
-			else {
-				return a.channelId < b.channelId ? -1 : 1;
-			}
 		});
 	}
 }
