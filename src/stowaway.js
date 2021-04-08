@@ -174,6 +174,7 @@ class Stowaway extends EventEmitter {
 				this.db.remove({ channel_id: ch0.id });
 			}
 		});
+		// do the same but with guild, guild update, guildMemberUpdate
 		this.#sendKeyUpdate = armoredPublicKey => {
 			const updateJSON = {
 				type: KEY_UPDATE,
@@ -284,9 +285,9 @@ class Stowaway extends EventEmitter {
 							last_id: message.id,
 							last_ts: message.createdTimestamp,
 						}, () => {
-							this.emit('handshake channel', channel.id);
+							this.emit('handshake channel', channel);
 							this.emit('handshake', channel.id, message.createdTimestamp, message.createdAt, message.author);
-							this.db.update({ last_channel: { $exists: true }}, { last_channel: channel.id }, { upsert: true });
+							this.db.update({ last_channel: { $exists: true } }, { last_channel: channel.id }, { upsert: true });
 							resolve();
 						});
 					})
@@ -301,7 +302,7 @@ class Stowaway extends EventEmitter {
 					.then(messages => {
 						messages.sort((m0, m1) => m0.createdTimestamp - m1.createdTimestamp)
 						.each(message => { this.#handleMessage(message); });
-						this.db.update({ last_channel: { $exists: true }}, { last_channel: channel.id }, { upsert: true });
+						this.db.update({ last_channel: { $exists: true } }, { last_channel: channel.id }, { upsert: true });
 						resolve();
 					})
 					.catch(reject);
@@ -894,7 +895,7 @@ class Stowaway extends EventEmitter {
 	#keyRevocation (armoredRevocation, armoredPublicKey, message) {
 		this.#findUser(message.author.id, (err, doc) => {
 			if (err != null) {
-				this.emit('database error', `Stowaway.#keyRevocation() user id argument: ${user.id}`);
+				this.emit('database error', `Stowaway.#keyRevocation() user id argument: $message.author.id}`);
 			}
 			else if (doc != null) {
 				Promise.all([
