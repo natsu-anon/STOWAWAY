@@ -239,15 +239,6 @@ class StowawayCLI {
 	set stateColor (color) {
 		this.stateLine.style = { fg: 'white', bg: color };
 	}
-
-	get selectorHeight () {
-		return this.selector.height - 4;
-	}
-
-	get navigationHeight () {
-		return this.navigation.height - 4;
-	}
-
 	select (setup) {
 		setup(this.selector);
 		this.selector.show();
