@@ -59,7 +59,7 @@ class ChannelsMediator extends Mediator {
 					res.push(`\t${displayChannel(data[i])}`);
 				}
 			}
-			return res.jon('\n');;
+			return res.join('\n');;
 		}
 		else {
 			return 'No text channels! Add your bot to a server!';
