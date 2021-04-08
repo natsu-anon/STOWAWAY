@@ -211,7 +211,7 @@ class Stowaway extends EventEmitter {
 			}
 			else {
 				docs.forEach(doc => {
-					client.fetch(doc.channel_id)
+					client.channels.fetch(doc.channel_id)
 					.then(channel => {
 						if (channel.deleted) {
 							this.db.remove({ channel_id: doc.channel_id });
@@ -306,6 +306,26 @@ class Stowaway extends EventEmitter {
 						resolve();
 					})
 					.catch(reject);
+				}
+			});
+		});
+	}
+
+	numberStowaways (channel) {
+		return new Promise((resolve, reject) => {
+			this.#allUsers((err, docs) => {
+				if (err != null) {
+					reject(err);
+				}
+				else {
+					let res = 0;
+					docs.map(x => x.user_id).forEach(id => {
+						channel.members.find(user => user.id === id)
+						.each(() => {
+							res++;
+						});
+					});
+					resolve(res);
 				}
 			});
 		});
