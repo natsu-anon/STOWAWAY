@@ -16,7 +16,7 @@ class ChannelNavigator {
 			return 0;
 		}
 		else {
-			return this.#index / (this.struct.data.length + this.struct.numChannels());
+			return this.#index / (this.struct.data.length + this.struct.numChannels()) * 100;
 		}
 	}
 
