@@ -54,7 +54,7 @@ Thanks for downloading & I hope you find this software useful
 
 class StowawayCLI {
 
-	constructor (title, userTag, navigationContent) {
+	constructor (title, userTag) {
 		this.screen = blessed.screen({
 			smartcsr: true,
 			autopadding: true,
@@ -100,15 +100,16 @@ class StowawayCLI {
 			scrollable: true,
 			alwaysScroll: true,
 			scrollbar: {
-				ch: '#',
-				fg: 'black',
-				bg: 'cyan',
+				ch: '@',
+				track : {
+					ch: '|',
+				}
 			},
 			label: ` Logged in as ${userTag} `,
 			border: {
 				type: 'line',
 			},
-			content: navigationContent,
+			content: 'Loading...',
 		});
 		this.messages = blessed.box({
 			parent: this.screen,
@@ -122,8 +123,9 @@ class StowawayCLI {
 			alwaysScroll: true,
 			scrollbar: {
 				ch: '@',
-				fg: 'black',
-				bg: 'cyan',
+				track : {
+					ch: '|',
+				}
 			},
 			label: ' Welcome! ',
 			border: {
@@ -165,37 +167,22 @@ class StowawayCLI {
 			tags: true,
 			hidden: true,
 			height: '80%',
-			width: 80,
+			width: '50%',
 			top: 'center',
 			left: 'center',
 			content: ' Loading... ',
 			padding: 1,
+			scrollable: true,
+			alwaysScroll: true,
+			scrollbar: {
+				ch: '@',
+				track: {
+					ch: '|'
+				}
+			},
 			border: { type: 'line' }
 
 		});
-		this.selector.display = (index, content) => {
-			if (this.selectorHeight <= 1) {
-				this.selector.setContent(content[index]);
-			}
-			else {
-				const halfHeight = Math.floor(this.selectorHeight / 2);
-				const contentHeight = content.length;
-				if (contentHeight > this.selectorHeight) {
-					if (index <= halfHeight) {
-						this.selector.setContent(content.slice(0, this.selectorHeight).join('\n'));
-					}
-					else if (index >= contentHeight - halfHeight) {
-						this.selector.setContent(content.slice(contentHeight - this.selectorHeight, contentHeight).join('\n'));
-					}
-					else {
-						this.selector.setContent(content.slice(index - halfHeight, index + halfHeight).join('\n'));
-					}
-				}
-				else {
-					this.selector.setContent(content.join('\n'));
-				}
-			}
-		};
 		this.popup = blessed.box({ // used for help & about
 			parent: this.screen,
 			hidden: true,
@@ -210,8 +197,9 @@ class StowawayCLI {
 			alwaysScroll: true,
 			scrollbar: {
 				ch: '@',
-				fg: 'black',
-				bg: 'cyan',
+				track: {
+					ch: '|'
+				}
 			},
 			padding: 1,
 			border: {
@@ -254,6 +242,10 @@ class StowawayCLI {
 
 	get selectorHeight () {
 		return this.selector.height - 4;
+	}
+
+	get navigationHeight () {
+		return this.navigation.height - 4;
 	}
 
 	select (setup) {
