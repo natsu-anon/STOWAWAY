@@ -91,7 +91,7 @@ class HandshakedModel extends Model {
 		}
 	}
 
-	clearFavorite (channelId) {
+	clearFavorite (channelId, emitFlag=true) {
 		for (const number in this.#favorites) {
 			if (this.#favorites[number] === channelId) {
 				delete this.#favorites[number];
@@ -103,7 +103,7 @@ class HandshakedModel extends Model {
 					if (err != null) {
 						throw err;
 					}
-					else {
+					else if (emitFlag){
 						this.emit('update');
 					}
 				});
@@ -219,6 +219,7 @@ class HandshakedModel extends Model {
 					else {
 						// NOTE Stowaway does the db work
 						if (this.struct.removeChannel(channel0)) {
+							this.clearFavorite(channel0.id, false);
 							this.emit('update');
 						}
 					}
