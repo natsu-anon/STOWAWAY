@@ -48,7 +48,7 @@ class FSM extends EventEmitter {
 			state.on('to navigate', () => { this.navigate(); });
 			state.on('to handshake', s => { this.handshake(s); });
 			state.on('to read', enterFlag => { this.emit('read channel', enterFlag); });
-			state.on('to write', () => { this.write(); });
+			state.on('to write', publicFlag => { this.write(publicFlag); });
 			state.on('to member', () => { this.member(); });
 			state.on('to revoke', s => { this.revoke(s); });
 			state.on('to about', s => { this.about(s); });
@@ -79,11 +79,11 @@ class FSM extends EventEmitter {
 		this.#read.on('handshake', () => { this.emit('repeat handshake'); });
 		this.#write.on('clear', () => {
 			this.emit('clear input');
-			this.read();
+			this.emit('read channel', false);
 		});
 		this.#write.on('send', () => {
 			this.emit('send input');
-			this.read();
+			this.emit('read channel', false);
 		});
 		this.#member.on('scroll', offset => { this.emit('scroll members', offset); });
 		this.#member.on('sign member', () => { this.emit('sign member'); });
@@ -107,12 +107,16 @@ class FSM extends EventEmitter {
 		this.#transition(this.#handshake, state);
 	}
 
-	read () {
-		this.#transition(this.#read);
+	read (args) {
+		this.#current.Exit();
+		this.#current = this.#read;
+		this.#current.Enter(args);
 	}
 
-	write () {
-		this.#transition(this.#write);
+	write (publicFlag) {
+		this.#current.Exit();
+		this.#current = this.#write;
+		this.#current.Enter(publicFlag);
 	}
 
 	member () {

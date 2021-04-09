@@ -22,8 +22,8 @@ class WriteState extends State {
 		return WriteColor;
 	}
 
-	Enter () {
-		this.#enter();
+	Enter (publicFlag) {
+		this.#enter(publicFlag);
 	}
 
 	Exit () {

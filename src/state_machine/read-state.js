@@ -44,8 +44,8 @@ class ReadState extends State {
 		return ReadColor;
 	}
 
-	Enter () {
-		this.#enter();
+	Enter (args) {
+		this.#enter(args);
 	}
 
 	Exit () {
