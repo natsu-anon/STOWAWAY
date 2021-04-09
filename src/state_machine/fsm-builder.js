@@ -39,7 +39,7 @@ class FSMBuilder {
 	}
 
 	write (enter, exit=_) {
-		this.#read = { enter, exit };
+		this.#write = { enter, exit };
 		return this;
 	}
 
