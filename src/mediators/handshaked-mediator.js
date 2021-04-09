@@ -13,10 +13,12 @@ function displayChannel (channel) {
 // really more of a wrapper but w/e
 class HandshakedMediator extends Mediator {
 	#navigator;
+	#readingId;
 
 	constructor (model) {
 		super();
 		this.model = model;
+		this.#readingId = null;
 		this.#navigator = new ChannelNavigator(model.struct, navigator => {
 			let index = 0;
 			for (let i = 0; i < model.struct.data.length; i++) {
@@ -42,15 +44,23 @@ class HandshakedMediator extends Mediator {
 		if (this.model.struct.numChannels() > 0) {
 			const res = [];
 			const data = this.model.struct.flatten();
+			let temp = '';
 			for (let i = 0; i < data.length; i++) {
 				if (data[i].server) {
 					res.push(`{underline}${data[i].name}{/underline}`);
 				}
-				else if (i === this.#navigator.index) {
-					res.push(`\t> {inverse}${displayChannel(data[i])}{/inverse}`);
-				}
 				else {
-					res.push(`\t${displayChannel(data[i])}`);
+					temp = displayChannel(data[i]);
+					if (data[i].id === this.#readingId) {
+						temp = `{inverse}${temp}{/inverse}`;
+					}
+					if (i === this.#navigator.index) {
+						temp = `\t> ${temp}`;
+					}
+					else {
+						temp = `\t${temp}`;
+					}
+					res.push(temp);
 				}
 			}
 			return res.join('\n');
@@ -66,6 +76,11 @@ class HandshakedMediator extends Mediator {
 
 	get numChannels () {
 		return this.model.struct.numChannels();
+	}
+
+	read (channelId) {
+		this.#readingId = channelId;
+		this.emit('update', this.text);
 	}
 
 	channelId () {
