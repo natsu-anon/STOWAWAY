@@ -13,12 +13,11 @@ function displayChannel (channel) {
 // really more of a wrapper but w/e
 class HandshakedMediator extends Mediator {
 	#navigator;
-	#readingId;
 
 	constructor (model) {
 		super();
 		this.model = model;
-		this.#readingId = null;
+		this.readingId = null;
 		this.#navigator = new ChannelNavigator(model.struct, navigator => {
 			let index = 0;
 			for (let i = 0; i < model.struct.data.length; i++) {
@@ -51,7 +50,7 @@ class HandshakedMediator extends Mediator {
 				}
 				else {
 					temp = displayChannel(data[i]);
-					if (data[i].id === this.#readingId) {
+					if (data[i].id === this.readingId) {
 						temp = `{inverse}${temp}{/inverse}`;
 					}
 					if (i === this.#navigator.index) {
@@ -79,7 +78,7 @@ class HandshakedMediator extends Mediator {
 	}
 
 	read (channelId) {
-		this.#readingId = channelId;
+		this.readingId = channelId;
 		this.emit('update', this.text);
 	}
 
