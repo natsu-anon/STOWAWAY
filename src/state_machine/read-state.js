@@ -45,7 +45,15 @@ class ReadState extends State {
 	}
 
 	Enter (args) {
-		this.#enter(args);
+		if (args != null) {
+			args.statelineOnly = false;
+			this.#enter(args);
+			this.args = args;
+			this.args.statelineOnly = true;
+		}
+		else {
+			this.#enter(this.args);
+		}
 	}
 
 	Exit () {
