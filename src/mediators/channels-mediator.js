@@ -51,7 +51,7 @@ class ChannelsMediator extends Mediator {
 					res.push(`{underline}${data[i].name}{/underline}`);
 				}
 				else if (i === this.#navigator.index) {
-					res.push(`\t> {inverse}${displayChannel(data[i])}{/inverse}`);
+					res.push(`\t> ${displayChannel(data[i])}`);
 				}
 				else {
 					res.push(`\t${displayChannel(data[i])}`);
