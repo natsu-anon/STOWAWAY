@@ -57,7 +57,7 @@ function existingKey (lockedKey, keyPath, revocationPath, stowaway, client, cli)
 							// stowaway revoke
 							// write new key & revocation cert to file
 							cli.cat('{black-fg}{yellow-bg}REVOCATION PROCESS INITIATED!{/}');
-							generateKey(keyPath, revocationPath, client.user.id, cli, false)
+							generateKey(keyPath, revocationPath, cli, false)
 							.then(({ key, revocationCertificate, passphrase }) => {
 								stowaway.revokeKey(client, lockedKey, key, data)
 								.then(signedKey => {
@@ -91,7 +91,49 @@ function existingKey (lockedKey, keyPath, revocationPath, stowaway, client, cli)
 	});
 }
 
-function generateKey (keyPath, revocationPath, userId, cli, writeFlag) {
+async function generateKey (keyPath, revocationPath, cli, writeFlag) {
+	const nickname = await cli.question('Enter a nickname for your key then press [Enter] to continue');
+	if (nickname === '') {
+		await cli.notify('Must enter a valid nickname!  Trying again!');
+		return await generateKey(keyPath, revocationPath, cli, writeFlag);
+	}
+	const phrase = await cli.question('Enter a passphrase to encrypt your key with then press [Enter] to continue', true);
+	if (phrase === '') {
+		await cli.notify('Must enter a valid passphrase!  Trying again!');
+		return await generateKey(keyPath, revocationPath, cli, writeFlag);
+	}
+	else {
+		const temp = await cli.question('Re-enter the passphrase then press [Enter] to continue', true);
+		if (phrase === temp) {
+			const { key, revocationCertificate } = await openpgp.generateKey({
+				type: 'ecc',
+				curve: 'curve25519',
+				passphrase: phrase,
+				userIds: [{
+					name: nickname,
+				}]
+			});
+			cli.log(`\t- Key nickanme: {underline}${nickname}{/}, key fingerprint: {underline}${key.getFingerprint()}{/}`);
+			if (writeFlag) {
+				await writeFile(keyPath, key.armor());
+				await writeFile(revocationPath, revocationCertificate);
+			}
+			await cli.notify(BEST_PRACTICES);
+			return {
+				key: await openpgp.decryptKey({
+					privateKey: key,
+					passphrase: phrase
+				}),
+				passphrase: phrase,
+				revocationCertificate
+			};
+		}
+		else {
+			await cli.notify('Passphrases do not match!  Trying again!');
+			return await generateKey(keyPath, revocationPath, cli, writeFlag);
+		}
+	}
+	/* this stuff definitely works but oh lawdy
 	return new Promise((resolve, reject) => {
 		cli.question('Enter a nickname for your key then press [Enter] to continue')
 		.then(nickname => {
@@ -179,6 +221,7 @@ function generateKey (keyPath, revocationPath, userId, cli, writeFlag) {
 		})
 		.catch(reject);
 	});
+	*/
 }
 
 function init (keyPath, revocationPath, stowaway, client, cli) {
@@ -206,7 +249,7 @@ function init (keyPath, revocationPath, stowaway, client, cli) {
 			else {
 				cli.cat('{yellow-fg}No existing keys found!{/}');
 				cli.log('\t- Generating new private key... ');
-				generateKey(keyPath, revocationPath, client.user.id, cli, true)
+				generateKey(keyPath, revocationPath, cli, true)
 				.then(({ key }) => { resolve(key); })
 				.catch(reject);
 			}
