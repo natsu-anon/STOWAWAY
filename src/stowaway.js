@@ -87,6 +87,27 @@ function hash (input) {
 	return crypto.createHash('sha224').update(input).digest('base64');
 }
 
+class Messager {
+	constructor (stowaway) {
+		this.stowaway = stowaway;
+	}
+
+	send (plainText) {
+		if (this.channel != null && this.publicFlag != null) {
+			if (this.publicFlag) {
+				this.stowaway.messagePublic(this.channel, plainText);
+			}
+			else {
+				this.stowaway.messageSigned(this.channel, plainText);
+			}
+			return true;
+		}
+		else {
+			return false;
+		}
+	}
+}
+
 /* EVENTS
 	channel delete
 	channel update
@@ -345,7 +366,7 @@ class Stowaway extends EventEmitter {
 				}
 				else if (docs.length > 0) {
 					let { privateKey: revocation } = await openpgp.revokeKey({
-						key0,
+						key: key0,
 						revocationCertificate
 					});
 					const revocations = await this.#revocations();
@@ -972,4 +993,4 @@ class Stowaway extends EventEmitter {
 
 }
 
-module.exports = { Stowaway, Permissions };
+module.exports = { Stowaway, Permissions, Messager };
