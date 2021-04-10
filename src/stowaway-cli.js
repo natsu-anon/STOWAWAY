@@ -139,7 +139,6 @@ class StowawayCLI {
 			tags: true,
 			left: 40,
 			top: '100%-6',
-			label: this._inputLabel,
 			width: '100%-40',
 			height: 5,
 			inputOnFocus: true,
@@ -148,6 +147,10 @@ class StowawayCLI {
 			},
 			padding : 1,
 		});
+		this.input.length = () => {
+			const res = this.input.width - 4;
+			return res > 0 ? res : 0;
+		};
 		this.stateLine = blessed.box({
 			parent: this.screen,
 			bold: true,
@@ -239,6 +242,12 @@ class StowawayCLI {
 	set stateColor (color) {
 		this.stateLine.style = { fg: 'white', bg: color };
 	}
+
+	enableInput () {
+		this.input.show();
+		this.messages.height = '100%-7';
+	}
+
 	select (setup) {
 		setup(this.selector);
 		this.selector.show();
