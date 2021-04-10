@@ -70,21 +70,12 @@ class FSM extends EventEmitter {
 		this.#navigate.on('servers', next => { this.emit('navigate servers', next); });
 		this.#handshake.on('channels', next => { this.emit('handshake channels', next); });
 		this.#handshake.on('servers', next => { this.emit('handshake servers', next); });
-		this.#handshake.on('handshake', () => {
-			this.emit('perform handshake');
-		});
+		this.#handshake.on('handshake', () => { this.emit('perform handshake'); });
 		this.#read.on('scroll', offset => { this.emit('scroll messages', offset); });
 		this.#read.on('scroll top', () => { this.emit('messages top'); });
 		this.#read.on('scroll bottom', () => { this.emit('messages bottom'); });
 		this.#read.on('handshake', () => { this.emit('repeat handshake'); });
-		this.#write.on('clear', () => {
-			this.emit('clear input');
-			this.emit('read channel', false);
-		});
-		this.#write.on('send', () => {
-			this.emit('send input');
-			this.emit('read channel', false);
-		});
+		this.#write.on('clear', () => { this.emit('clear input'); });
 		this.#member.on('scroll', offset => { this.emit('scroll members', offset); });
 		this.#member.on('sign member', () => { this.emit('sign member'); });
 		this.#current = this.#navigate;
