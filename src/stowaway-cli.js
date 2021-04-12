@@ -302,23 +302,22 @@ class StowawayCLI {
 	warn (text) {
 		const box = blessed.box({
 			parent: this.screen,
-			label: ' ***WARNING*** Press [Enter] or [Escape] to close ',
+			label: ' ***WARNING*** Press [X] to close ',
 			content: text,
 			top: 'center',
 			left: 'center',
 			width: '50%',
 			height: '50%',
+			padding: 1,
 			border: {
 				type: 'line'
 			}
 		});
-		box.focus();
-		box.setFront();
-		this.screen.render();
-		box.onceKey(['enter', 'escape'], () => {
+		this.screen.onceKey(['x', 'S-x'], () => {
 			box.destroy();
 			this.screen.render();
 		});
+		this.screen.render();
 	}
 
 	render () {
