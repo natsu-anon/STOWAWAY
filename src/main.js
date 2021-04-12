@@ -36,6 +36,11 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 		//  COMMAND LINE INTERFACE  //
 
 		cli = new StowawayCLI(SCREEN_TITLE, client.user.tag);
+		stowaway.on('error', error => { cli.warn(error); });
+		stowaway.on('debug', debug => { cli.notify(`DEBUG: ${debug}`); });
+		stowaway.on('decryption failure', message => {
+			cli.notify(`failed to decrypt message from ${message.author.tag} on ${message.channel.name}`);
+		});
 		// cli.screen.on('resize', () => { cli.render(); });
 
 		//  UPDATE LISTENING TO RENDER //
@@ -59,7 +64,6 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 			}
 			cli.render();
 		});
-
 
 		//  FSM BUILDER  //
 
@@ -96,7 +100,7 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 			.read(({ guildName, channelName, nickname, topic, numStowaways, statelineOnly }) => {
 				if (!statelineOnly) {
 					if (topic != null) {
-						cli.messages.setLabel(` #${channelName} | ${topic}`);
+						cli.messages.setLabel(` #${channelName} | ${topic} `);
 					}
 					else {
 						cli.messages.setLabel(` #${channelName} `);
@@ -250,7 +254,7 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 
 		// STOWAWAY EVENT LISTENING //
 
-		stowaway.on('handshake channel', channel => {
+		stowaway.on('read channel', channel => {
 			enterChannel(channel);
 		});
 
@@ -314,7 +318,7 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 				const channelId = hMediator.channelId();
 				if (channelId != null) {
 					client.channels.fetch(channelId)
-					.then(channel => { enterChannel(channel); })
+					.then(channel => { stowaway.loadChannel(channel); })
 					.catch(err => { throw err; });
 				}
 			}
