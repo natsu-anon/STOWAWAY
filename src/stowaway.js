@@ -87,12 +87,12 @@ function hash (input) {
 	return crypto.createHash('sha224').update(input).digest('base64');
 }
 
-class Messager {
+class Messenger {
 	constructor (stowaway) {
 		this.stowaway = stowaway;
 	}
 
-	send (plainText) {
+	message (plainText) {
 		if (this.channel != null && this.publicFlag != null) {
 			if (this.publicFlag) {
 				this.stowaway.messagePublic(this.channel, plainText);
@@ -993,4 +993,4 @@ class Stowaway extends EventEmitter {
 
 }
 
-module.exports = { Stowaway, Permissions, Messager };
+module.exports = { Stowaway, Permissions, Messenger };

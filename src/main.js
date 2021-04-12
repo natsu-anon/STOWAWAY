@@ -4,7 +4,7 @@ const phrase = require('./nato-phrase.js');
 const versionCheck = require('./version-check.js');
 const initialize = require('./initialization.js');
 const StowawayCLI = require('./stowaway-cli.js');
-const { Permissions, Messager } = require('./stowaway.js');
+const { Permissions, Messenger } = require('./stowaway.js');
 const Revoker = require('./revoker.js');
 const { NavigateColor, ReadColor, WriteColor, MemberColor } = require('./state_machine/state-colors.js');
 const FSMBuilder = require('./state_machine/fsm-builder.js');
@@ -28,7 +28,7 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 
 		//   COOMPOSITING  //
 
-		const messager = new Messager(stowaway);
+		const messenger = new Messenger(stowaway);
 		const revoker = new Revoker(stowaway, client, PRIVATE_KEY, REVOCATION_CERTIFICATE).setKey(key);
 		const hMediator = new HandshakedMediator(await (new HandshakedModel()).initialize(stowaway, client, db));
 		const cMediator = new ChannelsMediator(await (new ChannelsModel()).initialize(stowaway, client, db));
@@ -120,7 +120,7 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 				cli.input.focus();
 				cli.stateText = `WRITE | ${publicFlag? 'PUBLIC' : 'SIGNED'}`; // eventually sepcify session as well
 				cli.stateColor = WriteColor;
-				messager.publicFlag = publicFlag;
+				messenger.publicFlag = publicFlag;
 				cli.render();
 			},
 			() => {
@@ -218,7 +218,7 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 			.then(number => {
 				allowTab = true;
 				cli.enableInput();
-				messager.channel = channel;
+				messenger.channel = channel;
 				hMediator.read(channel.id);
 				messages.listen(channel.id);
 				hMediator.read(channel.id);
@@ -345,7 +345,7 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 		//  CLI DRIVEN STATE TRANSITIONS  //
 
 		cli.input.on('submit', () => {
-			if (messager.send(cli.input.value)) {
+			if (messenger.message(cli.input.value)) {
 				fsm.read();
 			}
 		});
