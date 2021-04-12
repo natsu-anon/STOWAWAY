@@ -563,19 +563,24 @@ class Stowaway extends EventEmitter {
 	}
 
 	#publicKey (userId) {
-		return new Promise((resolve, reject) => {
-			this.findUser(userId, (err, doc) => {
-				if (err) {
-					this.emit('error', `database error in Stowaway.#publicKey() user id argument: ${userId}`);
+		if (userId === this.id) {
+			return Promise.resolve(this.key.toPublic());
+		}
+		else {
+			return new Promise((resolve, reject) => {
+				this.findUser(userId, (err, doc) => {
+					if (err) {
+						this.emit('error', `database error in Stowaway.#publicKey() user id argument: ${userId}`);
+						reject();
+					}
+					else if (doc != null) {
+						openpgp.readKey({ armoredKey: doc.public_key })
+						.then(resolve);
+					}
 					reject();
-				}
-				else if (doc != null) {
-					openpgp.readKey({ armoredKey: doc.public_key })
-					.then(resolve);
-				}
-				reject();
+				});
 			});
-		});
+		}
 	}
 
 	#send (channel, attachment) {
@@ -633,6 +638,7 @@ class Stowaway extends EventEmitter {
 							this.emit('error', `malformed json:\n${file.url}`);
 							return;
 						}
+						this.emit('debug', data.type);
 						if (data.type == null) {
 							this.emit('error', 'missing type');
 							// emit something about missing type
@@ -640,10 +646,11 @@ class Stowaway extends EventEmitter {
 						}
 						else if (data.type === CHANNEL_MESSAGE) {
 							this.emit('debug', `channel message on ${message.channel.name} at ${message.createdTimestamp}`);
-							if (data.encrypted != null && data.level != null && (typeof data.public) === 'boolean') {
+							if (data.encrypted != null && (typeof data.public) === 'boolean') {
 								this.#channelMessage(data.encrypted, data.public, message); // may cause a key provenance
 							}
 							else {
+								this.emit('debug', 'RUHROH');
 								// emit something about no encrypted field
 							}
 						}
@@ -710,8 +717,10 @@ class Stowaway extends EventEmitter {
 
 	// OK
 	#channelMessage (armoredMessage, publicFlag, message) {
-		this.#publicKey(message.user.id)
+		this.emit('debug', `Stowaway.#channelMessage() public: ${publicFlag}`);
+		this.#publicKey(message.author.id)
 		.then(publicKey => {
+			this.emit('debug', `${publicKey}`);
 			if (!publicFlag) {
 				this.key.verifyPrimaryUser([ publicKey ])
 				.then(bonafides => {
@@ -734,13 +743,14 @@ class Stowaway extends EventEmitter {
 	// OK
 	#decrypt (publicKey, armoredMessage, message) {
 		openpgp.readMessage({ armoredMessage })
-		.then(message => openpgp.decrypt({
-			message: message,
+		.then(res => openpgp.decrypt({
+			message: res,
 			publicKeys: publicKey,
-			privateKey: [ this.key ].concat(this.oldKeys)
+			privateKeys: this.key,
 		}))
 		.then(decrypted => this.#verifyMessage(decrypted, publicKey))
 		.then(result => {
+			this.emit('debug', result.plainText);
 			this.emit('channel message', message, result);
 			this.#updateLatests(message.channel.id, message.id, message.createdTimestamp);
 		})
@@ -753,14 +763,14 @@ class Stowaway extends EventEmitter {
 				this.emit('decryption failure', message);
 			}
 			else {
-				this.emit('error', `unexpected error in Stowaway.#message(): ${err}`);
+				this.emit('error', `unexpected error in Stowaway.#decrypt(): ${err}`);
 			}
 		});
 	}
 
 	// OK
 	#verifyMessage (decrypted, publicKey) {
-		if (decrypted.signatures.length > 0) {
+		if (decrypted.signatures != null && decrypted.signatures.length > 0) {
 			return new Promise(resolve => {
 				decrypted.signatures[0].verified
 				.then(flag => {

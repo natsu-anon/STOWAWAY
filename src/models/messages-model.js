@@ -104,9 +104,9 @@ class MessagesModel extends Model {
 
 	constructor (stowaway) {
 		super();
-		stowaway.on('channel message', this.#channelMessage);
+		stowaway.on('channel message', (message, data) => { this.#channelMessage(message, data); });
 		stowaway.on('decryption failure', this.#decryptionFailure);
-		stowaway.on('user handshake', this.#handshake);
+		stowaway.on('user handshake', (message, accepted) => { this.#handshake(message, accepted); });
 		stowaway.on('signed key', this.#signedKey);
 		stowaway.on('key update', this.#keyUpdate);
 		stowaway.on('revocation', this.#keyUpdate);
@@ -150,11 +150,11 @@ class MessagesModel extends Model {
 		}
 	}
 
-	#handshake (message, goodFlag) {
+	#handshake (message, accepted) {
 		if (message.channel.id === this.channelId) {
 			this.#messages.push({
 				timestamp: message.createdTimestamp,
-				content: new Handshake(message.createdAt, message.member, goodFlag)
+				content: new Handshake(message.createdAt, message.member, accepted)
 			});
 			this.#sortThenUpdate();
 		}
@@ -192,7 +192,7 @@ class MessagesModel extends Model {
 
 	#sortThenUpdate() {
 		this.#messages.sort((a, b) => { return a.timestamp - b.timestamp; });
-		this.emit('update', this.text());
+		this.emit('update', this.text);
 	}
 }
 
