@@ -2,6 +2,8 @@ All messages use "#### STOWAWAY #### (maybe some meme about the version or linki
 All messages attach stowaway.json
 NOTE: encrypted is encrypted.  Clearly.  But I need to write about what's in there.
 
+ALL HAVE A VERSION KEY & VALUE FOR VERSIONING (to allow for backwards compatibility)
+
 SENDING A MESSAGE:
 json:
 {

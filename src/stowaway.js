@@ -82,10 +82,6 @@ function getAttachment (message, name=FILE) {
 	}
 }
 
-// idk what im hashing: user id & fingerprints are all public knowledge
-function hash (input) {
-	return crypto.createHash('sha224').update(input).digest('base64');
-}
 
 class Messenger {
 	constructor (stowaway) {
@@ -126,6 +122,7 @@ class Stowaway extends EventEmitter {
 		super();
 		this.db = db;
 		this.keyFile = keyFile;
+		this.version = version;
 		this.discordMessage = `${STOWAWAY}\nVERSION: ${version}`;
 		if (comment.length > 0) {
 			this.discordMessage += `\nUser comment: ${comment}`;
@@ -162,6 +159,11 @@ class Stowaway extends EventEmitter {
 				}
 			});
 		});
+	}
+
+	#attachJSON (json, name) {
+		json.version = this.version;
+		return attachJSON(json, name);
 	}
 
 	launch (client, key) {
@@ -378,7 +380,7 @@ class Stowaway extends EventEmitter {
 					docs.filter(x => x.channel_id != null).forEach(doc => {
 						client.channels.fetch(doc.channel_id, false)
 						.then(channel => {
-							this.#send(channel, attachJSON({
+							this.#send(channel, this.#attachJSON({
 								type: REVOCATION,
 								revocation: publicRevocationArmored,
 								publicKey: publicKeyArmored
@@ -402,7 +404,7 @@ class Stowaway extends EventEmitter {
 			else if (doc != null) {
 				openpgp.readKey({ armoredKey: doc.public_key })
 				.then(publicKey => publicKey.signPrimaryUser([ this.key ]))
-				.then(signedKey => this.#send(channel, attachJSON({
+				.then(signedKey => this.#send(channel, this.#attachJSON({
 					type: SIGNED_KEY,
 					recipient: userId,
 					publicKey: signedKey
@@ -427,7 +429,7 @@ class Stowaway extends EventEmitter {
 			privateKeys: this.key
 		}))
 		.then(armoredText => {
-			this.#send(channel, attachJSON({
+			this.#send(channel, this.#attachJSON({
 				type: CHANNEL_MESSAGE,
 				public: true,
 				encrypted: armoredText
@@ -459,7 +461,7 @@ class Stowaway extends EventEmitter {
 			privateKeys: this.key
 		}))
 		.then(armoredText => {
-			this.#send(channel, attachJSON({
+			this.#send(channel, this.#attachJSON({
 				type: CHANNEL_MESSAGE,
 				public: false,
 				encrypted: armoredText
@@ -570,7 +572,7 @@ class Stowaway extends EventEmitter {
 	}
 
 	async #sendHandshake (channel, requestResponse) {
-		return this.#send(channel, attachJSON({
+		return this.#send(channel, this.#attachJSON({
 			type: HANDSHAKE,
 			respond: requestResponse,
 			public_key: this.key.toPublic().armor(),
@@ -579,7 +581,7 @@ class Stowaway extends EventEmitter {
 	}
 
 	#sendKeySignature (channel, userId, armoredPublicKey) {
-		this.#send(channel, attachJSON({
+		this.#send(channel, this.#attachJSON({
 			type: SIGNED_KEY,
 			recipient: userId,
 			publicKey: armoredPublicKey
