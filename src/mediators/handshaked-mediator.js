@@ -54,7 +54,7 @@ class HandshakedMediator extends Mediator {
 						temp = `{inverse}${temp}{/inverse}`;
 					}
 					if (i === this.#navigator.index) {
-						temp = `\t> ${temp}`;
+						temp = `\t{inverse}>{/inverse} ${temp}`;
 					}
 					else {
 						temp = `\t${temp}`;
