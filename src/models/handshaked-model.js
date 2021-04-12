@@ -163,7 +163,7 @@ class HandshakedModel extends Model {
 
 	#initCache (client, db) {
 		return new Promise((resolve, reject) => {
-			db.find({ channel_id: { $exists: true }, handshake_id: { $exists: true } }, (err, docs) => {
+			db.find({ channel_id: { $exists: true } }, (err, docs) => {
 				if (err != null) {
 					reject(err);
 				}
