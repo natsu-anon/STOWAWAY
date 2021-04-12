@@ -340,6 +340,9 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 		});
 		fsm.on('handshake channels', next => { cMediator.scrollChannels(next); });
 		fsm.on('handshake servers', next => { cMediator.scrollServers(next); });
+		fsm.on('scroll messages', offset => { cli.messages.scroll(offset); });
+		fsm.on('messages top', () => { cli.messages.setScrollPerc(0); });
+		fsm.on('messages bottom', () => { cli.messages.setScrollPerc(100); });
 
 		fsm.on('clear input', () => {
 			cli.input.clearValue();
