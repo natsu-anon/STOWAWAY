@@ -295,8 +295,17 @@ class StowawayCLI {
 	}
 
 	notify (text) {
+		this.visualBell(text);
+	}
+
+	visualBell(text) {
 		this.notification.setContent(text);
+		this.notification.style = { fg: 'black', bg: 'white' };
 		this.screen.render();
+		setTimeout(() => {
+			this.notification.style = { fg: 'white', bg: 'black' };
+			this.screen.render();
+		}, 100);
 	}
 
 	warn (text) {
@@ -327,6 +336,7 @@ class StowawayCLI {
 	destroy () {
 		this.screen.destroy();
 	}
+
 }
 
 module.exports = StowawayCLI;
