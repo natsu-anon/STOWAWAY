@@ -39,6 +39,10 @@ class MemberState extends State {
 		this.emit('to read');
 	}
 
+	tab () {
+		this.emit('to navigate');
+	}
+
 	w () {
 		this.emit('scroll', -1);
 	}

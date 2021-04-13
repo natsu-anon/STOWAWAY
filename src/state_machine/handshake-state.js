@@ -50,6 +50,10 @@ class HandshakeState extends State {
 		this.emit('handshake');
 	}
 
+	tab () {
+		this.emit('to read', false);
+	}
+
 	w () {
 		this.emit('channels', false);
 	}
