@@ -23,8 +23,8 @@ class MemberState extends State {
 		return MemberColor;
 	}
 
-	Enter () {
-		this.#enter();
+	Enter (args) {
+		this.#enter(args);
 	}
 
 	Exit () {
@@ -32,7 +32,8 @@ class MemberState extends State {
 	}
 
 	enter () {
-		this.emit('sign member');
+		// TODO uncomment in 1.1.0
+		// this.emit('sign member');
 	}
 
 	escape () {

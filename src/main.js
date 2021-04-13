@@ -116,13 +116,20 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 				else {
 					temp += ` | ${numStowaways} fellow stowaways`;
 				}
+				cli.input.setLabel(` Message #${channelName} `);
 				cli.stateText = temp;
 				cli.stateColor = ReadColor;
 				cli.render();
 			})
 			.write(publicFlag => {
 				cli.input.focus();
-				cli.stateText = `WRITE | ${publicFlag? 'PUBLIC' : 'SIGNED'}`; // eventually sepcify session as well
+				if (publicFlag) {
+					cli.input.setLabel(` All stowaways will receive your message `);
+				}
+				else {
+					cli.input.setLabel(` Only members whose keys you have signed will receive your message `);
+				}
+				cli.stateText = `WRITE | ${publicFlag ? 'PUBLIC' : 'SIGNED'}`; // eventually sepcify session as well
 				cli.stateColor = WriteColor;
 				messenger.publicFlag = publicFlag;
 				cli.render();
@@ -131,10 +138,18 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 				cli.input.clearValue();
 				cli.screen.focusPop();
 			})
-			.member(() => {
-				cli.stateText = 'MEMBERS | initializing...';
+			.member(({ channelName, guildName, members }) => {
+				cli.select(box => {
+					box.setLabel(` Members of ${guildName} #${channelName} -- FUTURE FUNCTIONALITY NEXT RELEASE `);
+					box.setContent(members.join('\n'));
+				});
+				cli.stateText = `MEMBERS | UNDER DEVELOPMENT `;
 				cli.stateColor = MemberColor;
 				cli.render();
+			},
+			() => {
+				cli.selector.removeAllListeners('resize');
+				cli.selector.hide();
 			})
 			.revoke(prevState => {
 				const challenge = phrase();
@@ -223,8 +238,6 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 				allowTab = true;
 				cli.enableInput();
 				messenger.channel = channel;
-				hMediator.read(channel.id);
-				messages.listen(channel.id);
 				hMediator.read(channel.id);
 				fsm.read({
 					channelName: channel.name,
@@ -317,6 +330,7 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 			if (enterFlag) {
 				const channelId = hMediator.channelId();
 				if (channelId != null) {
+					messages.listen(channelId);
 					client.channels.fetch(channelId)
 					.then(channel => { stowaway.loadChannel(channel); })
 					.catch(err => { throw err; });
@@ -324,6 +338,18 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 			}
 			else {
 				fsm.read();
+			}
+		});
+		fsm.on('channel members', () => {
+			if (hMediator.readingId != null) {
+				client.channels.fetch(hMediator.readingId)
+				.then(channel => {
+					fsm.member({
+						channelName: channel.name,
+						guildName: channel.guild.name,
+						members: channel.members.map(x => `${x.displayName} (${x.user.tag})`)
+					});
+				});
 			}
 		});
 
@@ -334,6 +360,7 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 		fsm.on('perform handshake', () => {
 			const channel = cMediator.channelData();
 			if (channel.valid) {
+				messages.listen(channel.id);
 				client.channels.fetch(channel.id)
 				.then(channel => { stowaway.loadChannel(channel); });
 			}
@@ -380,7 +407,7 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 		cli.screen.key(['`', '~'], () => { fsm.backtick(); });
 		// state specific
 		cli.screen.key('enter', () => { fsm.enter(); });
-		cli.screen.key('linefeed', () => { fsm.ctrlEnter(); });
+		// cli.screen.key('linefeed', () => { fsm.ctrlEnter(); }); TODO 1.1.0
 		cli.screen.key('tab', () => {
 			if (allowTab) {
 				fsm.tab();

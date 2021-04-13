@@ -3,12 +3,7 @@ const Model = require('./model.js');
 class ChannelMessage {
 	constructor (date, member, verified, signed, plainText) {
 		this.date = date;
-		if (member.nickname != null) {
-			this.name = signed ? member.nickname : `{green-fg}${member.nickname}{/green-fg}`;
-		}
-		else {
-			this.name = signed ? member.user.username : `{green-fg}${member.user.username}{/green-fg}`;
-		}
+		this.name = signed ? member.displayName : `{green-fg}${member.displayName}{/green-fg}`;
 		this.verified = verified;
 		this.plainText = plainText;
 	}
@@ -26,29 +21,29 @@ class ChannelMessage {
 class DecryptionFailure {
 	constructor (date, member) {
 		this.date = date;
-		this.name = member.nickname != null ? member.nickname : member.user.username;
+		this.name = member.displayName;
 		this.tag = member.user.tag;
 	}
 
 	get text () {
-		return `{red-fg}[${this.date.toLocaleDateString()} ${this.date.toLocaleTimeString()}] <{underline}${this.name}{/underline}> Failed to decrypt message from {underline}${this.tag}{/} consider repeating the handshake protocol.  Press 'Ctrl-H' for help.`;
+		return `{red-fg}[${this.date.toLocaleDateString()} ${this.date.toLocaleTimeString()}] <{underline}${this.name}{/underline}> Failed to decrypt message from {underline}${this.tag}{/}\n`;
 	}
 }
 
 class Handshake {
-	constructor (date, member, goodFlag) {
+	constructor (date, member, accepted) {
 		this.date = date;
-		this.name = member.nickaname != null ? member.nickname : member.user.username;
+		this.name = member.displayName;
 		this.tag = member.user.tag;
-		this.goodFlag = goodFlag;
+		this.accepted = accepted;
 	}
 
 	get text () {
-		if (this.goodFlag) {
-			return `\t{green-bg}{black-fg}$this.name (${this.author.tag}) handshake at ${this.date.toLocaleDateString()} ${this.date.toLocaleTimeString()}{/}`;
+		if (this.accepted) {
+			return `\t{green-bg}{black-fg}${this.name} (${this.tag}) handshake at ${this.date.toLocaleDateString()} ${this.date.toLocaleTimeString()}{/}`;
 		}
 		else {
-			return `\t{red-bg}{black-fg}$this.name ${this.author.tag} bad handshake at ${this.date.toLocaleDateString()} ${this.date.toLocaleTimeString()}{/}`;
+			return `\t{red-bg}{black-fg}${this.name} (${this.tag}) bad handshake at ${this.date.toLocaleDateString()} ${this.date.toLocaleTimeString()}{/}`;
 		}
 	}
 }
@@ -56,7 +51,7 @@ class Handshake {
 class SignedKey {
 	constructor (date, member) {
 		this.date = date;
-		this.name = member.nickname != null ? member.nickname : member.user.username;
+		this.name = member.displayName;
 		this.tag = member.user.tag;
 	}
 
@@ -68,7 +63,7 @@ class SignedKey {
 class KeyUpdate {
 	constructor (date, member) {
 		this.date = date;
-		this.name = member.nickname != null ? member.nickname : member.user.username;
+		this.name = member.displayName;
 		this.tag = member.user.tag;
 	}
 
@@ -80,7 +75,7 @@ class KeyUpdate {
 class Revocation {
 	constructor (date, member, blockReason) {
 		this.date = date;
-		this.name = member.nickname != null ? member.nickname : member.user.username;
+		this.name = member.displayName;
 		this.tag = member.user.tag;
 		this.blockReason = blockReason;
 	}
@@ -106,7 +101,7 @@ class MessagesModel extends Model {
 		super();
 		stowaway.on('channel message', (message, data) => { this.#channelMessage(message, data); });
 		stowaway.on('decryption failure', this.#decryptionFailure);
-		stowaway.on('user handshake', (message, accepted) => { this.#handshake(message, accepted); });
+		stowaway.on('handshake', (accepted, message) => { this.#handshake(message, accepted); });
 		stowaway.on('signed key', this.#signedKey);
 		stowaway.on('key update', this.#keyUpdate);
 		stowaway.on('revocation', this.#keyUpdate);
