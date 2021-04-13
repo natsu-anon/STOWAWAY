@@ -44,24 +44,9 @@ KEY SIGNATURE:
 NOTE: signer doesn't update his own keys, only after receiving KEY UPDATE does anyone (aside from recipient) update their public keys
 json:
 {
-	type: 'signed_key'
-	recipient: snowflake (discord id) of intended recipient
+	type: 'signed_key',
+	recipient: snowflake (discord id) of intended recipient,
 	publicKey: signed key
 }
 
 recipient still checks if fingerprints match, and if they do (1) update then:
-
-KEY UPDATE (send this to all known channels):
-json:
-{
-	type: 'key_update'
-	publicKey: update public key
-}
-again, perform the fingerprint check then use update.  It gracefully merges keys if they have the same fingerprint.
-
-REVOCATION (send this to all known channels upon key revocation):
-json:
-{
-	revocation: revokingKey
-	publicKey: new publicKey
-}
