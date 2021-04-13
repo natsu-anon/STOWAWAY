@@ -849,7 +849,7 @@ class Stowaway extends EventEmitter {
 			let bonafides = await publicKey.verifyPrimaryUser([ userKey ]);
 			let res = bonafides.find(x => x.valid);
 			if (res != null && res.valid) {
-				bonafides = await this.key.verifyPrimaryUser([ userKey ])
+				bonafides = await this.key.verifyPrimaryUser([ userKey ]);
 				res = bonafides.find(x => x.valid);
 				if (res == null || !res.valid) {
 					await this.#updatePrivateKey(publicKey);
@@ -870,7 +870,7 @@ class Stowaway extends EventEmitter {
 	// OK -- do error handling
 	#updatePrivateKey (publicKey) {
 		return new Promise(async (resolve, reject) => {
-			await this.key.update(publicKey)
+			await this.key.update(publicKey);
 			this.#allChannels((err, docs) => {
 				if (err != null) {
 					reject(err);
@@ -882,7 +882,7 @@ class Stowaway extends EventEmitter {
 						.then(resolve);
 					})))
 					.then(() => {
-						this.#writeKey(this.key.armor())
+						this.#writeKey(this.key.armor());
 					})
 					.then(resolve)
 					.catch(reject);
