@@ -147,10 +147,6 @@ class StowawayCLI {
 			},
 			padding : 1,
 		});
-		this.input.length = () => {
-			const res = this.input.width - 4;
-			return res > 0 ? res : 0;
-		};
 		this.stateLine = blessed.box({
 			parent: this.screen,
 			bold: true,
