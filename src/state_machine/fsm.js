@@ -49,7 +49,7 @@ class FSM extends EventEmitter {
 			state.on('to handshake', s => { this.handshake(s); });
 			state.on('to read', enterFlag => { this.emit('read channel', enterFlag); });
 			state.on('to write', publicFlag => { this.write(publicFlag); });
-			state.on('to member', () => { this.member(); });
+			state.on('to member', s => { this.member(s); });
 			state.on('to revoke', s => { this.revoke(s); });
 			state.on('to about', s => { this.about(s); });
 			state.on('to keybinds', s => { this.keybind(s); });
@@ -110,8 +110,8 @@ class FSM extends EventEmitter {
 		this.#current.Enter(publicFlag);
 	}
 
-	member () {
-		this.#transition(this.#member);
+	member (state) {
+		this.#transition(this.#member, state);
 	}
 
 	revoke (state) {
@@ -150,6 +150,8 @@ class FSM extends EventEmitter {
 
 	ctrlS () { this.#current.ctrlS(); }
 
+	e () { this.#current.e(); }
+
 	w () { this.#current.w(); }
 
 	s () { this.#current.s(); }
@@ -157,12 +159,6 @@ class FSM extends EventEmitter {
 	a () { this.#current.a(); }
 
 	d () { this.#current.d(); }
-
-	e () { this.#current.e(); }
-
-	h () { this.#current.h(); }
-
-	m () { this.#current.m(); }
 
 	shift0 () { this.#current.shift0(); }
 

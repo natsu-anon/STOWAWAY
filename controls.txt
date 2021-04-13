@@ -13,7 +13,6 @@ all states:
 	[Ctrl-R] initiate revoke sequence (except self)
 	[Ctrl-A] about (except self)
 	[Ctrl-K] to show controls/basic gestalt for current state (except self) -- CTRL-H is BACKSPACE -- GONNA BE USING THAT
-	[E] enter handshake state (except write state)
 	[`] to jump to notification item (except write & if there is any
 
 
@@ -24,6 +23,7 @@ navigation state:
 	[Enter] begin reading selected channel
 	[W/S] navigate to prev/next channel (or server if at first/last channel of current server)
 	[A/D] navigate to first channel of prev/next server (loops)
+	[E] enter handshake state
 	[Ctrl + Number] to save a jump to curently selected channel
 	[Backspace/Delete] remove favorite  of currently selected channel (if any)
 	[Tab] enter read state
@@ -41,8 +41,7 @@ read state:
 	- NOTE: messages from signed keys have sender & date underlined
 	[W/S] scroll up/down
 	[A/D] jump to top/bottom
-	[M] enter member view for channel
-	[H] to repeat handshake protocol.
+	[E] enter member view for channel
 	[Enter] begin writing public message
 	[Ctrl + Number] favorite current channel
 	[Backspace/Delete] remove favorite from current channel (if possible)

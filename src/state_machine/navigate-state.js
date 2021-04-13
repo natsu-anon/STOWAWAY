@@ -10,7 +10,6 @@ class NavigateState extends State {
 		this.#enter = args.enter;
 		this.#exit = args.exit;
 		this.backtick = () => { this.emit('to notification'); };
-		this.e = () => { this.emit('to handshake', this); };
 		this.ctrlR = () => { this.emit('to revoke', this); };
 		this.ctrlA = () => { this.emit('to about', this); };
 		this.ctrlK = () => { this.emit('to keybinds', this); };
@@ -66,6 +65,10 @@ class NavigateState extends State {
 
 	tab () {
 		this.emit('to read', false);
+	}
+
+	e () {
+		this.emit('to handshake', this);
 	}
 
 	w () {

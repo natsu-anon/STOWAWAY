@@ -13,7 +13,6 @@ class MemberState extends State {
 		this.ctrlA = () => { this.emit('to about', this); };
 		this.ctrlK = () => { this.emit('to keybinds', this); };
 		this.backtick = () => { this.emit('to notification'); };
-		this.e = () => { this.emit('to handshake', this); };
 	}
 
 	get name () {
