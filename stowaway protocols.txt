@@ -49,4 +49,21 @@ json:
 	publicKey: signed key
 }
 
-recipient still checks if fingerprints match, and if they do (1) update then:
+recipient still checks if fingerprints match, and if they do then update
+
+
+CHALLENGE REVOCATION:
+emitted when a revcation in handshake matches current key fingerprint for the user
+json:
+{
+	type: 'challenge_revocation'
+	encrypted: encrypted 64 word nato phrase
+}
+save hash of encrypted phrase to db, when response recieved remove it & update key
+
+CHALLENGE RESPONSE
+json:
+{
+	type: 'challenge_response'
+	response: hash of 64 word nato phrase
+}
