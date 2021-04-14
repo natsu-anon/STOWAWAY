@@ -76,7 +76,7 @@ class FSM extends EventEmitter {
 		this.#read.on('scroll bottom', () => { this.emit('messages bottom'); });
 		this.#read.on('handshake', () => { this.emit('repeat handshake'); });
 		this.#write.on('clear', () => { this.emit('clear input'); });
-		this.#member.on('scroll', offset => { this.emit('scroll members', offset); });
+		this.#member.on('scroll', next => { this.emit('scroll members', next); });
 		this.#member.on('sign member', () => { this.emit('sign member'); });
 		this.#current = this.#navigate;
 		this.#current.Enter();
