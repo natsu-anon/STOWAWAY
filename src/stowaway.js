@@ -17,8 +17,8 @@ const FILE = 'STOWAWAY.json';
 const CHANNEL_MESSAGE = 'channel_message';
 const HANDSHAKE = 'handshake';
 const SIGNED_KEY = 'signed_key';
-const KEY_UPDATE = 'key_update';
-const REVOCATION = 'revocation';
+// const KEY_UPDATE = 'key_update';
+// const REVOCATION = 'revocation';
 // TODO session
 
 
@@ -116,7 +116,6 @@ class Messenger {
 	database error
 */
 class Stowaway extends EventEmitter {
-	#sendKeyUpdate;
 
 	constructor (db, keyFile, version, comment='') {
 		super();
@@ -131,9 +130,13 @@ class Stowaway extends EventEmitter {
 
 	get #armoredPublicRevocations () {
 		return new Promise((resolve, reject) => {
-			this.#revocations()
-			.then(revocations => {
-				resolve(revocations.map(x => x.toPublic().armor()));
+			this.#revocations.then(revocations => {
+				if (revocations.length > 0) {
+					resolve(revocations.map(x => x.toPublic().armor()));
+				}
+				else {
+					resolve([]);
+				}
 			})
 			.catch(reject);
 		});
@@ -145,10 +148,13 @@ class Stowaway extends EventEmitter {
 				if (err != null) {
 					reject(err);
 				}
-				else {
+				else if (docs.length > 0) {
 					Promise.all(docs.map(x => openpgp.readKey({ armoredKey: x.revocation })))
 					.then(resolve)
 					.catch(reject);
+				}
+				else {
+					resolve([]);
 				}
 			});
 		});
@@ -239,6 +245,7 @@ class Stowaway extends EventEmitter {
 	}
 
 	launch (client, key) {
+		this.client = client;
 		this.id = client.user.id;
 		this.key = key;
 		this.fingerprint = key.getFingerprint();
@@ -270,28 +277,6 @@ class Stowaway extends EventEmitter {
 			}
 		});
 		// do the same but with guild, guild update, guildMemberUpdate
-		this.#sendKeyUpdate = armoredPublicKey => {
-			const updateJSON = {
-				type: KEY_UPDATE,
-				publicKey: armoredPublicKey
-			};
-			this.#allChannels((err, docs) => {
-				if (err != null) {
-					this.emit('error', 'database error in Stowaway.#sendKeyUpdate()');
-				}
-				else {
-					docs.forEach(doc => {
-						client.channels.fetch(doc.channel_id, false)
-						.then(channel => {
-							this.#send(channel, updateJSON);
-						})
-						.catch(err => {
-							this.emit('error', `unexpected error fetching channel with id: ${doc.channel_id} in _sendKeyUpdate():  ${err}`);
-						});
-					});
-				}
-			});
-		};
 		client.user.setPresence({
 			activity: {
 				type: 'LISTENING',
@@ -593,12 +578,15 @@ class Stowaway extends EventEmitter {
 	}
 
 	async #sendHandshake (channel, requestResponse) {
-		return this.#send(channel, this.#attachJSON({
+		const json = this.#attachJSON({
 			type: HANDSHAKE,
 			respond: requestResponse,
 			public_key: this.key.toPublic().armor(),
-			revocations: await this.#armoredPublicRevocations
-		}, FILE));
+		});
+		if (!requestResponse) {
+			json.revocations = await this.#armoredPublicRevocations;
+		}
+		return this.#send(channel, json, FILE);
 	}
 
 	#sendKeySignature (channel, userId, armoredPublicKey) {
