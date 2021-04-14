@@ -9,6 +9,7 @@ const Revoker = require('./revoker.js');
 const { NavigateColor, ReadColor, WriteColor, MemberColor } = require('./state_machine/state-colors.js');
 const FSMBuilder = require('./state_machine/fsm-builder.js');
 const { ChannelsMediator, HandshakedMediator } = require('./mediators.js');
+const MemberFactory = require('./member-factory.js');
 const { ChannelsModel, HandshakedModel, MessagesModel } = require('./models.js');
 
 // NOTE update url to use main branch
@@ -29,6 +30,8 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 		//   COOMPOSITING  //
 
 		const messenger = new Messenger(stowaway);
+		const mFactory = new MemberFactory(stowaway, db);
+		let mPromise;
 		const revoker = new Revoker(stowaway, client, PRIVATE_KEY, REVOCATION_CERTIFICATE).setKey(key);
 		const hMediator = new HandshakedMediator(await (new HandshakedModel()).initialize(stowaway, client, db));
 		const cMediator = new ChannelsMediator(await (new ChannelsModel()).initialize(stowaway, client, db));
@@ -97,7 +100,7 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 				cli.selector.removeAllListeners('resize');
 				cli.selector.hide();
 			})
-			.read(({ guildName, channelName, nickname, topic, numStowaways, statelineOnly }) => {
+			.read(({ guildName, channelName, displayName, topic, statelineOnly }) => {
 				if (!statelineOnly) {
 					if (topic != null) {
 						cli.messages.setLabel(` #${channelName} | ${topic} `);
@@ -106,28 +109,33 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 						cli.messages.setLabel(` #${channelName} `);
 					}
 				}
-				let temp = `READ | ${guildName}`; // eventually specify session as well
-				if (nickname != null) {
-					temp += ` | nickname: ${nickname}`;
-				}
-				if (numStowaways === 1) {
-					temp += ' | 1 fellow stowaway';
-				}
-				else {
-					temp += ` | ${numStowaways} fellow stowaways`;
-				}
+				cli.stateText = `READ | ${guildName} | ${displayName} | loading...`; // eventually specify session as well
+				mPromise.then(mediator => {
+					const num = mediator.numMembers;
+					let temp = `READ | ${guildName} | ${displayName} | `;
+					if (num === 0) {
+						temp += '0 fellow stowaways';
+					}
+					else if (num === 1) {
+						temp += '1 fellow stowaway';
+					}
+					else {
+						temp += `${num} fellow stowaways`;
+					}
+					cli.stateText = temp;
+					cli.render();
+				});
 				cli.input.setLabel(` Message #${channelName} `);
-				cli.stateText = temp;
 				cli.stateColor = ReadColor;
 				cli.render();
 			})
 			.write(publicFlag => {
 				cli.input.focus();
 				if (publicFlag) {
-					cli.input.setLabel(` All stowaways will receive your message `);
+					cli.input.setLabel(` All stowaways will receive this message `);
 				}
 				else {
-					cli.input.setLabel(` Only members whose keys you have signed will receive your message `);
+					cli.input.setLabel(` Only members whose keys you have signed will receive this message `);
 				}
 				cli.stateText = `WRITE | ${publicFlag ? 'PUBLIC' : 'SIGNED'}`; // eventually sepcify session as well
 				cli.stateColor = WriteColor;
@@ -138,17 +146,52 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 				cli.input.clearValue();
 				cli.screen.focusPop();
 			})
-			.member(({ channelName, guildName, members }) => {
+			.member(() => {
 				cli.select(box => {
-					box.setLabel(` Members of ${guildName} #${channelName} -- FUTURE FUNCTIONALITY NEXT RELEASE `);
-					box.setContent(members.join('\n'));
+					box.setLabel(' Loading channel information. ');
+					box.setContent('loading...');
+					cli.stateText = 'MEMBERS | loading... ';
+					mPromise.then(mediator => {
+						box.setLabel(` Members of {underline}${mediator.channel.guild.name}{/underline} #${mediator.channel.name} `);
+						let temp = 'MEMBERS | ';
+						const num = mediator.numMembers;
+						if (num === 0) {
+							temp += '0 fellow stowaways';
+						}
+						else if (num === 1) {
+							temp += '1 fellow stowaway';
+						}
+						else {
+							temp += `${num} fellow stowaways`;
+						}
+						cli.stateText = temp;
+						mediator.on('update', text => {
+							box.setScrollPerc(mediator.percentage);
+							box.setContent(text);
+							cli.render();
+						});
+						box.on('resize', () => {
+							box.setScrollPerc(mediator.percentage);
+							cli.render();
+						});
+						fsm.on('scroll members', next => { mediator.scrollMembers(next); });
+						fsm.on('sign member', () => { mediator.signMember(); });
+						return mediator.representation();
+					})
+					.then(text => {
+						box.setContent(text);
+						cli.render();
+					});
 				});
-				cli.stateText = `MEMBERS | UNDER DEVELOPMENT `;
 				cli.stateColor = MemberColor;
 				cli.render();
 			},
 			() => {
 				cli.selector.removeAllListeners('resize');
+				mPromise.then(() => {
+					fsm.removeAllListeners('scroll members');
+					fsm.removeAllListeners('sign member');
+				});
 				cli.selector.hide();
 			})
 			.revoke(prevState => {
@@ -239,12 +282,12 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 				cli.enableInput();
 				messenger.channel = channel;
 				hMediator.read(channel.id);
+				mPromise = mFactory.mediator(channel);
 				fsm.read({
 					channelName: channel.name,
 					guildName: channel.guild.name,
 					topic: channel.topic,
-					nickname: channel.members.find(member => member.id === client.user.id).nickname,
-					numStowaways: number
+					displayName: channel.members.find(member => member.id === client.user.id).displayName,
 				});
 			})
 			.catch(err => { throw err; });
@@ -342,14 +385,7 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 		});
 		fsm.on('channel members', () => {
 			if (hMediator.readingId != null) {
-				client.channels.fetch(hMediator.readingId)
-				.then(channel => {
-					fsm.member({
-						channelName: channel.name,
-						guildName: channel.guild.name,
-						members: channel.members.map(x => `${x.displayName} (${x.user.tag})`)
-					});
-				});
+				fsm.member();
 			}
 		});
 
@@ -407,7 +443,7 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 		cli.screen.key(['`', '~'], () => { fsm.backtick(); });
 		// state specific
 		cli.screen.key('enter', () => { fsm.enter(); });
-		// cli.screen.key('linefeed', () => { fsm.ctrlEnter(); }); TODO 1.1.0
+		cli.screen.key('linefeed', () => { fsm.ctrlEnter(); });
 		cli.screen.key('tab', () => {
 			if (allowTab) {
 				fsm.tab();
