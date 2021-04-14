@@ -515,6 +515,12 @@ class Stowaway extends EventEmitter {
 		});
 	}
 
+	async signedKey (userId) {
+		const publicKey = await this.#publicKey(userId);
+		const bonafides = await publicKey.verifyPrimaryUser([ this.key ]);
+		return bonafides.find(x => x.valid) !== undefined;
+	}
+
 	#allChannels (callback) {
 		this.db.find({ channel_id: { $exists: true } }, callback);
 	}
@@ -712,7 +718,7 @@ class Stowaway extends EventEmitter {
 		.then(publicKey => {
 			this.emit('debug', `${publicKey}`);
 			if (!publicFlag) {
-				this.key.verifyPrimaryUser([ publicKey ])
+				publicKey.verifyPrimaryUser([ this.key ])
 				.then(bonafides => {
 					if (bonafides.find(x => x.valid) !== undefined) {
 						this.#decrypt(publicKey, armoredMessage, message, publicFlag);
