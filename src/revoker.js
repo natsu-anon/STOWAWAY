@@ -32,18 +32,18 @@ class Revoker {
 		return this;
 	}
 
-	async setNickname (promise) {
-		this.nickname = await promise;
+	setNickname (nickname) {
+		this.nickname = nickname;
 		return this;
 	}
 
-	async setPassphrase (promise) {
-		this.passphrase = await promise;
+	setPassphrase (passphrase) {
+		this.passphrase = passphrase;
 		return this;
 	}
 
-	async setRevocationCertificate (promise) {
-		this.revocationCertificate = await promise;
+	setRevocationCertificate (revocationCertificate) {
+		this.revocationCertificate = revocationCertificate;
 		return this;
 	}
 
@@ -61,6 +61,7 @@ class Revoker {
 			this.key = key;
 			await writeFile(this.revocationPath, revocationCertificate);
 			await writeFile(this.keyPath, key);
+			return key;
 		}
 	}
 }
