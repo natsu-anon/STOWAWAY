@@ -49,7 +49,7 @@ class Revoker {
 
 	async revoke () {
 		if (this.passphrase != null && this.nickname != null && this.key != null && this.revocationCertificate != null) {
-			const { key, revocationCertificate } = await openpgp.generateKey({
+			let { key, revocationCertificate } = await openpgp.generateKey({
 				type: 'ecc',
 				curve: 'curve25519',
 				passphrase: this.passphrase,
@@ -57,11 +57,21 @@ class Revoker {
 					name: this.nickname,
 				}]
 			});
-			this.stowaway.revokeKey(this.client, this.key, key, this.revocationCertificate);
-			this.key = key;
+			key = await openpgp.decryptKey({
+				privateKey: key,
+				passphrase: this.passphrase
+			});
+			key = await this.stowaway.revokeKey(this.client, this.key, key, this.revocationCertificate);
 			await writeFile(this.revocationPath, revocationCertificate);
-			await writeFile(this.keyPath, key);
-			return key;
+			await writeFile(this.keyPath, (await openpgp.encryptKey({
+				privateKey: this.key,
+				passphrase: this.passphrase
+			})).armor());
+			this.key = key;
+			return { nickname: this.nickname, fingerprint: key.getFingerprint() };
+		}
+		else {
+			throw Error('revocation values unset!');
 		}
 	}
 }
