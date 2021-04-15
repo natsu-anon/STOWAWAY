@@ -150,8 +150,9 @@ async function main () {
 	// NOTE key.getRevocationCertificate() does not give you the revocation certificate that revokes the key
 	console.log('\x1b[32m\n#### KEY REVOKING\n\x1b[0m');
 	// only revokes if key & cert match
-	let { publicKey: rKey } = await openpgp.revokeKey({
-		key: await openpgp.readKey({ armoredKey: pk1 }),
+	let { privateKey: rKey } = await openpgp.revokeKey({
+		// key: await openpgp.readKey({ armoredKey: sk1 }),
+		key: k1,
 		revocationCertificate: rc1,
 	});
 	console.log(`revoked key matches original? ${rKey.hasSameFingerprintAs(await openpgp.readKey({ armoredKey: pk1 }))}`);
@@ -163,11 +164,16 @@ async function main () {
 	});
 	// sign the revoked key with new key
 	rKey = await rKey.signPrimaryUser([ k3 ]);
-	console.log(`signed revoked key matches original? ${rKey.hasSameFingerprintAs(await openpgp.readKey({armoredKey: pk1 }))}`);
+	// k3 = await k3.signPrimaryUser([ rKey ]);
+	console.log(rKey.getFingerprint());
+	console.log(await rKey.verifyPrimaryUser([ k3 ]));
+	console.log(`signed revoked key matches original? ${rKey.toPublic().hasSameFingerprintAs(await openpgp.readKey({armoredKey: pk1 }))}`);
 	console.log("signed revoked public key:");
 	console.log(rKey.armor());
+	console.log(rKey.toPublic().armor());
 	console.log("new public key:");
 	console.log(pk3);
+	/*
 	try {
 		await k3.toPublic().getRevocationCertificate(); // if there's not a revocation certificate this throws an error
 		res = await rKey.verifyPrimaryUser([ await openpgp.readKey({ armoredKey: pk1 }), k3.toPublic() ]);
@@ -176,6 +182,17 @@ async function main () {
 	catch (err) {
 		console.error(err.message);
 	}
+	*/
+
+	encrypted = await openpgp.encrypt({
+		message: openpgp.Message.fromText('henlo'),
+		publicKeys: k1.toPublic()
+	});
+	decrypted = await openpgp.decrypt({
+		message: await openpgp.readMessage({ armoredMessage: encrypted }),
+		privateKeys: rKey
+	});
+	console.log(decrypted);
 	// console.log(rKey.revocationSignatures[0]);
 	// what happens if a user misses the original revocation but sees later signature messages????
 	// bruh just send the revoked public key fuggit
@@ -184,7 +201,7 @@ async function main () {
 
 	/*  HASHED FINGERPRINTS  */
 
-
+	/*
 	console.log('\x1b[32m\n#### FINGERPRINT HASHING\n\x1b[0m');
 	const fingerprint = k0.getFingerprint();
 	console.log(`fingerprint: ${fingerprint}`);
@@ -193,7 +210,7 @@ async function main () {
 	console.log(crypto.createHash('sha1').update(fingerprint).digest('base64'));
 
 
-	/*  openpgp.readKey()  */
+	//  openpgp.readKey()  //
 
 
 	console.log('\x1b[32m\n#### OPENPGP.READKEY() \n\x1b[0m');
@@ -213,7 +230,7 @@ async function main () {
 
 	console.log('\x1b[32m\n#### OPENPGP.READKEY() \n\x1b[0m');
 
-	/*  openpgp.readMessage()  */
+	//  openpgp.readMessage()  //
 
 
 	console.log('\x1b[32m\n#### OPENPGP.READMESSAGE() \n\x1b[0m');
@@ -225,6 +242,7 @@ async function main () {
 	.catch(err => {
 		console.error(err);
 	});
+	*/
 
 
 
