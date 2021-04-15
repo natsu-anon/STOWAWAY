@@ -29,10 +29,10 @@ json:
 	respond: true/false,
 	publicKey: armored public key
 	revocations: [
-		revokingKey0, (can get the fingerprint of the original key from it)
-		revokingKey1, (can get the fingerprint of the original key from it)
+		armored public revokingKey0, (can get the fingerprint of the original key from it)
+		armored public revokingKey1, (can get the fingerprint of the original key from it)
 		...
-		revokingKeyN, (can get the fingerprint of the original key from it)
+		armored public revokingKeyN, (can get the fingerprint of the original key from it)
 	]
 }
 
@@ -50,20 +50,3 @@ json:
 }
 
 recipient still checks if fingerprints match, and if they do then update
-
-
-CHALLENGE REVOCATION:
-emitted when a revcation in handshake matches current key fingerprint for the user
-json:
-{
-	type: 'challenge_revocation'
-	encrypted: encrypted 64 word nato phrase
-}
-save hash of encrypted phrase to db, when response recieved remove it & update key
-
-CHALLENGE RESPONSE
-json:
-{
-	type: 'challenge_response'
-	response: hash of 64 word nato phrase
-}
