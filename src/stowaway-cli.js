@@ -179,7 +179,10 @@ class StowawayCLI {
 					ch: '|'
 				}
 			},
-			border: { type: 'line' }
+			border: {
+				type: 'line',
+				fg: 'green'
+			}
 
 		});
 		this.popup = blessed.box({ // used for help & about
@@ -202,7 +205,8 @@ class StowawayCLI {
 			},
 			padding: 1,
 			border: {
-				type: 'line'
+				type: 'line',
+				fg: 'green'
 			}
 		});
 		this.revoke = blessed.textbox({
@@ -270,9 +274,7 @@ class StowawayCLI {
 			content: 'POP',
 			border : {
 				type: 'line',
-				fg: 'yellow',
 			},
-			fg: 'yellow',
 		});
 		let timeout;
 		const cycle = i => {
@@ -307,7 +309,7 @@ class StowawayCLI {
 	warn (text) {
 		const box = blessed.box({
 			parent: this.screen,
-			label: ' ***WARNING*** Press [X] to close ',
+			label: ' ***WARNING*** Press [Escape] to close ',
 			content: text,
 			top: 'center',
 			left: 'center',
@@ -315,14 +317,39 @@ class StowawayCLI {
 			height: '50%',
 			padding: 1,
 			border: {
-				type: 'line'
+				type: 'line',
+				fg: 'yellow'
 			}
 		});
-		this.screen.onceKey(['x', 'S-x'], () => {
+		this.screen.onceKey('escape', () => {
 			box.destroy();
 			this.screen.render();
 		});
 		this.screen.render();
+		return box;
+	}
+
+	keyData (text) {
+		const box = blessed.box({
+			parent: this.screen,
+			tags: true,
+			label: ' Generated Key Data; Press [Escape] to close ',
+			content: text,
+			top: 'center',
+			left: 'center',
+			width: 80,
+			height: 8,
+			padding: 1,
+			border: {
+				type: 'line'
+			}
+		});
+		this.screen.onceKey('escape', () => {
+			box.destroy();
+			this.screen.render();
+		});
+		this.screen.render();
+		return box;
 	}
 
 	render () {
