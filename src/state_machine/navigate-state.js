@@ -51,10 +51,6 @@ class NavigateState extends State {
 		this.#exit();
 	}
 
-	escape () {
-		throw Error('FML');
-	}
-
 	enter () {
 		this.emit('to read', true);
 	}
