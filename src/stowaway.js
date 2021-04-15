@@ -1,6 +1,6 @@
 const EventEmitter = require('events');
 const fs = require('fs');
-const crypto = require('crypto');
+// const crypto = require('crypto');
 const https = require('https');
 const openpgp = require('openpgp');
 const { MessageAttachment } = require('discord.js');
@@ -18,7 +18,7 @@ const CHANNEL_MESSAGE = 'channel_message';
 const HANDSHAKE = 'handshake';
 const SIGNED_KEY = 'signed_key';
 // const KEY_UPDATE = 'key_update';
-// const REVOCATION = 'revocation';
+const REVOCATION = 'revocation';
 // TODO session
 
 
