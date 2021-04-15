@@ -149,7 +149,7 @@ class Stowaway extends EventEmitter {
 					reject(err);
 				}
 				else if (docs.length > 0) {
-					Promise.all(docs.map(x => openpgp.readKey({ armoredKey: x.revocation })))
+					Promise.all(docs.map(x => openpgp.readKey({ armoredKey: x.revocation_certificate })))
 					.then(resolve)
 					.catch(reject);
 				}
@@ -438,21 +438,24 @@ class Stowaway extends EventEmitter {
 		return new Promise((resolve, reject) => {
 			this.db.find({ $or : [
 				{ channel_id: { $exists: true } },
-				{ user_id: { $exists: true } }
+				{ revocation_ceritifcate: { $exists: true } }
 			] }, async (err, docs) => {
+				const channelIds = docs.filter(x => x.channel_id != null).map(x => x.channel_id);
+				let revocations = docs.filter(x => x.revocation_certificate != null).map(x => x.revocation_certificate);
 				if (err != null) {
 					this.emit('error', 'database error in Stowaway.revokeKey()');
 					reject(err);
 				}
-				else if (docs.length > 0) { // don't just do it if you know someone else
+				else if (channelIds.length > 0) { // don't just do it if you know someone else
 					let { privateKey: revocation } = await openpgp.revokeKey({
 						key: key0,
 						revocationCertificate
 					});
-					let revocations = await this.#revocations();
-					revocation = await revocation.signPrimaryUser(revocations.concat(key1));
-					this.db.insert({ revocation_certificate: revocation.armor() });
-					revocations = revocation.concat(revocations);
+					revocation = await revocation.signPrimaryUser([ key1 ]);
+					this.db.insert({ fingerprint: revocation.getFingerprint(), revocation_certificate: revocation.armor() });
+					revocations = await Promise.all(revocations.map(armor => openpgp.readKey({ armoredKey: armor })));
+					revocations = await Promise.all(revocations.map(r => r.signPrimaryUser([ key1 ])));
+					revocations.push(revocation);
 					const key = await key1.signPrimaryUser(revocations);
 					const publicKeyArmored = key.toPublic().armor();
 					docs.filter(x => x.channel_id != null).forEach(doc => {
@@ -466,9 +469,11 @@ class Stowaway extends EventEmitter {
 							}, FILE));
 						});
 					});
+					this.key = key;
 					resolve(key);
 				}
 				else {
+					this.key = key1;
 					resolve(key1);
 				}
 			});
@@ -817,10 +822,15 @@ class Stowaway extends EventEmitter {
 							Promise.all(revocations.map(revocation => openpgp.readKey({ armoredKey: revocation })))
 							.then(revokingKeys => {
 								const revokingKey = revokingKeys.find(x => savedKey.hasSameFingerprintAs(x));
-								return this.#revocation(revokingKey, savedKey, publicKey);
+								if (revokingKey != null) {
+									return this.#revocation(revokingKey, savedKey, publicKey);
+								}
+								else {
+									return { valid: false, reason: 'did not find a revoking key with matching fingerprint' };
+								}
 							})
-							.then(result => {
-								if (result.valid) {
+							.then(({ valid }) => {
+								if (valid) {
 									this.db.update({ user_id: message.author.id }, { public_key: armoredKey });
 									this.emit('handshake', true, message);
 								}
@@ -893,13 +903,7 @@ class Stowaway extends EventEmitter {
 			return { valid: false, reason: 'no revocation certificate' };
 		}
 		if (publicKey0.hasSameFingerprintsAs(revocation)) {
-			const res = await revocation.verifyPrimaryUser([ publicKey0, publicKey1 ]);
-			if (res.filter(x => x.valid) === 2 && (await publicKey1.verifyPrimaryUser([ revocation ]))[0].valid) {
-				return { valid: true, publicKey: publicKey1 };
-			}
-			else {
-				return { valid: false, reason: 'invalid signatures' };
-			}
+			return { valid: true, publicKey: publicKey1 };
 		}
 		else {
 			return { valid: false, reason: 'fingerprint mismatch' };
