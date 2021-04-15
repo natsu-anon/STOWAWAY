@@ -18,7 +18,7 @@ const CHANNEL_MESSAGE = 'channel_message';
 const HANDSHAKE = 'handshake';
 const SIGNED_KEY = 'signed_key';
 // const KEY_UPDATE = 'key_update';
-const REVOCATION = 'revocation';
+const REVOCATION = 'revocation'; 
 // TODO session
 
 
@@ -533,7 +533,7 @@ class Stowaway extends EventEmitter {
 	}
 
 	#publicKey (userId) {
-		if (userId === this.id) {
+		if (userId === this.id || userID == null) {
 			return Promise.resolve(this.key.toPublic());
 		}
 		else {
@@ -545,7 +545,8 @@ class Stowaway extends EventEmitter {
 					}
 					else if (doc != null) {
 						openpgp.readKey({ armoredKey: doc.public_key })
-						.then(resolve);
+						.then(resolve)
+						.catch(reject);
 					}
 					reject();
 				});
@@ -685,6 +686,13 @@ class Stowaway extends EventEmitter {
 										this.emit('error', 'missing json keys for signed key');
 									}
 									break;
+								case REVOCATION:
+									if (data.revocation != null && data.publicKey != null) {
+										this.#revocation(data.revocation, data.publicKey, message.author.id);
+									}
+									else {
+										this.emit('error', 'missing json keys for revocation');
+									}
 								default:
 									break;
 							}
@@ -823,14 +831,6 @@ class Stowaway extends EventEmitter {
 							.then(revokingKeys => {
 								const revokingKey = revokingKeys.find(x => savedKey.hasSameFingerprintAs(x));
 								if (revokingKey != null) {
-									return this.#revocation(revokingKey, savedKey, publicKey);
-								}
-								else {
-									return { valid: false, reason: 'did not find a revoking key with matching fingerprint' };
-								}
-							})
-							.then(({ valid }) => {
-								if (valid) {
 									this.db.update({ user_id: message.author.id }, { public_key: armoredKey });
 									this.emit('handshake', true, message);
 								}
@@ -895,7 +895,26 @@ class Stowaway extends EventEmitter {
 		});
 	}
 
-	async #revocation (revocation, publicKey0, publicKey1) {
+	#revocation (armoredRevocation, armoredKey, userId) {
+		Promise.all([ 
+			openpgp.readKey({ armoredKey: armoredRevocation }),
+			openpgp.readKey({ armoredKey }),
+			this.#publicKey(userId)
+		])
+		.then(keys => {
+			return this.#testRevoke(keys[0], keys[1], keys[2]);
+		})
+		.then(({ valid }) => {
+			if (valid) {
+				this.db.update({ user_id: userId }, { public_key: armoredKey });
+			}
+		})
+		.catch(err => {
+			this.emit('error', `error in Stowaway.#revocation()\n${err}`);
+		});
+	}
+
+	async #testRevoke (revocation, publicKey0, publicKey1) {
 		try {
 			await revocation.getRevocationCertificate();
 		}
