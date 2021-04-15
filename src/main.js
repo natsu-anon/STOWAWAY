@@ -1,15 +1,16 @@
 const process = require('process');
+const fs = require('fs');
 
 const phrase = require('./nato-phrase.js');
 const versionCheck = require('./version-check.js');
 const initialize = require('./initialization.js');
 const StowawayCLI = require('./stowaway-cli.js');
 const { Permissions, Messenger } = require('./stowaway.js');
-const Revoker = require('./revoker.js');
 const { NavigateColor, ReadColor, WriteColor, MemberColor } = require('./state_machine/state-colors.js');
 const FSMBuilder = require('./state_machine/fsm-builder.js');
-const { ChannelsMediator, HandshakedMediator } = require('./mediators.js');
+const Revoker = require('./revoker.js');
 const MemberFactory = require('./member-factory.js');
+const { ChannelsMediator, HandshakedMediator } = require('./mediators.js');
 const { ChannelsModel, HandshakedModel, MessagesModel } = require('./models.js');
 
 // NOTE update url to use main branch
@@ -74,7 +75,11 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 			.navigate(() => {
 				cli.stateText = `NAVIGATE | ${hMediator.numChannels} handshaked channels`;
 				cli.stateColor = NavigateColor;
+				cli.navigation.style.border.fg = 'green';
 				cli.render();
+			},
+			() => {
+				cli.navigation.style.border.fg = 'white';
 			})
 			.handshake(prevState => {
 				cli.stateText = `HANDSHAKE | from: ${prevState.name} | ${cMediator.numChannels} text channels`;
@@ -127,7 +132,11 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 				});
 				cli.input.setLabel(` Message #${channelName} `);
 				cli.stateColor = ReadColor;
+				cli.messages.style.border.fg = 'green';
 				cli.render();
+			},
+			() => {
+				cli.messages.style.border.fg = 'white';
 			})
 			.write(publicFlag => {
 				cli.input.focus();
@@ -140,9 +149,11 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 				cli.stateText = `WRITE | ${publicFlag ? 'PUBLIC' : 'SIGNED'}`; // eventually sepcify session as well
 				cli.stateColor = WriteColor;
 				messenger.publicFlag = publicFlag;
+				cli.input.style.border.fg = 'green';
 				cli.render();
 			},
 			() => {
+				cli.input.style.border.fg = 'white';
 				cli.input.clearValue();
 				cli.screen.focusPop();
 			})
@@ -197,11 +208,141 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 			.revoke(prevState => {
 				const challenge = phrase();
 				revoker.challenge = challenge;
-				cli.stateText = `REVOKE | from: ${prevState.name} | WARNING: revoking a key is irreversible!`;
+				cli.stateText = `REVOKE | from: ${prevState.name} | STEP 1: CHALLENGE | WARNING: revoking a key is irreversible!`;
 				cli.stateColor = prevState.color;
 				cli.revoke.show();
-				cli.revoke.setLabel(` Enter '${challenge}' then press [Enter] to revoke your key THIS IS IRREVERSIBLE; Press [Enter] to return to ${prevState.name} mode `);
+				const temp = `; press [Escape] to return to ${prevState.name}`;
+				const label = `Enter '${challenge}' then press [Enter] to begin revoking your key${temp}`;
+				cli.revokeLabel = label;
 				cli.revoke.focus();
+				cli.revoke.censor = false;
+				// revocation sequence:
+				// nickname
+				// password #1
+				// password #2
+				// read revocation cert from disk
+				// display nickname & fingerprint
+				new Promise((resolve, reject) => {
+					cli.revoke.once('submit', () => {
+						if (revoker.checkChallenge(cli.revoke.value)) {
+							resolve();
+						}
+						else {
+							reject();
+						}
+					});
+				})
+				.then(() => {
+					cli.revoke.focus();
+					cli.revoke.clearValue();
+					cli.revokeLabel = `Enter a valid nickname for your new key then press [Enter] to proceed${temp}`;
+					cli.stateText = `REVOKE | from: ${prevState.name} | STEP 2: NICKNAME | WARNING: revoking a key is irreversible!`;
+					cli.render();
+					return new Promise((resolve, reject) => {
+						cli.revoke.once('submit', () => {
+							if (cli.revoke.value.length > 0) {
+								resolve(cli.revoke.value);
+							}
+							else {
+								reject();
+							}
+						});
+					});
+				})
+				.then(nickname => {
+					cli.revoke.focus();
+					cli.revoke.clearValue();
+					revoker.setNickname(nickname);
+					cli.revoke.censor = true;
+					cli.revokeLabel = `Enter a passphrase for your new key then press [Enter] to continue${temp}`;
+					cli.stateText = `REVOKE | from: ${prevState.name} | NICKNAME: ${nickname} | STEP 3: PASSPHRASE | WARNING: revoking a key is irreversible!`;
+					cli.render();
+					return new Promise((resolve, reject) => {
+						cli.revoke.once('submit', () => {
+							if (cli.revoke.value.length > 0) {
+								resolve(cli.revoke.value);
+							}
+							else {
+								reject();
+							}
+						});
+					});
+				})
+				.then(passphrase => {
+					cli.revoke.focus();
+					cli.revoke.clearValue();
+					cli.revokeLabel = `Re-enter the passphrase then press [Enter] to continue${temp}`;
+					cli.stateText = `REVOKE | from: ${prevState.name} | NICKNAME: ${revoker.nickname} | STEP 4: PASSPHRASE CONFIRMATION | WARNING: revoking a key is irreversible!`;
+					cli.render();
+					return new Promise((resolve, reject) => {
+						cli.revoke.once('submit', () => {
+							if (cli.revoke.value === passphrase) {
+								resolve(passphrase);
+							}
+							else {
+								reject();
+							}
+						});
+					});
+					
+				})
+				.then(passphrase => {
+					fsm.revokeLock();
+					revoker.setPassphrase(passphrase);
+					cli.screen.focusPop();
+					cli.revoke.hide();
+					const stopSpinning = cli.spin('reading revocation certificate from disk...');
+					cli.stateText = `REVOKE | from: ${prevState.name} | NICKNAME: ${revoker.nickname} | STEP 5: reading revocation certificate | IT'S TOO LATE`;
+					cli.revoke.clearValue();
+					return new Promise((resolve, reject) => {
+						fs.readFile(REVOCATION_CERTIFICATE, (err, data) => {
+							if (err != null) {
+								reject(err);
+							}
+							else {
+								resolve(data);
+							}
+						});
+					})
+					.finally(() => {
+						stopSpinning();
+					});
+				})
+				.then(revocationCertificate => {
+					cli.stateText = `REVOKE | from: ${prevState.name} | REVOKING KEY | IT'S TOO LATE`;
+					const stopSpinning = cli.spin('revoking key...');
+					return revoker.setRevocationCertificate(revocationCertificate).revoke()
+					.finally(() => { stopSpinning(); });
+
+				})
+				.then(({ nickname, fingerprint }) => {
+					cli.stateText = `REVOKE | from: ${prevState.name} | REVOCATION PROCESS COMPLETE`;
+					let temp = 'Always check that your key\'s nickname & fingerprint match what you remember!\n';
+					temp += `> key nickname: {underline}${nickname}{/underline}\n`;
+					temp += `> key fingerprint: {underline}${fingerprint}{/underline}\n`;
+					temp += 'Move your new revocation ceritifcate to an offline storage device.';
+					const box = cli.keyData(temp);
+					return new Promise(resolve => {
+						box.once('destroy', () => {
+							resolve();
+						});
+					});
+				})
+				.then(() => {
+					fsm.revokeUnlock();
+					fsm.escape();
+				})
+				.catch(err => {
+					if (err != null) {
+						cli.warn(`Error while revoking:\n${err}`);
+					}
+					cli.revoke.clearValue();
+					cli.revoke.removeAllListeners('submit');
+					fsm.revoke(prevState);
+				})
+				.finally(() => {
+					fsm.revokeUnlock();
+				});
 				cli.render();
 			}, () => {
 				cli.revoke.clearValue();
@@ -276,21 +417,17 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 		// HELPFUL FUNCTIONS //
 
 		const enterChannel = function (channel) {
-			stowaway.numberStowaways(channel)
-			.then(number => {
-				allowTab = true;
-				cli.enableInput();
-				messenger.channel = channel;
-				hMediator.read(channel.id);
-				mPromise = mFactory.mediator(channel);
-				fsm.read({
-					channelName: channel.name,
-					guildName: channel.guild.name,
-					topic: channel.topic,
-					displayName: channel.members.find(member => member.id === client.user.id).displayName,
-				});
-			})
-			.catch(err => { throw err; });
+			allowTab = true;
+			cli.enableInput();
+			messenger.channel = channel;
+			hMediator.read(channel.id);
+			mPromise = mFactory.mediator(channel);
+			fsm.read({
+				channelName: channel.name,
+				guildName: channel.guild.name,
+				topic: channel.topic,
+				displayName: channel.members.find(member => member.id === client.user.id).displayName,
+			});
 		};
 		/* I shouldn't need this HOPEFULLY
 		const returnToChannel = function (channel) {
@@ -418,8 +555,6 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 			if (messenger.message(cli.input.value)) {
 				fsm.read();
 			}
-		});
-		cli.revoke.on('submit', () => {
 		});
 
 		//  KEYBINDING  //
