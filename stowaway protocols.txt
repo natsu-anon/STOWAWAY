@@ -49,4 +49,12 @@ json:
 	publicKey: signed key
 }
 
+KEY REVOCATION:
+json:
+{
+	type: 'revocation'
+	revocation: armored public revocation
+	publicKey: armored public key
+}
+
 recipient still checks if fingerprints match, and if they do then update
