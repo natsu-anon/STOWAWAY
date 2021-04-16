@@ -66,6 +66,8 @@ async function test() {
 
 	// TESTING
 
+	// NOTE set up something to it tests initial then subsequent launches
+
 
 	// key revocation
 
