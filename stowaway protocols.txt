@@ -9,7 +9,7 @@ json:
 {
 	type: 'channel_message',
 	public: true/false -- if false only sends message to recipients whose key you HAVE signed o.w. everyone in the channel
-	encrypted: the encrypted message itself
+	message: the encrypted message itself
 }
 
 then when message recieved:
