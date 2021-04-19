@@ -1,6 +1,7 @@
 const EventEmitter = require('events');
 const fs = require('fs');
 const https = require('https');
+// const { Duplex } = require('stream');
 const crypto = require('crypto');
 const Datastore = require('nedb');
 const { Client } = require('discord.js');
@@ -11,20 +12,23 @@ const API_TOKEN = './DO_NOT_SHARE/stowaway.token';
 const DATABASE = './DO_NOT_SHARE/stowaway.db';
 const REGEX = /^#{4} STOWAWAY #{4}$/m;
 
-/* lmao didn't work
-// https.get("api.github.com/repos/natsu-anon/STOWAWAY/releases", response => {
-const options = {
-	// hostname: "api.github.com",
-	// path: "repos/octocat/hello-world/releases",
-	headers: { 'User-Agent': 'Mozilla/5.0' }
-};
-// https.get(options, response => {
-https.get("https://api.github.com/repos/octocat/hello-world/releases", options, response => {
-	response.on('data', data => { console.log(data); });
-	response.on('error', err => { throw err; });
-});
-*/
+const VERSION_URL = 'https://raw.githubusercontent.com/natsu-anon/STOWAWAY/development/version.json';
 
+new Promise(resolve => {
+	https.get(VERSION_URL, response => {
+		let buffer = Buffer.alloc(0);
+		response.once('end', () => {
+			console.log('*** RESPONSE ENDED ***');
+			console.log(buffer.toString());
+			resolve();
+		});
+		response.on('data', chunk => {
+			buffer = Buffer.concat([ buffer, Buffer.from(chunk) ]);
+		});
+	}).on('error', err => { throw err; });
+});
+
+/*
 console.log(phrase());
 
 const db = new Datastore({ filename: DATABASE, autoload: true });
@@ -86,3 +90,4 @@ return new Promise((resolve, reject) => {
 	// console.log(crypto.getHashes());
 })
 .catch(err => { console.error(err); });
+*/
