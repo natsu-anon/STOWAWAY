@@ -30,7 +30,7 @@ const NATO = [
 ];
 
 function hash (str, length) {
-	const temp = crypto.createHash('sha256').update(str).digest().slice(0, length);
+	const temp = crypto.createHash('blake2s256').update(str).digest().slice(0, length);
 	return [...temp].map(x => NATO[x % 26]).join(' ');
 }
 
