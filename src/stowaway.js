@@ -57,18 +57,17 @@ function Permissions (channel, user) {
 function readAttached (url) {
 	return new Promise((resolve, reject) => {
 		https.get(url, response => {
-			// console.log(response);
-			let result = '';
+			let buffer = Buffer.alloc(0);
 			response.once('end', () => {
 				if (response.complete) {
-					resolve(result);
+					resolve(buffer.toString());
 				}
 				else {
 					reject(Error(`Connection was terminated while response from ${url} was still being set!`));
 				}
 			});
 			response.on('data', data => {
-				result += data.toString();
+				buffer = Buffer.concat([ buffer, Buffer.from(data) ]);
 			});
 		}).on('error', reject);
 	});
@@ -1009,7 +1008,6 @@ class Stowaway extends EventEmitter {
 	}
 
 	#revocation (armoredRevocation, armoredKey, userId) {
-		// const savedKey = this.#publicKey(userId);
 		return new Promise(resolve => {
 			Promise.all([ 
 				this.#publicKey(userId),

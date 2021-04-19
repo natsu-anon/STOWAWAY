@@ -32,10 +32,13 @@ function versionCheck (url, version) {
 		};
 		try {
 			https.get(url, response => {
-				response.on('err', handleError);
+				let buffer = Buffer.alloc(0);
 				response.on('data', data => {
+					buffer = Buffer.concat([ buffer, Buffer.from(data) ]);
+				});
+				response.once('end', () => {
 					try {
-						const json = JSON.parse(data.toString());
+						const json = JSON.parse(buffer.toString());
 						if (json.redirect != null) {
 							versionCheck(json.redirect, version)
 							.then(resolve);
@@ -70,7 +73,7 @@ function versionCheck (url, version) {
 						handleError(err);
 					}
 				});
-			});
+			}).on('error', handleError);
 		}
 		catch (error) {
 			handleError(error);
