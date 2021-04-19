@@ -24,6 +24,7 @@
 		"build-all": "pkg -t latest-win,latest-linux,latest-macos --public --out-path releases .",
 		"prep": "prepare.bat",
 		"debug": "node --trace-warnings src/index.js",
+		"test": "node --trace-warnings test.js",
 		"start": "node src/index.js",
 		"about": "node src/index.js --about",
 		"channels": "node src/index.js --channels",
