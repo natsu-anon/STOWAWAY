@@ -358,7 +358,9 @@ class Stowaway extends EventEmitter {
 					.catch(err => {
 						this.emit('error', `Unexpected error in Stowaway.loadChannel() from Stowaway.#sendHandshake()\n${err.stack}`);
 					})
-					.finally(resolve);
+					.finally(() => {
+						resolve(channel);
+					});
 				}
 				else { // load messages around the last seen message
 					channel.messages.fetch(doc.handshake.id)
@@ -377,7 +379,9 @@ class Stowaway extends EventEmitter {
 					.catch(err => {
 						this.emit('error', `unexpected error in Stowaway.loadChannel() ${err.stack}`);
 					})
-					.finally(resolve);
+					.finally(() => {
+						resolve(channel);
+					});
 				}
 			});
 		});
