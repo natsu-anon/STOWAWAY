@@ -17,10 +17,12 @@ async function launch () {
 		console.error(`${client.user.tag}: ${text}`);
 	});
 	stowaway.launch(client, key);
-	for (let i = 0; i < channels1.length; i++) {
-		await stowaway.loadChannel(await client.channels.fetch(channels1[i]));
-	}
+	let channel;
 	console.log(`deadhead: ${client.user.tag}`);
+	for (let i = 0; i < channels1.length; i++) {
+		channel = await stowaway.loadChannel(await client.channels.fetch(channels1[i]));
+		console.log(`\tdeadheading: ${channel.guild.name} #${channel.name}`);
+	}
 }
 
 launch();
