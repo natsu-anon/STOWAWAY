@@ -25,6 +25,7 @@
 		"prep": "prepare.bat",
 		"debug": "node --trace-warnings src/index.js",
 		"test": "node --trace-warnings test.js",
+		"deadhead": "node --trace-warnings deadhead.js",
 		"start": "node src/index.js",
 		"about": "node src/index.js --about",
 		"channels": "node src/index.js --channels",

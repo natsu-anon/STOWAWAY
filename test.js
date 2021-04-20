@@ -134,4 +134,33 @@ async function test() {
 	}
 }
 
-test();
+if (require.main === module) {
+	test();
+}
+
+module.exports = {
+	clientLogin,
+	writeKey: async keyPath => {
+		const { key } = await genKey();
+		fs.writeFile(keyPath, key.armor(), 'utf8', err => {
+			if (err != null) {
+				console.error(err);
+			}
+			else {
+				console.log('DONE!');
+			}
+		});
+	},
+	loadKey: keyPath => {
+		return new Promise((resolve, reject) => {
+			fs.readFile(keyPath, 'utf8', (err, data) => {
+				if (err != null) {
+					reject(err);
+				}
+				else {
+					openpgp.readKey({ armoredKey: data }).then(resolve);
+				}
+			});
+		});
+	}
+};
