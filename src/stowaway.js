@@ -351,7 +351,7 @@ class Stowaway extends EventEmitter {
 								this.db.update({ last_channel: { $exists: true } }, { last_channel: channel.id }, { upsert: true });
 								this.channelId = channel.id;
 								this.emit('read channel', channel);
-								this.emit('test', `handshaked ${channel.guild.name} #${channel.name}`);
+								// this.emit('test', `handshaked ${channel.guild.name} #${channel.name}`);
 							}
 						});
 					})
@@ -372,7 +372,7 @@ class Stowaway extends EventEmitter {
 						this.db.update({ last_channel: { $exists: true } }, { last_channel: channel.id }, { upsert: true });
 						this.channelId = channel.id;
 						this.emit('read channel', channel);
-						this.emit('test', `active channel ${channel.guild.name} #${channel.name}`);
+						// this.emit('test', `active channel ${channel.guild.name} #${channel.name}`);
 					})
 					.catch(err => {
 						this.emit('error', `unexpected error in Stowaway.loadChannel() ${err.stack}`);
@@ -670,7 +670,7 @@ class Stowaway extends EventEmitter {
 						this.#channelMessage(json.message, json.public, message);
 					}
 					else {
-						throw Error(`missing keys for channel message in JSON:\n${json}`);
+						throw Error(`missing keys for channel message in JSON. Keys found:\n${Object.keys(json)}`);
 					}
 				}
 				if (message.author.id !== this.id) {
@@ -727,8 +727,7 @@ class Stowaway extends EventEmitter {
 				if (json.revocation != null && json.publicKey != null) {
 					this.#revocation(json.revocation, json.publicKey, message.author.id)
 					.then(({ valid, reason }) => {
-						// if (notify) {
-						if (true) {
+						if (notify) {
 							if (valid) {
 								this.emit('notify', 'green', `Key revocation from ${message.author.tag}`);
 							}
@@ -829,7 +828,7 @@ class Stowaway extends EventEmitter {
 		})
 		.then(result => {
 			this.emit('channel message', message, result);
-			this.emit('test', `${publicFlag? 'public' : 'signed-only'} message from ${message.author.tag}: (signed: ${result.signed}, verified: ${result.verified}) ${result.plainText}`);
+			// this.emit('test', `${publicFlag? 'public' : 'signed-only'} message from ${message.author.tag}: (signed: ${result.signed}, verified: ${result.verified}) ${result.plainText}`);
 			this.#updateLatests(message.channel.id, message.id, message.createdTimestamp);
 		})
 		.catch(err => {
@@ -965,7 +964,7 @@ class Stowaway extends EventEmitter {
 				if (bonafides.find(x => x.valid) == null) {
 					await this.#updatePrivateKey(publicKey);
 					this.emit('signed key', message);
-					this.emit('test', `${message.author.tag} signed your key!`);
+					// this.emit('test', `${message.author.tag} signed your key!`);
 					return `${message.author.tag} signed your key!`;
 				}
 			}
