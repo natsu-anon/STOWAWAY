@@ -23,7 +23,8 @@ navigation state:
 	[Enter] begin reading selected channel
 	[W/S] navigate to prev/next channel (or server if at first/last channel of current server)
 	[A/D] navigate to first channel of prev/next server (loops)
-	[E] enter handshake state
+	[H] enter handshake state
+	[M] enter member state
 	[Ctrl + Number] to save a jump to curently selected channel
 	[Backspace/Delete] remove favorite  of currently selected channel (if any)
 	[Tab] enter read state
@@ -36,13 +37,15 @@ handshake state:
 	[W/S] scroll to prev/next channel (loops)
 	[A/D] scroll to first channel of prev/next server (loops)
 	[tab] to go to read state
+	[M] go to member state (if possible);
 
 read state:
 	- NOTE: unverified messages are entirely yellow
 	- NOTE: messages from signed keys have sender & date underlined
 	[W/S] scroll up/down
 	[A/D] jump to top/bottom
-	[E] enter member view for channel
+	[H] enter handshake state
+	[M] enter member view for channel
 	[Enter] begin writing public message
 	[Ctrl + Number] favorite current channel
 	[Backspace/Delete] remove favorite from current channel (if possible)
@@ -73,6 +76,7 @@ member state
 	[escape] return to previous state (read state)
 	[enter] sign currently selected (unless already signed)
 	[tab] to go to read state
+	[H] go to handshake state
 
 revoke sequence:
 	- NOTE: WARN THAT THIS IS IRREVOCABLE & SHOULD ONLY BE USED IF YOU:
