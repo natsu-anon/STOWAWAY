@@ -1,56 +1,27 @@
 const Mediator = require('./mediators/mediator.js');
 
-async function displayMember (member, stowaway) {
-	if ((await stowaway.signedKey(member.user.id))) {
-		return `{green-fg}${member.displayName} (${member.user.tag}){/green-fg}`;
-	}
-	else {
-		return `{${member.displayName} (${member.user.tag}){/green-fg}`;
-	}
+async function displayMember (member, signedKey) {
+	const flag = await signedKey(member.id);
+	const temp = `${member.displayName} (${member.user.tag})`;
+	return {
+		signed: flag,
+		text: flag ? `{green-fg}${temp}{/green-fg}` : temp
+	};
 }
 
 class Members extends Mediator {
-	constructor (members, stowaway, channel) {
+	constructor (data, stowaway, channel) {
 		super();
-		this.data = members;
-		this.#sort();
-		this.index = members.length > 0 ? 0 : null;
-		this.stowaway = stowaway;
+		this.data = data;
+		this._sort();
+		this.index = data.length > 0 ? 0 : null;
+		this.id = stowaway.id;
+		this.signedKey = stowaway.signedKey;
 		this.channel = channel;
-		stowaway.on('handshake', (accepted, message) => {
-			if (accepted && message.author.id !== stowaway.id && message.channel.id === channel.id && !this.data.includes(message.member)) {
-				this.data.push(message.author);
-				if (this.index == null) {
-					this.index = 0;
-				}
-				this.#sort();
-				this.representation().then(text => { this.emit('update', text); });
-			}
-		});
-		stowaway.client.on('guildMemberRemove', member => {
-			const index = this.data.indexOf(member);
-			if (member.guild.id === channel.guild.id && index > -1) {
-				this.data.splice(index, 1);
-				if (this.data.length <= 0) {
-					this.index = null;
-				}
-				else {
-					this.index = this.index % this.data.length;
-				}
-				this.representation().then(text => { this.emit('update', text); });
-			}
-		});
-		stowaway.client.on('guildMemberUpdate', (member0, member1) => {
-			const index = this.data.indexOf(member0);
-			if (member0.guild.id === channel.guild.id && index > -1) {
-				this.data[index] = member1;
-			}
-			this.representation().then(text => { this.emit('update', text); });
-		});
 	}
 
 	get percentage () {
-		return this.index != null ? this.index / this.members.length : 0;
+		return this.index != null ? this.index / this.data.length : 0;
 	}
 
 	get numMembers () {
@@ -59,41 +30,88 @@ class Members extends Mediator {
 
 	scrollMembers (nextFlag) {
 		if (this.index != null) {
-			nextFlag ? this.#nextMember() : this.#prevMember();
+			nextFlag ? this._nextMember() : this._prevMember();
 			this.representation().then(text => { this.emit('update', text); });
 		}
 	}
 
-	#nextMember () {
-		this.index = (this.index + 1) % this.members.length;
+	_nextMember () {
+		this.index = (this.index + 1) % this.data.length;
 		return true;
 	}
 
-	#prevMember () {
+	_prevMember () {
 		this.index--;
 		if (this.index < -1) {
-			this.index = this.members.length - 1;
+			this.index = this.data.length - 1;
 		}
 	}
 
-	async signMember () {
-		if (this.index != null && !(await this.stowaway.signedUser(this.data[this.index]).user.id)) {
-			const userId = this.data[this.index].user.id;
-			if (!(await this.stowaway.signedKey(userId))) {
-				this.stowaway.signKey(this.channel, userId);
+	handshake (accepted, message) {
+		try {
+			if (accepted && message.author.id !== this.id && message.channel.id === this.channel.id) {
+				if (this.data.findIndex(({ id }) => message.member.id === id) === -1) {
+					this.data.push(message.member);
+					if (this.index == null) {
+						this.index = 0;
+					}
+					this._sort();
+				}
+				this.representation().then(text => { this.emit('update', text); });
 			}
+		}
+		catch (err) {
+			throw Error(`Error!
+			authorId: ${message.author.id},
+			selfId: ${this.id},
+			channelId: ${this.channelId}`);
+		}
+	}
+
+	memberRemove (member) {
+		const index = this.data.indexOf(member);
+		if (member.guild.id === this.channel.guild.id && index > -1) {
+			this.data.splice(index, 1);
+			if (this.data.length <= 0) {
+				this.index = null;
+			}
+			else {
+				this.index = this.index % this.data.length;
+			}
+			this.representation().then(text => { this.emit('update', text); });
+		}
+	}
+
+	memberUpdate (member0, member1) {
+		const index = this.data.indexOf(member0);
+		if (member0.guild.id === this.guildId && index > -1) {
+			this.data[index] = member1;
+		}
+		this.representation().then(text => { this.emit('update', text); });
+	}
+
+	async signMember () {
+		if (this.index != null && !(await this.signedKey(this.data[this.index].id))) {
+			await this.stowaway.signKey(this.channel, this.data[this.index].id);
 		}
 	}
 
 	async representation () {
 		if (this.data.length > 0) {
 			const res = [];
+			let temp;
 			for (let i = 0; i < this.data.length; i++) {
+				temp = await displayMember(this.data[i], this.signedKey);
 				if (i === this.index) {
-					res.push(`{inverse}>{/inverse} ${await displayMember(this.data[i], this.stowaway)}`);
+					if (temp.signed) {
+						res.push(`{green-bg}{black-fg}X{/} ${temp.text}`);
+					}
+					else {
+						res.push(`{inverse}>{/inverse} ${temp.text}`);
+					}
 				}
 				else {
-					res.push(await displayMember(this.data[i], this.stowaway));
+					res.push(temp.text);
 				}
 			}
 			return res.join('\n');
@@ -103,7 +121,7 @@ class Members extends Mediator {
 		}
 	}
 
-	#sort () {
+	_sort () {
 		this.data.sort((a, b) => (a.id < b.id ? -1 : 1));
 	}
 }
@@ -113,9 +131,15 @@ class MembersFactory {
 	constructor (stowaway, db) {
 		this.stowaway = stowaway;
 		this.db = db;
+		this.current = null;
 	}
 
 	mediator (channel) {
+		if (this.current != null) {
+			this.stowaway.removeListener('handshake', this.current.handshake);
+			this.stowaway.client.removeListener('guildMemberRemove', this.current.memberRemove);
+			this.stowaway.client.removeListener('guildMemberUpdate', this.current.memberUpdate);
+		}
 		return new Promise((resolve, reject) => {
 			this.db.find({ user_id: { $exists: true } }, (err, docs) => {
 				if (err != null) {
@@ -130,7 +154,11 @@ class MembersFactory {
 							data.push(member);
 						}
 					});
-					resolve(new Members(data, this.stowaway, channel));
+					this.current = new Members(data, this.stowaway, channel);
+					this.stowaway.on('handshake', this.current.handshake);
+					this.stowaway.client.on('guildMemberRemove', this.current.memberRemove);
+					this.stowaway.client.on('guildMemberUpdate', this.current.memberUpdate);
+					resolve(this.current);
 				}
 			});
 		});

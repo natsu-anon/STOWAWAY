@@ -22,7 +22,7 @@ class State extends EventEmitter {
 		return 'green';
 	}
 
-	get help () {
+	get keybinds () {
 		return 'FUG :DDDDDDDD';
 	}
 
@@ -58,7 +58,7 @@ class State extends EventEmitter {
 
 	d () {}
 
-	e () {}
+	// e () {}
 
 	h () {}
 

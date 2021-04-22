@@ -1,14 +1,16 @@
 const State = require('./state.js');
 const { WriteColor } = require('./state-colors.js');
 
+const KEYBINDS =
+`[Enter] Send what is written to current channel
+[Escape] Stop writing & clear what is written`;
+
 class WriteState extends State {
-	#enter;
-	#exit;
 
 	constructor (args) {
 		super();
-		this.#enter = args.enter;
-		this.#exit = args.exit;
+		this._enter = args.enter;
+		this._exit = args.exit;
 		this.ctrlR = () => { this.emit('to revoke', this); };
 		this.ctrlA = () => { this.emit('to about', this); };
 		this.ctrlK = () => { this.emit('to keybinds', this); };
@@ -22,12 +24,16 @@ class WriteState extends State {
 		return WriteColor;
 	}
 
+	get keybinds () {
+		return KEYBINDS;
+	}
+
 	Enter (publicFlag) {
-		this.#enter(publicFlag);
+		this._enter(publicFlag);
 	}
 
 	Exit () {
-		this.#exit();
+		this._exit();
 	}
 
 	escape () {

@@ -1,18 +1,31 @@
 const State = require('./state.js');
 const { ReadColor } = require('./state-colors.js');
 
+const KEYBINDS = 
+`[Enter] begin writing a public message to the current channel
+[Ctrl-Enter] begin writing a signed-keys-only message to the current channel
+[W] scroll up & load more messages if at the top
+[S] scroll down & load more messages if at the bottom
+[A] jump to the top of the messages
+[D] jump to the bottom of the messages
+[H] bring up handhshake channel selector
+[M] view the members for the current channel
+[Number] jump to associated favorite channel (if any)
+[Shift-Number] assign favorite number to current channel
+[Backspace/Delete] remove favorite number from current channel (if any)
+[Tab] return to handshaked navigator`;
+
 class ReadState extends State {
-	#enter;
-	#exit;
 
 	constructor (args) {
 		super();
-		this.#enter = args.enter;
-		this.#exit = args.exit;
+		this._enter = args.enter;
+		this._exit = args.exit;
 		this.ctrlR = () => { this.emit('to revoke', this); };
 		this.ctrlA = () => { this.emit('to about', this); };
 		this.ctrlK = () => { this.emit('to keybinds', this); };
 		this.backtick = () => { this.emit('to notification'); };
+		this.backspace = () => { this.emit('clear favorite'); };
 		this.num0 = () => { this.emit('to favorite', 0); };
 		this.num1 = () => { this.emit('to favorite', 1); };
 		this.num2 = () => { this.emit('to favorite', 2); };
@@ -43,20 +56,16 @@ class ReadState extends State {
 		return ReadColor;
 	}
 
-	Enter (args) {
-		if (args != null) {
-			args.statelineOnly = false;
-			this.#enter(args);
-			this.args = args;
-			this.args.statelineOnly = true;
-		}
-		else {
-			this.#enter(this.args);
-		}
+	get keybinds () {
+		return KEYBINDS;
+	}
+
+	Enter () {
+		this._enter();
 	}
 
 	Exit () {
-		this.#exit();
+		this._exit();
 	}
 
 	enter () {
@@ -75,7 +84,11 @@ class ReadState extends State {
 		this.emit('to navigate');
 	}
 
-	e () {
+	h () {
+		this.emit('to handshake', this);
+	}
+
+	m () {
 		this.emit('to member');
 	}
 

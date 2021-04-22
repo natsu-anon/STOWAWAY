@@ -33,9 +33,13 @@ const spinner = [
 	'[ @              ]',
 ];
 
-const LANDING = `This message will vanish when you begin reading a channel.
+class StowawayCLI {
 
-If there are no channels in the navigation box to your right you must add your bot to a server & make sure it has the proper permissionsin order use said channels.
+	constructor (title, userTag, invite) {
+		const LANDING = `This message will vanish when you begin reading a channel.
+
+If there are no channels in the navigation box to your right you must add your bot to a server & make sure it has the proper permissions in order use said channels.
+	- invitation link: {underline}${invite}{/underline}
 	- see: {underline}https://github.com/natsu-anon/STOWAWAY#add-your-bot-to-a-server{/underline} for how to add your bot to a server.
 	- pass '--channels' to STOWAWAY to list all channels availbale to your bot & any necessary permissions it lacks that it needs.
 
@@ -51,10 +55,6 @@ To learn more about the WTFPL that STOWAWAY is licensed under see: {underline}ht
 
 Thanks for downloading & I hope you find this software useful
 <3`;
-
-class StowawayCLI {
-
-	constructor (title, userTag) {
 		this.screen = blessed.screen({
 			smartcsr: true,
 			autopadding: true,

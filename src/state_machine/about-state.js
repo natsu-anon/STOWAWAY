@@ -1,22 +1,20 @@
 const State = require('./state.js');
 
 class AboutState extends State {
-	#enter;
-	#exit;
 
 	constructor (args) {
 		super();
-		this.#enter = args.enter;
-		this.#exit = args.exit;
+		this._enter = args.enter;
+		this._exit = args.exit;
 		this.backtick = () => { this.emit('to notification'); };
 	}
 
 	Enter (state) {
-		this.#enter(state);
+		this._enter(state);
 	}
 
 	Exit () {
-		this.#exit();
+		this._exit();
 	}
 
 	ctrlR () {

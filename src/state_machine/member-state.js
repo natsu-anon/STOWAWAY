@@ -1,14 +1,19 @@
 const State = require('./state.js');
 const { MemberColor } = require('./state-colors.js');
 
+const KEYBINDS =
+`[Enter] sign currently selected (unless already signed)
+[Escape] read currently selected channel
+[W/S] scroll up/down members
+[H] bring up handshake channel selector
+[Tab] return to channel navigator`;
+
 class MemberState extends State {
-	#enter;
-	#exit;
 
 	constructor (args) {
 		super();
-		this.#enter = args.enter;
-		this.#exit = args.exit;
+		this._enter = args.enter;
+		this._exit = args.exit;
 		this.ctrlR = () => { this.emit('to revoke', this); };
 		this.ctrlA = () => { this.emit('to about', this); };
 		this.ctrlK = () => { this.emit('to keybinds', this); };
@@ -23,17 +28,20 @@ class MemberState extends State {
 		return MemberColor;
 	}
 
+	get keybinds () {
+		return KEYBINDS;
+	}
+
 	Enter (args) {
-		this.#enter(args);
+		this._enter(args);
 	}
 
 	Exit () {
-		this.#exit();
+		this._exit();
 	}
 
 	enter () {
-		// TODO uncomment in 1.1.0
-		// this.emit('sign member');
+		this.emit('sign member');
 	}
 
 	escape () {
@@ -50,6 +58,11 @@ class MemberState extends State {
 
  	a () {
 		this.emit('scroll', 1);
+	}
+
+
+	h () {
+		this.emit('to handshake', this);
 	}
 }
 

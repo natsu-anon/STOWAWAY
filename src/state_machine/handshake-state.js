@@ -1,25 +1,34 @@
 const State = require('./state.js');
+const KEYBINDS =
+`[Enter] handshake selected channel (if permissions allow) & begin reading it
+[Escape] return to previous state
+[W/S] scroll to previous/next channel
+[A/D] jump to first channel in previous/next server
+[Tab] begin reading current channel displayed in messages box (if possible)
+[M] view members of current channel displayed in messages box (if possible)`;
 
 class HandshakeState extends State {
-	#enter;
-	#exit;
 
 	constructor (args) {
 		super();
-		this.#enter = args.enter;
-		this.#exit = args.exit;
+		this._enter = args.enter;
+		this._exit = args.exit;
 		this.backtick = () => { this.emit('to notification'); };
 		this.ctrlR = () => { this.emit('to revoke', this); };
 		this.ctrlA = () => { this.emit('to about', this); };
-		this.ctrlH = () => { this.emit('to keybinds', this); };
+		this.ctrlK = () => { this.emit('to keybinds', this); };
+	}
+
+	get keybinds () {
+		return KEYBINDS;
 	}
 
 	Enter (state) {
-		this.#enter(state);
+		this._enter(state);
 	}
 
 	Exit () {
-		this.#exit();
+		this._exit();
 	}
 
 	ctrlR () {
@@ -52,6 +61,10 @@ class HandshakeState extends State {
 
 	tab () {
 		this.emit('to read', false);
+	}
+
+	m () {
+		this.emit('to member');
 	}
 
 	w () {

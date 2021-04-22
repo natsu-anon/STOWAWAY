@@ -23,12 +23,13 @@ function displayChannel (channel) {
 }
 
 class ChannelsMediator extends Mediator {
-	#navigator;
+	_navigator;
 
-	constructor (model) {
+	constructor (model, invite) {
 		super();
 		this.model = model;
-		this.#navigator = new ChannelNavigator(model.struct, navigator => {
+		this.invite = invite;
+		this._navigator = new ChannelNavigator(model.struct, navigator => {
 			for (let i = 0; i < model.struct.data.length; i++) {
 				if (model.struct.data[0].channels.length > 0) {
 					navigator.setPosition(i, 0);
@@ -37,7 +38,7 @@ class ChannelsMediator extends Mediator {
 			}
 		});
 		model.on('update', () => {
-			this.#navigator.checkIndex();
+			this._navigator.checkIndex();
 			this.emit('update', this.text);
 		});
 	}
@@ -50,8 +51,13 @@ class ChannelsMediator extends Mediator {
 				if (data[i].server) {
 					res.push(`{underline}${data[i].name}{/underline}`);
 				}
-				else if (i === this.#navigator.index) {
-					res.push(`\t{inverse}>{/inverse} ${displayChannel(data[i])}`);
+				else if (i === this._navigator.index) {
+					if (data[i].permissions.valid) {
+						res.push(`\t{inverse}>{/inverse} ${displayChannel(data[i])}`);
+					}
+					else {
+						res.push(`\t{red-bg}{black-fg}X{/} ${displayChannel(data[i])}`);
+					}
 				}
 				else {
 					res.push(`\t${displayChannel(data[i])}`);
@@ -60,12 +66,12 @@ class ChannelsMediator extends Mediator {
 			return res.join('\n');;
 		}
 		else {
-			return 'No text channels! Add your bot to a server!';
+			return `No text channels! Add your bot to a server!\nlink: {underline}${this.invite}{/underline}`;
 		}
 	}
 
 	get percentage () {
-		return this.#navigator.percentage;
+		return this._navigator.percentage;
 	}
 
 	get numChannels () {
@@ -73,7 +79,7 @@ class ChannelsMediator extends Mediator {
 	}
 
 	channelData () {
-		const data = this.#navigator.channel;
+		const data = this._navigator.channel;
 		if (data != null) {
 			return {
 				id: data.id,
@@ -87,13 +93,13 @@ class ChannelsMediator extends Mediator {
 	}
 
 	scrollChannels (nextFlag) {
-		if (this.#navigator.scrollChannels(nextFlag)) {
+		if (this._navigator.scrollChannels(nextFlag)) {
 			this.emit('update', this.text);
 		}
 	}
 
 	scrollServers (nextFlag) {
-		if (this.#navigator.scrollServers(nextFlag)) {
+		if (this._navigator.scrollServers(nextFlag)) {
 			this.emit('update', this.text);
 		}
 	}

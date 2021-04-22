@@ -95,98 +95,97 @@ class Revocation {
 
 
 class MessagesModel extends Model {
-	#messages;
 
 	constructor (stowaway) {
 		super();
-		stowaway.on('channel message', (message, data) => { this.#channelMessage(message, data); });
-		stowaway.on('decryption failure', this.#decryptionFailure);
-		stowaway.on('handshake', (accepted, message) => { this.#handshake(message, accepted); });
-		stowaway.on('signed key', this.#signedKey);
-		stowaway.on('key update', this.#keyUpdate);
-		stowaway.on('revocation', this.#keyUpdate);
+		stowaway.on('channel message', (message, data) => { this._channelMessage(message, data); });
+		stowaway.on('decryption failure', this._decryptionFailure);
+		stowaway.on('handshake', (accepted, message) => { this._handshake(message, accepted); });
+		stowaway.on('signed key', this._signedKey);
+		stowaway.on('key update', this._keyUpdate);
+		stowaway.on('revocation', this._keyUpdate);
 	}
 
 	listen (channelId) {
-		this.#messages = [];
+		this._messages = [];
 		this.channelId = channelId;
 		this.emit('update', '');
 	}
 
 	get oldestTs () {
-		return this.#messages[0].timestamp;
+		return this._messages[0].timestamp;
 	}
 
 	get newestTs () {
-		return this.#messages[this.#messages.length - 1].timestamp;
+		return this._messages[this._messages.length - 1].timestamp;
 	}
 
 	get text () {
-		return this.#messages.map(message => message.content.text).join('\n');
+		return this._messages.map(message => message.content.text).join('\n');
 	}
 
-	#channelMessage (message, data) {
+	_channelMessage (message, data) {
 		if (message.channel.id === this.channelId) {
-			this.#messages.push({
+			this._messages.push({
 				timestamp: message.createdTimestamp,
 				content: new ChannelMessage(message.createdAt, message.member, data.verified, data.signed, data.plainText)
 			});
-			this.#sortThenUpdate();
+			this._sortThenUpdate();
 		}
 	}
 
-	#decryptionFailure (message) {
+	_decryptionFailure (message) {
 		if (message.channel.id === this.channelId) {
-			this.#messages.push({
+			this._messages.push({
 				timestamp: message.createdTimestamp,
 				content: new DecryptionFailure(message.createdAt, message.member)
 			});
-			this.#sortThenUpdate();
+			this._sortThenUpdate();
 		}
 	}
 
-	#handshake (message, accepted) {
+	_handshake (message, accepted) {
 		if (message.channel.id === this.channelId) {
-			this.#messages.push({
+			this._messages.push({
 				timestamp: message.createdTimestamp,
 				content: new Handshake(message.createdAt, message.member, accepted)
 			});
-			this.#sortThenUpdate();
+			this._sortThenUpdate();
 		}
 	}
 
-	#signedKey (message) {
+	_signedKey (message) {
 		if (message.channel.id === this.channelId) {
-			this.#messages.push({
+			this._messages.push({
 				timestamp: message.createdTimestamp,
 				content: new SignedKey(message.createdAt, message.member)
 			});
-			this.#sortThenUpdate();
+			this._sortThenUpdate();
 		}
 	}
 
-	#keyUpdate (message) {
+	_keyUpdate (message) {
 		if (message.channel.id === this.channelId) {
-			this.#messages.push({
+			this._messages.push({
 				timestamp: message.createdTimestamp,
 				content: new KeyUpdate(message.createdAt, message.member)
 			});
-			this.#sortThenUpdate();
+			this._sortThenUpdate();
 		}
 	}
 
-	#revocation (message, blockReason) {
+	_revocation (message, blockReason) {
 		if (message.channel.id === this.channelId) {
-			this.#messages.push({
+			this._messages.push({
 				timestamp: message.createdTimestamp,
 				content: new Revocation(message.createdAt, message.member, blockReason)
 			});
-			this.#sortThenUpdate();
+			this._sortThenUpdate();
 		}
 	}
 
-	#sortThenUpdate() {
-		this.#messages.sort((a, b) => { return a.timestamp - b.timestamp; });
+	_sortThenUpdate() {
+		this._messages.sort((a, b) => { return a.timestamp - b.timestamp; });
 		this.emit('update', this.text);
 	}
 }

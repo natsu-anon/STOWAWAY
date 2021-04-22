@@ -26,12 +26,10 @@ function serverIndex (guild, data) {
 }
 
 class HandshakedModel extends Model {
-	#favorites;
-	#launchChannel;
 
 	constructor () {
 		super();
-		this.#favorites = {};
+		this._favorites = {};
 		this.struct = new ServerChannel({
 			data: serverData,
 			index: serverIndex,
@@ -53,78 +51,122 @@ class HandshakedModel extends Model {
 	}
 
 	get launchChannel () {
-		return this.#launchChannel;
+		return this._launchChannel;
 	}
 
 	async initialize (stowaway, client, db) {
 		this.db = db;
-		await this.#initCache(client, db);
-		this.#initClient(client, db);
-		this.#initStowaway(stowaway);
-		this.#launchChannel = await this.#getLaunchChannel(db);
+		await this._initCache(client, db);
+		this._initClient(client, db);
+		this._initStowaway(stowaway);
+		this._launchChannel = await this._getLaunchChannel(db);
 		return this;
 	}
 
-	setFavorite (channelId, number) {
-		if (this.#favorites[number] != null) {
-			this.struct.withChannel(this.#favorites[number], data => {
-				delete data.favoriteNumber;
-				return data;
+	async setFavorite (channelId, number) {
+		// await this.clearFavorite(channelId, false);
+		await new Promise((resolve, reject) => {
+			this.db.update({ favorite_number: number }, { $unset: { favorite_number: number } }, {}, err => {
+				if (err != null) {
+					reject(err);
+				}
+				else {
+					resolve();
+				}
 			});
-		}
+		});
+		this.db.update({ channel_id: channelId }, { $set: { favorite_number: number } }, {}, (err, numAffected) => {
+			if (err != null) {
+				throw err;
+			}
+			else if (numAffected > 0) {
+				this.emit('update');
+			}
+		});
+		/*
 		const channel = this.struct.findChannel(channelId);
 		if (channel != null) {
-			this.#favorites[number] = channelId;
+			if (this._favorites[number] != null) {
+				delete this._favorites[number];
+				this.struct.withChannel(temp, data => {
+					delete data.favoriteNumber;
+					return data;
+				});
+				const temp = this._favorites[number];
+				await this.clearFavorite(temp, false);
+			}
+			this._favorites[number] = channelId;
 			this.struct.withChannel(channelId, data => {
 				data.favoriteNumber = number;
 				return data;
 			});
-			this.db.update({ favorite_number: number }, { $unset: { favorite_number: true } }, {}, err => {
+			this.db.update({ channel_id: channelId }, { $set: { favorite_number: number } }, {}, err => {
 				if (err != null) {
 					throw err;
 				}
 				else {
-					this.db.update({ channel_id: channelId }, { $set: { favorite_number: number } });
 					this.emit('update');
 				}
 			});
 		}
+		*/
 	}
 
 	clearFavorite (channelId, emitFlag=true) {
-		for (const number in this.#favorites) {
-			if (this.#favorites[number] === channelId) {
-				delete this.#favorites[number];
-				this.struct.withChannel(channelId, data => {
-					delete data.favoriteNumber;
-					return data;
-				});
-				this.db.update({ channel_id: channelId }, { $unset: { favorite_number: true } }, {}, err => {
-					if (err != null) {
-						throw err;
-					}
-					else if (emitFlag){
+		return new Promise((resolve, reject) => {
+			this.db.update({ channel_id: channelId }, { $unset: { favorite_number: true } }, {}, (err, numAffected) => {
+				if (err != null) {
+					reject(err);
+				}
+				else {
+					if (emitFlag && numAffected > 0) {
 						this.emit('update');
 					}
+					resolve();
+				}
+			});
+		});
+		/*
+		for (const number in this._favorites) {
+			if (this._favorites[number] === channelId) {
+				return new Promise((resolve, reject) => {
+					delete this._favorites[number];
+					this.struct.withChannel(channelId, data => {
+						delete data.favoriteNumber;
+						return data;
+					});
+					this.db.update({ channel_id: channelId }, { $unset: { favorite_number: true } }, {}, err => {
+						if (err != null) {
+							reject(err);
+						}
+						else {
+							if (emitFlag) {
+								this.emit('update');
+							}
+							resolve();
+						}
+					});
 				});
 			}
 		}
+		return Promise.resolve();
+		*/
 	}
 
 	getFavorite (number) {
-		return this.#favorites[number];
+		return this._favorites[number];
 	}
 
 	// getChannel (channelId) {
-	// 	return this.#data.find(({ id }) => id === channelId );
+	// 	return this._data.find(({ id }) => id === channelId );
 	// }
 
 	// getChannelIndex (channelId) {
-	// 	return this.#data.findIndex(({ id }) => id === channelId);
+	// 	return this._data.findIndex(({ id }) => id === channelId);
 	// }
 
 	// should not be this class's responsibility to determine the launch channel but here it is
-	#getLaunchChannel (db) {
+	_getLaunchChannel (db) {
 		return new Promise((resolve, reject) => {
 			db.findOne({ last_channel: { $exists: true } }, (err, doc) => {
 				if (err != null) {
@@ -161,7 +203,7 @@ class HandshakedModel extends Model {
 		});
 	}
 
-	#initCache (client, db) {
+	_initCache (client, db) {
 		return new Promise((resolve, reject) => {
 			db.find({ channel_id: { $exists: true } }, (err, docs) => {
 				if (err != null) {
@@ -174,9 +216,11 @@ class HandshakedModel extends Model {
 							.then(channel => {
 								if (!channel.deleted && Permissions(channel, client.user).valid) {
 									this.struct.addChannel(channel);
+									/*
 									if (x.favorite_number != null) {
-										this.favorites[x.favorite_number] = x.channel_id;
+										this._favorites[x.favorite_number] = x.channel_id;
 									}
+									*/
 								}
 								res();
 							})
@@ -192,7 +236,7 @@ class HandshakedModel extends Model {
 		});
 	}
 
-	#initClient (client, db) {
+	_initClient (client, db) {
 		client.on('guildDelete', guild => {
 			if (this.struct.removeServer(guild)) {
 				this.emit('update');
@@ -238,7 +282,7 @@ class HandshakedModel extends Model {
 		});
 	}
 
-	#initStowaway (stowaway) {
+	_initStowaway (stowaway) {
 		stowaway.on('handshake channel', channel => {
 			this.struct.addChannel(channel);
 			this.emit('update');

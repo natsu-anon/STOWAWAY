@@ -9,39 +9,29 @@ const AboutState = require('./about-state.js');
 const KeybindState = require('./keybind-state.js');
 
 class FSM extends EventEmitter {
-	#current;
-	#navigate;
-	#handshake;
-	#read;
-	#write;
-	#member;
-	#revoke;
-	#about;
-	#keybinds;
-	#noticeFunc;
 
 	constructor (args) {
 		super();
-		this.#navigate = new NavigateState(args.navigate);
-		this.#handshake = new HandshakeState(args.handshake);
-		this.#read = new ReadState(args.read);
-		this.#write = new WriteState(args.write);
-		this.#member = new MemberState(args.member);
-		this.#revoke = new RevokeState(args.revoke);
-		this.#about = new AboutState(args.about);
-		this.#keybinds = new KeybindState(args.keybinds);
+		this._navigate = new NavigateState(args.navigate);
+		this._handshake = new HandshakeState(args.handshake);
+		this._read = new ReadState(args.read);
+		this._write = new WriteState(args.write);
+		this._member = new MemberState(args.member);
+		this._revoke = new RevokeState(args.revoke);
+		this._about = new AboutState(args.about);
+		this._keybinds = new KeybindState(args.keybinds);
 
 		/*  WELCOME TO HELL  */
 
 		const states = [
-			this.#navigate,
-			this.#handshake,
-			this.#read,
-			this.#write,
-			this.#member,
-			// this.#revoke, handle its transitions 
-			this.#about,
-			this.#keybinds
+			this._navigate,
+			this._handshake,
+			this._read,
+			this._write,
+			this._member,
+			// this._revoke, handle its transitions 
+			this._about,
+			this._keybinds
 		];
 		// these work for all states (except for the last 3 but w/e)
 		states.forEach(state => {
@@ -53,12 +43,12 @@ class FSM extends EventEmitter {
 			state.on('to revoke', s => { this.revoke(s); });
 			state.on('to about', s => { this.about(s); });
 			state.on('to keybinds', s => { this.keybind(s); });
-			state.on('to previous', s => { this.#transition(s); });
+			state.on('to previous', s => { this._transition(s); });
 			state.on('to favorite', number => {
-				this.emit('to favorite', number, this.read);
+				this.emit('to favorite', number);
 			});
 			state.on('to notification', () => {
-				if (this.#noticeFunc != null) {
+				if (this._noticeFunc != null) {
 					this.noticeFunc();
 				}
 			});
@@ -66,82 +56,86 @@ class FSM extends EventEmitter {
 			state.on('clear favorite', () => { this.emit('clear favorite'); });
 			state.on('set favorite', number => { this.emit('set favorite', number); });
 		});
-		this.#navigate.on('channels', next => { this.emit('navigate channels', next); });
-		this.#navigate.on('servers', next => { this.emit('navigate servers', next); });
-		this.#handshake.on('channels', next => { this.emit('handshake channels', next); });
-		this.#handshake.on('servers', next => { this.emit('handshake servers', next); });
-		this.#handshake.on('handshake', () => { this.emit('perform handshake'); });
-		this.#read.on('scroll', offset => { this.emit('scroll messages', offset); });
-		this.#read.on('scroll top', () => { this.emit('messages top'); });
-		this.#read.on('scroll bottom', () => { this.emit('messages bottom'); });
-		this.#read.on('handshake', () => { this.emit('repeat handshake'); });
-		this.#write.on('clear', () => { this.emit('clear input'); });
-		this.#member.on('scroll', next => { this.emit('scroll members', next); });
-		this.#member.on('sign member', () => { this.emit('sign member'); });
-		this.#revoke.on('to previous', s => {
+		this._navigate.on('channels', next => { this.emit('navigate channels', next); });
+		this._navigate.on('servers', next => { this.emit('navigate servers', next); });
+		this._navigate.on('set favorite', number => { this.emit('set favorite', true, number); });
+		this._navigate.on('clear favorite', () => { this.emit('clear favorite', true); });
+		this._handshake.on('channels', next => { this.emit('handshake channels', next); });
+		this._handshake.on('servers', next => { this.emit('handshake servers', next); });
+		this._handshake.on('handshake', () => { this.emit('perform handshake'); });
+		this._read.on('scroll', offset => { this.emit('scroll messages', offset); });
+		this._read.on('scroll top', () => { this.emit('messages top'); });
+		this._read.on('scroll bottom', () => { this.emit('messages bottom'); });
+		this._read.on('handshake', () => { this.emit('repeat handshake'); });
+		this._read.on('set favorite', number => { this.emit('set favorite', false, number); });
+		this._navigate.on('clear favorite', () => { this.emit('clear favorite', false); });
+		this._write.on('clear', () => { this.emit('clear input'); });
+		this._member.on('scroll', next => { this.emit('scroll members', next); });
+		this._member.on('sign member', () => { this.emit('sign member'); });
+		this._revoke.on('to previous', s => {
 			if (this.revokeFree()) {
-				this.#transition(s);
+				this._transition(s);
 			}
 		});
-		this.#revoke.on('to about', s => {
+		this._revoke.on('to about', s => {
 			if (this.revokeFree()) {
 				this.about(s);
 			}
 		});
-		this.#revoke.on('to keybinds', s => {
+		this._revoke.on('to keybinds', s => {
 			if (this.revokeFree()) {
 				this.keybinds(s);
 			}
 		});
-		this.#current = this.#navigate;
-		this.#current.Enter();
+		this._current = this._navigate;
+		this._current.Enter();
 		this.revokeUnlock();
 	}
 
 	get current () {
-		return this.#current;
+		return this._current;
 	}
 
 	set notification (func) {
-		this.#noticeFunc = func;
+		this._noticeFunc = func;
 	}
 
 	navigate () {
-		this.#transition(this.#navigate);
+		this._transition(this._navigate);
 	}
 
 	handshake (state) {
-		this.#transition(this.#handshake, state);
+		this._transition(this._handshake, state);
 	}
 
-	read (args) {
-		this.#current.Exit();
-		this.#current = this.#read;
-		this.#current.Enter(args);
+	read () {
+		this._current.Exit();
+		this._current = this._read;
+		this._current.Enter();
 	}
 
 	write (publicFlag) {
-		this.#current.Exit();
-		this.#current = this.#write;
-		this.#current.Enter(publicFlag);
+		this._current.Exit();
+		this._current = this._write;
+		this._current.Enter(publicFlag);
 	}
 
 	member (args) {
-		this.#current.Exit();
-		this.#current = this.#member;
-		this.#current.Enter(args);
+		this._current.Exit();
+		this._current = this._member;
+		this._current.Enter(args);
 	}
 
 	revoke (state) {
-		this.#transition(this.#revoke, state);
+		this._transition(this._revoke, state);
 	}
 
 	about (state) {
-		this.#transition(this.#about, state);
+		this._transition(this._about, state);
 	}
 
 	keybind (state) {
-		this.#transition(this.#keybinds, state);
+		this._transition(this._keybinds, state);
 	}
 
 	revokeLock () {
@@ -158,88 +152,92 @@ class FSM extends EventEmitter {
 
 	ctrlC () { this.emit('quit'); }
 
-	ctrlR () { this.#current.ctrlR(); }
+	ctrlR () { this._current.ctrlR(); }
 
-	ctrlA () { this.#current.ctrlA(); }
+	ctrlA () { this._current.ctrlA(); }
 
-	ctrlK () { this.#current.ctrlK(); }
+	ctrlK () { this._current.ctrlK(); }
 
-	escape () { this.#current.escape(); }
+	escape () { this._current.escape(); }
 
-	backtick () { this.#current.backtick(); }
+	backtick () { this._current.backtick(); }
 
-	ctrlEnter() { this.#current.ctrlEnter(); }
+	ctrlEnter() { this._current.ctrlEnter(); }
 
-	enter () { this.#current.enter(); }
+	enter () { this._current.enter(); }
 
-	backspace () { this.#current.backspace(); }
+	backspace () { this._current.backspace(); }
 
-	tab () { this.#current.tab(); }
+	tab () { this._current.tab(); }
 
-	ctrlW () { this.#current.ctrlW(); }
+	ctrlW () { this._current.ctrlW(); }
 
-	ctrlS () { this.#current.ctrlS(); }
+	ctrlS () { this._current.ctrlS(); }
 
-	e () { this.#current.e(); }
+	// e () { this._current.e(); }
 
-	w () { this.#current.w(); }
+	h () { this._current.h(); }
 
-	s () { this.#current.s(); }
+	m () { this._current.m(); }
 
-	a () { this.#current.a(); }
+	w () { this._current.w(); }
 
-	d () { this.#current.d(); }
+	s () { this._current.s(); }
 
-	shift0 () { this.#current.shift0(); }
+	a () { this._current.a(); }
 
-	shift1 () { this.#current.shift1(); }
+	d () { this._current.d(); }
 
-	shift2 () { this.#current.shift2(); }
+	shift0 () { this._current.shift0(); }
 
-	shift3 () { this.#current.shift3(); }
+	shift1 () { this._current.shift1(); }
 
-	shift4 () { this.#current.shift4(); }
+	shift2 () { this._current.shift2(); }
 
-	shift5 () { this.#current.shift5(); }
+	shift3 () { this._current.shift3(); }
 
-	shift6 () { this.#current.shift6(); }
+	shift4 () { this._current.shift4(); }
 
-	shift7 () { this.#current.shift7(); }
+	shift5 () { this._current.shift5(); }
 
-	shift8 () { this.#current.shift8(); }
+	shift6 () { this._current.shift6(); }
 
-	shift9 () { this.#current.shift9(); }
+	shift7 () { this._current.shift7(); }
 
-	num0 () { this.#current.num0(); }
+	shift8 () { this._current.shift8(); }
 
-	num1 () { this.#current.num1(); }
+	shift9 () { this._current.shift9(); }
 
-	num2 () { this.#current.num2(); }
+	num0 () { this._current.num0(); }
 
-	num3 () { this.#current.num3(); }
+	num1 () { this._current.num1(); }
 
-	num4 () { this.#current.num4(); }
+	num2 () { this._current.num2(); }
 
-	num5 () { this.#current.num5(); }
+	num3 () { this._current.num3(); }
 
-	num6 () { this.#current.num6(); }
+	num4 () { this._current.num4(); }
 
-	num7 () { this.#current.num7(); }
+	num5 () { this._current.num5(); }
 
-	num8 () { this.#current.num8(); }
+	num6 () { this._current.num6(); }
 
-	num9 () { this.#current.num9(); }
+	num7 () { this._current.num7(); }
 
-	#transition (target, previous) {
-		this.#current.Exit();
+	num8 () { this._current.num8(); }
+
+	num9 () { this._current.num9(); }
+
+	_transition (target, previous) {
+		this._current.Exit();
 		if (previous != null) {
 			target.previousState = previous;
-			this.#current = target;
-			this.#current.Enter(previous);
+			this._current = target;
+			this._current.Enter(previous);
 		}
 		else {
-			this.#current = target;
-			this.#current.Enter();
+			this._current = target;
+			this._current.Enter();
 		}
 	}
 }
