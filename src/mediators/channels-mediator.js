@@ -23,7 +23,6 @@ function displayChannel (channel) {
 }
 
 class ChannelsMediator extends Mediator {
-	_navigator;
 
 	constructor (model, invite) {
 		super();
