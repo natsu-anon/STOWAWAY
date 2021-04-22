@@ -86,8 +86,8 @@ class Members extends Mediator {
 		const index = this.data.indexOf(member0);
 		if (member0.guild.id === this.guildId && index > -1) {
 			this.data[index] = member1;
+			this.representation().then(text => { this.emit('update', text); });
 		}
-		this.representation().then(text => { this.emit('update', text); });
 	}
 
 	async signMember () {
