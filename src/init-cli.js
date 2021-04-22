@@ -83,6 +83,12 @@ class BlessedInit {
 		this.screen = screen;
 	}
 
+	decouple () {
+		this.screen.children.forEach(child => {
+			child.destroy();
+		});
+	}
+
 	destroy () {
 		this.screen.destroy();
 	}
