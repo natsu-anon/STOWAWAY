@@ -13,7 +13,6 @@ const screen = blessed.screen({
 	fullunicode: true, // allows for meme double-wide characters
 });
 
-/*
 const box = blessed.box({
 	parent: screen,
 	top: 0,
@@ -24,7 +23,6 @@ const box = blessed.box({
 });
 
 screen.on('keypress', (char, key) => {
-
 	let temp = `character: ${char}`;
 	for (const val in key) {
 		temp += `\nkey.${val}: ${key[val]}`;
@@ -33,7 +31,15 @@ screen.on('keypress', (char, key) => {
 	box.setContent(temp);
 	screen.render();
 });
+
+/*
+screen.key(['delete', 'backspace'], () => {
+	box.setContent('DELETE/BACKSPACE');
+	screen.render();
+});
 */
+
+/*
 const input = blessed.textbox({
 	parent: screen,
 	top: 0,
@@ -43,12 +49,13 @@ const input = blessed.textbox({
 	inputOnFocus: true
 });
 input.focus();
-
-
-screen.onceKey('C-c', () => { process.exit(0); });
 input.on('submit', () => {
 	input.clearValue();
 	screen.render();
 });
 input.onceKey('C-c', () => { process.exit(0); });
+*/
+
+
+screen.onceKey('C-c', () => { process.exit(0); });
 screen.render();
