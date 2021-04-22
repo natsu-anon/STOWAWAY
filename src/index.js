@@ -1,3 +1,4 @@
+const process = require('process');
 const SAVE_DIR = './DO_NOT_SHARE/';
 const DATABASE = SAVE_DIR + 'stowaway.db';
 const API_TOKEN = SAVE_DIR + 'stowaway.token';
