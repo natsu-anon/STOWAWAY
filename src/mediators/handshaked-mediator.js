@@ -116,7 +116,7 @@ class HandshakedMediator extends Mediator {
 		}
 	}
 
-	toFavorite (number) {
+	favoriteId (number) {
 		return new Promise((resolve, reject) => {
 			this.db.findOne({ favorite_number: number }, (err, doc) => {
 				if (err != null) {
@@ -143,7 +143,9 @@ class HandshakedMediator extends Mediator {
 
 	toChannel (channelId) {
 		if (this._navigator.find(channelId)) {
-			this.emit('update', this.text);
+			this.representation().then(text => {
+				this.emit('update', text);
+			});
 		}
 	}
 
