@@ -59,72 +59,69 @@ async function initAsync (BANNER, SCREEN_TITLE, DATABASE, API_TOKEN, PRIVATE_KEY
 	const db = await dbInit(DATABASE);
 	cli.cat('{green-fg}DONE!{/}');
 	cli.log('>initializing discord client... ');
-	const client = await clientInit(API_TOKEN, fs, cli, Client);
-	client.user.setStatus('dnd');
-	cli.cat('{green-fg}DONE!{/}');
-	cli.log(`>logged in as {green-fg}{underline}${client.user.tag}{/}`);
-	cli.log('>initializing PGP key... ');
-	const stowaway = new Stowaway(db, PRIVATE_KEY, VERSION);
-	const key = await keyInit(PRIVATE_KEY, REVOCATION_CERTIFICATE, stowaway, client, cli);
-	cli.cat('{green-fg}DONE!{/}');
-	cli.log('{black-fg}{green-bg}>>STOWING AWAY!{/}');
-	await sleep(500);
-	return { stowaway, client, key, db };
+	try {
+		const client = await clientInit(API_TOKEN, fs, cli, Client);
+		client.user.setStatus('dnd');
+		cli.cat('{green-fg}DONE!{/}');
+		cli.log(`>logged in as {green-fg}{underline}${client.user.tag}{/}`);
+		cli.log('>initializing PGP key... ');
+		const stowaway = new Stowaway(db, PRIVATE_KEY, VERSION);
+		const key = await keyInit(PRIVATE_KEY, REVOCATION_CERTIFICATE, stowaway, client, cli);
+		cli.cat('{green-fg}DONE!{/}');
+		cli.log('{black-fg}{green-bg}>>STOWING AWAY!{/}');
+		await sleep(500);
+		cli.decouple();
+		return { stowaway, client, key, db, screen: cli.screen };
+	}
+	catch (err) {
+		cli.destroy();
+		throw err;
+	}
 }
 
-/*
 function init (BANNER, SCREEN_TITLE, DATABASE, API_TOKEN, PRIVATE_KEY, VERSION, REVOCATION_CERTIFICATE, versionText) {
+	const cli = new InitCLI(BANNER, SCREEN_TITLE, process);
 	return new Promise((resolve, reject) => {
-		const cli = new InitCLI(BANNER, SCREEN_TITLE, process);
 		(versionText != null ? cli.pauseLog(versionText) : Promise.resolve())
 		.then(() => {
 			cli.log(WARNING);
 			cli.log('>initializing database... ');
-			return dbInit(DATABASE);
-		})
-		.then(db => {
+			const db = dbInit(DATABASE);
 			cli.cat('{green-fg}DONE!{/}');
 			cli.log('>initializing discord client... ');
-			return new Promise(res => {
+			return new Promise((res, rej) => {
 				clientInit(API_TOKEN, fs, cli, Client)
 				.then(client => {
 					client.user.setStatus('dnd');
 					cli.cat('{green-fg}DONE!{/}');
 					cli.log(`>logged in as {green-fg}{underline}${client.user.tag}{/}`);
-					res({ db, client });
+					res({ client, db });
 				})
-				.catch(err => {
-					cli.destroy();
-					reject(err);
-				});
+				.catch(rej);
 			});
 		})
-		.then(({ db, client }) => {
+		.then(({ client, db }) => {
 			cli.log('>initializing PGP key... ');
 			const stowaway = new Stowaway(db, PRIVATE_KEY, VERSION);
-			return new Promise(res => {
+			return new Promise((res, rej) => {
 				keyInit(PRIVATE_KEY, REVOCATION_CERTIFICATE, stowaway, client, cli)
 				.then(key => { // key is decrypted
 					cli.cat('{green-fg}DONE!{/}');
 					cli.log('>{black-fg}{green-bg}STOWING AWAY!{/}');
 					setTimeout(() => {
-						// cli.destroy();
-						res({ stowaway, client, key, db });
+						cli.decouple();
+						res({ stowaway, client, key, db, screen: cli.screen });
 					}, 500);
 				})
-				.catch(err => {
-					// cli.destroy();
-					reject(err);
-				});
+				.catch(rej);
 			});
 		})
 		.then(resolve)
 		.catch(err => {
-			// cli.destroy();
+			cli.destroy();
 			reject(err);
 		});
 	});
 }
-*/
 
-module.exports = initAsync;
+module.exports = init;
