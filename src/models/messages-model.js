@@ -112,12 +112,12 @@ class MessagesModel extends Model {
 		this.emit('update', '');
 	}
 
-	get oldestTs () {
-		return this._messages[0].timestamp;
+	get oldestId () {
+		return this._messages[0].id;
 	}
 
-	get newestTs () {
-		return this._messages[this._messages.length - 1].timestamp;
+	get newestId () {
+		return this._messages[this._messages.length - 1].id;
 	}
 
 	get text () {
@@ -127,6 +127,7 @@ class MessagesModel extends Model {
 	_channelMessage (message, data) {
 		if (message.channel.id === this.channelId) {
 			this._messages.push({
+				id: message.id,
 				timestamp: message.createdTimestamp,
 				content: new ChannelMessage(message.createdAt, message.member, data.verified, data.signed, data.plainText)
 			});
@@ -137,6 +138,7 @@ class MessagesModel extends Model {
 	_decryptionFailure (message) {
 		if (message.channel.id === this.channelId) {
 			this._messages.push({
+				id: message.id,
 				timestamp: message.createdTimestamp,
 				content: new DecryptionFailure(message.createdAt, message.member)
 			});
@@ -147,6 +149,7 @@ class MessagesModel extends Model {
 	_handshake (message, accepted) {
 		if (message.channel.id === this.channelId) {
 			this._messages.push({
+				id: message.id,
 				timestamp: message.createdTimestamp,
 				content: new Handshake(message.createdAt, message.member, accepted)
 			});
@@ -157,6 +160,7 @@ class MessagesModel extends Model {
 	_signedKey (message) {
 		if (message.channel.id === this.channelId) {
 			this._messages.push({
+				id: message.id,
 				timestamp: message.createdTimestamp,
 				content: new SignedKey(message.createdAt, message.member)
 			});
@@ -167,6 +171,7 @@ class MessagesModel extends Model {
 	_keyUpdate (message) {
 		if (message.channel.id === this.channelId) {
 			this._messages.push({
+				id: message.id,
 				timestamp: message.createdTimestamp,
 				content: new KeyUpdate(message.createdAt, message.member)
 			});
@@ -177,6 +182,7 @@ class MessagesModel extends Model {
 	_revocation (message, blockReason) {
 		if (message.channel.id === this.channelId) {
 			this._messages.push({
+				id: message.id,
 				timestamp: message.createdTimestamp,
 				content: new Revocation(message.createdAt, message.member, blockReason)
 			});
