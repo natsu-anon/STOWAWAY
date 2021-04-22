@@ -140,6 +140,7 @@ if (require.main === module) {
 
 module.exports = {
 	clientLogin,
+	genKey,
 	writeKey: async keyPath => {
 		const { key } = await genKey();
 		fs.writeFile(keyPath, key.armor(), 'utf8', err => {
@@ -158,7 +159,10 @@ module.exports = {
 					reject(err);
 				}
 				else {
-					openpgp.readKey({ armoredKey: data }).then(resolve);
+					openpgp.readKey({ armoredKey: data })
+					.then(key => {
+						resolve({ key });
+					});
 				}
 			});
 		});
