@@ -8,7 +8,7 @@ const StowawayCLI = require('./stowaway-cli.js');
 const { Permissions, Messenger } = require('./stowaway.js');
 const { NavigateColor, ReadColor, WriteColor, MemberColor } = require('./state_machine/state-colors.js');
 const FSMBuilder = require('./state_machine/fsm-builder.js');
-const Revoker = require('./revoker.js');
+const { Revoker } = require('./revoker.js');
 const MemberFactory = require('./member-factory.js');
 const { ChannelsMediator, HandshakedMediator } = require('./mediators.js');
 const { ChannelsModel, HandshakedModel, MessagesModel } = require('./models.js');
@@ -17,14 +17,20 @@ const { ChannelsModel, HandshakedModel, MessagesModel } = require('./models.js')
 const VERSION_URL = 'https://raw.githubusercontent.com/natsu-anon/STOWAWAY/development/version.json';
 const SCREEN_TITLE = 'ＳＴＯＷＡＷＡＹ';
 
-function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CERTIFICATE) {
+async function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CERTIFICATE) {
 	let cli;
-	versionCheck(VERSION_URL, VERSION)
-	.then(result => {
-		return initialize(BANNER, SCREEN_TITLE, DATABASE, API_TOKEN, PRIVATE_KEY, VERSION, REVOCATION_CERTIFICATE, result);
-	})
-	.then(async ({ stowaway, client, key, db }) => {
+	const check = await versionCheck(VERSION_URL, VERSION);
+	const { stowaway, client, key, db } = await initialize(BANNER, SCREEN_TITLE, DATABASE, API_TOKEN, PRIVATE_KEY, VERSION, REVOCATION_CERTIFICATE, check);
+	try {
 		const ABOUT = require('./about.js')(BANNER);
+		const invite = await client.generateInvite({
+			permissions: [
+				'VIEW_CHANNEL',
+				'SEND_MESSAGES',
+				'READ_MESSAGE_HISTORY',
+				'CHANGE_NICKNAME'
+			]
+		});
 		let allowTab = false; // block tabbing into read state until navigated away from the landing page & to a proper channel
 		stowaway.launch(client, key);
 
@@ -34,12 +40,12 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 		const mFactory = new MemberFactory(stowaway, db);
 		let mPromise;
 		const revoker = new Revoker(stowaway, client, PRIVATE_KEY, REVOCATION_CERTIFICATE).setKey(key);
-		const hMediator = new HandshakedMediator(await (new HandshakedModel()).initialize(stowaway, client, db));
-		const cMediator = new ChannelsMediator(await (new ChannelsModel()).initialize(stowaway, client, db));
+		const hMediator = new HandshakedMediator(await (new HandshakedModel()).initialize(stowaway, client, db), db);
+		const cMediator = new ChannelsMediator(await (new ChannelsModel()).initialize(stowaway, client, db), invite);
 
 		//  COMMAND LINE INTERFACE  //
 
-		cli = new StowawayCLI(SCREEN_TITLE, client.user.tag);
+		cli = new StowawayCLI(SCREEN_TITLE, client.user.tag, invite);
 		stowaway.on('error', error => { cli.warn(error); });
 		stowaway.on('debug', debug => { cli.notify(`DEBUG: ${debug}`); });
 		stowaway.on('decryption failure', message => {
@@ -58,8 +64,11 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 			cli.navigation.setScrollPerc(hMediator.percentage);
 			cli.render();
 		});
-		cli.navigation.setContent(hMediator.text);
-		cli.navigation.setScrollPerc(hMediator.percentage);
+		hMediator.representation()
+		.then(text => {
+			cli.navigation.setContent(text);
+			cli.navigation.setScrollPerc(hMediator.percentage);
+		});
 		const messages = new MessagesModel(stowaway);
 		messages.on('update',text => {
 			cli.messages.setContent(text);
@@ -69,11 +78,11 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 			cli.render();
 		});
 
-		//  FSM BUILDER  //
+		//  FSM BUILDER  //https://www.youtube.com/watch?v=rVLIdFk-8no
 
 		const fsm = new FSMBuilder()
 			.navigate(() => {
-				cli.stateText = `NAVIGATE | ${hMediator.numChannels} handshaked channels`;
+				cli.stateText = `NAVIGATE | more information will be shown here next release`;
 				cli.stateColor = NavigateColor;
 				cli.navigation.style.border.fg = 'green';
 				cli.render();
@@ -82,10 +91,10 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 				cli.navigation.style.border.fg = 'white';
 			})
 			.handshake(prevState => {
-				cli.stateText = `HANDSHAKE | from: ${prevState.name} | ${cMediator.numChannels} text channels`;
+				cli.stateText = `HANDSHAKE | from: ${prevState.name} | more information will be shown here next release`;
 				cli.stateColor = prevState.color;
 				cli.select(box => {
-					box.setLabel(' Select an available server to handshake; [Escape] to return ');
+					box.setLabel(' Select an available server to handshake; [Enter] to handshake selected, [Escape] to return ');
 					box.setContent(cMediator.text);
 					box.setScrollPerc(cMediator.percentage);
 					box.on('resize', () => {
@@ -105,32 +114,8 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 				cli.selector.removeAllListeners('resize');
 				cli.selector.hide();
 			})
-			.read(({ guildName, channelName, displayName, topic, statelineOnly }) => {
-				if (!statelineOnly) {
-					if (topic != null) {
-						cli.messages.setLabel(` #${channelName} | ${topic} `);
-					}
-					else {
-						cli.messages.setLabel(` #${channelName} `);
-					}
-				}
-				cli.stateText = `READ | ${guildName} | ${displayName} | loading...`; // eventually specify session as well
-				mPromise.then(mediator => {
-					const num = mediator.numMembers;
-					let temp = `READ | ${guildName} | ${displayName} | `;
-					if (num === 0) {
-						temp += '0 fellow stowaways';
-					}
-					else if (num === 1) {
-						temp += '1 fellow stowaway';
-					}
-					else {
-						temp += `${num} fellow stowaways`;
-					}
-					cli.stateText = temp;
-					cli.render();
-				});
-				cli.input.setLabel(` Message #${channelName} `);
+			.read(() => {
+				cli.stateText = `READ | more information will be shown here next release`; // eventually spit out a buncha information (including session)
 				cli.stateColor = ReadColor;
 				cli.messages.style.border.fg = 'green';
 				cli.render();
@@ -146,7 +131,7 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 				else {
 					cli.input.setLabel(` Only members whose keys you have signed will receive this message `);
 				}
-				cli.stateText = `WRITE | ${publicFlag ? 'PUBLIC' : 'SIGNED'}`; // eventually sepcify session as well
+				cli.stateText = `WRITE | more information will be shown here next release`; // eventually sepcify session as well
 				cli.stateColor = WriteColor;
 				messenger.publicFlag = publicFlag;
 				cli.input.style.border.fg = 'green';
@@ -161,21 +146,9 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 				cli.select(box => {
 					box.setLabel(' Loading channel information. ');
 					box.setContent('loading...');
-					cli.stateText = 'MEMBERS | loading... ';
+					cli.stateText = 'MEMBERS | more information will be shown here next release ';
 					mPromise.then(mediator => {
 						box.setLabel(` Members of {underline}${mediator.channel.guild.name}{/underline} #${mediator.channel.name} `);
-						let temp = 'MEMBERS | ';
-						const num = mediator.numMembers;
-						if (num === 0) {
-							temp += '0 fellow stowaways';
-						}
-						else if (num === 1) {
-							temp += '1 fellow stowaway';
-						}
-						else {
-							temp += `${num} fellow stowaways`;
-						}
-						cli.stateText = temp;
 						mediator.on('update', text => {
 							box.setScrollPerc(mediator.percentage);
 							box.setContent(text);
@@ -360,7 +333,7 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 			.keybinds(prevState => {
 				cli.stateText = `KEYBINDS | from: ${prevState.name}`;
 				cli.stateColor = prevState.color;
-				cli.setPopup(`Keybinds for ${prevState.name} state controls; [Escape] to return`, prevState.help);
+				cli.setPopup(`Keybinds for ${prevState.name} state controls; [Escape] to return`, prevState.keybinds);
 				cli.render();
 			}, () => {
 				cli.popup.hide();
@@ -422,28 +395,15 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 			messenger.channel = channel;
 			hMediator.read(channel.id);
 			mPromise = mFactory.mediator(channel);
-			fsm.read({
-				channelName: channel.name,
-				guildName: channel.guild.name,
-				topic: channel.topic,
-				displayName: channel.members.find(member => member.id === client.user.id).displayName,
-			});
+			cli.input.setLabel(` Message #${channel.name} `);
+			if (channel.topic != null) {
+				cli.messages.setLabel(` ${channel.guild.name} #${channel.name} | ${channel.topic} `);
+			}
+			else {
+				cli.messages.setLabel(` ${channel.guild.name} #${channel.name} `);
+			}
+			fsm.read();
 		};
-		/* I shouldn't need this HOPEFULLY
-		const returnToChannel = function (channel) {
-			stowaway.numberStowaways(channel)
-			.then(number => {
-				fsm.read({
-					channelName: channel.name,
-					guildName: channel.guild.name,
-					topic: channel.topic,
-					nickname: channel.members.find(member => member.id === client.user.id).nickname,
-					numStowaway: number
-				});
-			})
-			.catch(err => { throw err; });
-		};
-		*/
 
 		// STOWAWAY EVENT LISTENING //
 
@@ -451,55 +411,8 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 			enterChannel(channel);
 		});
 
-		// fsm.handshake(fsm.current);
-
 		//  FSM EVENT LISTENING  //
 
-		/*
-		fsm.on('read channel', async enterFlag => {
-			if (enterFlag) {
-				const id = hMediator.channelId();
-				if (id != null) {
-					const channel = await client.channels.fetch(id);
-					allowTab = true;
-					cli.channelLabel = ` #${channel.name} ${channel.topic != null ? channel.topic : ''}`;
-					mModel.listen(id);
-				}
-			}
-			if (allowTab) {
-				fsm.read(); // this calls cli.render()
-			}
-		});
-		fsm.on('navigate channels', hMediator.scrollChannels);
-		fsm.on('navigate servers', hMediator.scrollServers);
-		fsm.on('navigation set favorite', number => {
-			const id = hMediator.channelId();
-			if (id != null) {
-				hMediator.setFavorite(number, id);
-			}
-		});
-		fsm.on('navigation clear favorite', () => {
-			const id = hMediator.channelId();
-			if (id != null) {
-				hMediator.clearFavorite(id);
-			}
-		});
-		fsm.on('perform handshake', () => {
-			const data = cMediator.channelData();
-			if (data.valid) {
-				const stop = cli.loading('handshaking new channel');
-				client.channels.fetch(data.id)
-				.then(channel => stowaway.loadChannel(channel))
-				.then(() => {
-					mModel.listen(data.id);
-					stop();
-					fsm.navigate();
-				})
-				.catch(err => { throw err; });
-			}
-		});
-		// etc.
-		*/
 		fsm.on('quit', () => {
 			cli.destroy();
 			client.destroy();
@@ -524,6 +437,39 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 			if (hMediator.readingId != null) {
 				fsm.member();
 			}
+		});
+		fsm.on('clear favorite', navigatorFlag => {
+			if (navigatorFlag) {
+				const channelId = hMediator.channelId();
+				if (channelId != null) {
+					hMediator.clearFavorite(channelId);
+				}
+			}
+			else if (hMediator.readingId != null) {
+				hMediator.clearFavorite(hMediator.readingId);
+			}
+		});
+		fsm.on('set favorite', (navigatorFlag, number) => {
+			if (navigatorFlag) {
+				const channelId = hMediator.channelId();
+				if (channelId != null) {
+					hMediator.setFavorite(number, channelId);
+				}
+			}
+			else if (hMediator.readingId != null) {
+				hMediator.setFavorite(number, hMediator.readingId);
+			}
+		});
+		fsm.on('to favorite', number => {
+			hMediator.toFavorite(number)
+			.then(channelId => {
+				if (channelId != null) {
+					messages.listen(channelId);
+					client.channels.fetch(channelId)
+					.then(channel => { stowaway.loadChannel(channel); })
+					.catch(err => { throw err; });
+				}
+			});
 		});
 
 		//  STOWAWAY EVENT LISTENING  //
@@ -574,7 +520,8 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 		cli.input.key('escape', () => { fsm.escape(); });
 		cli.revoke.key('escape', () => { fsm.escape(); });
 		// these work in all states but input
-		cli.screen.key(['e', 'S-e'], () => { fsm.e(); });
+		cli.screen.key(['h', 'S-h'], () => { fsm.h(); });
+		cli.screen.key(['m', 'S-m'], () => { fsm.m(); });
 		cli.screen.key(['`', '~'], () => { fsm.backtick(); });
 		// state specific
 		cli.screen.key('enter', () => { fsm.enter(); });
@@ -588,6 +535,27 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 		cli.screen.key(['s', 'S-s'], () => { fsm.s(); });
 		cli.screen.key(['a', 'S-a'], () => { fsm.a(); });
 		cli.screen.key(['d', 'S-d'], () => { fsm.d(); });
+		cli.screen.key(['backspace', 'delete'], () => { fsm.backspace(); });
+		cli.screen.key('0', () => { fsm.num0(); });
+		cli.screen.key('1', () => { fsm.num1(); });
+		cli.screen.key('2', () => { fsm.num2(); });
+		cli.screen.key('3', () => { fsm.num3(); });
+		cli.screen.key('4', () => { fsm.num4(); });
+		cli.screen.key('5', () => { fsm.num5(); });
+		cli.screen.key('6', () => { fsm.num6(); });
+		cli.screen.key('7', () => { fsm.num7(); });
+		cli.screen.key('8', () => { fsm.num8(); });
+		cli.screen.key('9', () => { fsm.num9(); });
+		cli.screen.key(')', () => { fsm.shift0(); });
+		cli.screen.key('!', () => { fsm.shift1(); });
+		cli.screen.key('@', () => { fsm.shift2(); });
+		cli.screen.key('#', () => { fsm.shift3(); });
+		cli.screen.key('$', () => { fsm.shift4(); });
+		cli.screen.key('%', () => { fsm.shift5(); });
+		cli.screen.key('^', () => { fsm.shift6(); });
+		cli.screen.key('&', () => { fsm.shift7(); });
+		cli.screen.key('*', () => { fsm.shift8(); });
+		cli.screen.key('(', () => { fsm.shift9(); });
 		// cli.screen.key('linefeed', () => { fsm.ctrlEnter(); }); // linefeed is ctrl-enter
 		// cli.screen.key(['backspace', 'delete' ], () => { fsm.backspace(); });
 		// const model = new SingleChannel();
@@ -718,17 +686,20 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 		// 		}
 		// 	}
 		// });
-	})
-	.catch(err => {
+	}
+	catch (err) {
 		if (cli != null) {
 			cli.destroy();
+		}
+		if (client != null) {
+			client.destroy();
 		}
 		if (err != null) {
 			console.error(err);
 		}
 		console.log('\nPass --help to see usage information');
 		console.log('Press [Ctrl-C] to quit');
-	});
+	}
 }
 
 module.exports = main;

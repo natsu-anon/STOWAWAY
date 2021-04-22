@@ -44,6 +44,35 @@ const WARNING = `
  *		- if they put in the wrong passphrase three times enter the revoke sequence & generate a new key
  * 5. STOWAWAY
 */
+
+function sleep (ms) {
+	return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function initAsync (BANNER, SCREEN_TITLE, DATABASE, API_TOKEN, PRIVATE_KEY, VERSION, REVOCATION_CERTIFICATE, versionText) {
+	const cli = new InitCLI(BANNER, SCREEN_TITLE, process);
+	if (versionText != null) {
+		await cli.pauseLog(versionText);
+	}
+	cli.log(WARNING);
+	cli.log('>initializing database... ');
+	const db = await dbInit(DATABASE);
+	cli.cat('{green-fg}DONE!{/}');
+	cli.log('>initializing discord client... ');
+	const client = await clientInit(API_TOKEN, fs, cli, Client);
+	client.user.setStatus('dnd');
+	cli.cat('{green-fg}DONE!{/}');
+	cli.log(`>logged in as {green-fg}{underline}${client.user.tag}{/}`);
+	cli.log('>initializing PGP key... ');
+	const stowaway = new Stowaway(db, PRIVATE_KEY, VERSION);
+	const key = await keyInit(PRIVATE_KEY, REVOCATION_CERTIFICATE, stowaway, client, cli);
+	cli.cat('{green-fg}DONE!{/}');
+	cli.log('{black-fg}{green-bg}>>STOWING AWAY!{/}');
+	await sleep(500);
+	return { stowaway, client, key, db };
+}
+
+/*
 function init (BANNER, SCREEN_TITLE, DATABASE, API_TOKEN, PRIVATE_KEY, VERSION, REVOCATION_CERTIFICATE, versionText) {
 	return new Promise((resolve, reject) => {
 		const cli = new InitCLI(BANNER, SCREEN_TITLE, process);
@@ -79,22 +108,23 @@ function init (BANNER, SCREEN_TITLE, DATABASE, API_TOKEN, PRIVATE_KEY, VERSION, 
 					cli.cat('{green-fg}DONE!{/}');
 					cli.log('>{black-fg}{green-bg}STOWING AWAY!{/}');
 					setTimeout(() => {
-						cli.destroy();
+						// cli.destroy();
 						res({ stowaway, client, key, db });
 					}, 500);
 				})
 				.catch(err => {
-					cli.destroy();
+					// cli.destroy();
 					reject(err);
 				});
 			});
 		})
 		.then(resolve)
 		.catch(err => {
-			cli.destroy();
+			// cli.destroy();
 			reject(err);
 		});
 	});
 }
+*/
 
-module.exports = init;
+module.exports = initAsync;
