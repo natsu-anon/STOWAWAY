@@ -6,7 +6,7 @@ const versionCheck = require('./version-check.js');
 const initialize = require('./initialization.js');
 const StowawayCLI = require('./stowaway-cli.js');
 const { Permissions, Messenger } = require('./stowaway.js');
-const { NavigateColor, ReadColor, WriteColor, MemberColor } = require('./state_machine/state-colors.js');
+const { NavigateColor, ReadColor, WriteColor, HandshakeColor, MemberColor, RevokeColor,  } = require('./state_machine/state-colors.js');
 const FSMBuilder = require('./state_machine/fsm-builder.js');
 const { Revoker } = require('./revoker.js');
 const MemberFactory = require('./member-factory.js');
@@ -17,11 +17,13 @@ const { ChannelsModel, HandshakedModel, MessagesModel } = require('./models.js')
 const VERSION_URL = 'https://raw.githubusercontent.com/natsu-anon/STOWAWAY/development/version.json';
 const SCREEN_TITLE = 'ＳＴＯＷＡＷＡＹ';
 
-async function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CERTIFICATE) {
-	let cli;
-	const check = await versionCheck(VERSION_URL, VERSION);
-	const { stowaway, client, key, db } = await initialize(BANNER, SCREEN_TITLE, DATABASE, API_TOKEN, PRIVATE_KEY, VERSION, REVOCATION_CERTIFICATE, check);
-	try {
+function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CERTIFICATE) {
+	let cli, client;
+	// const check = await versionCheck(VERSION_URL, VERSION);
+	versionCheck(VERSION_URL, VERSION)
+	.then(check => initialize(BANNER, SCREEN_TITLE, DATABASE, API_TOKEN, PRIVATE_KEY, VERSION, REVOCATION_CERTIFICATE, check))
+	.then(async ({ stowaway, client, key, passphrase, db, screen }) => {
+		let allowTab = false; // block tabbing into read state until navigated away from the landing page & to a proper channel
 		const ABOUT = require('./about.js')(BANNER);
 		const invite = await client.generateInvite({
 			permissions: [
@@ -31,8 +33,18 @@ async function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATI
 				'CHANGE_NICKNAME'
 			]
 		});
-		let allowTab = false; // block tabbing into read state until navigated away from the landing page & to a proper channel
-		stowaway.launch(client, key);
+
+		//  COMMAND LINE INTERFACE  //
+
+		cli = new StowawayCLI(screen, SCREEN_TITLE, client.user.tag, invite);
+		stowaway.on('error', error => { cli.warn(error); });
+		stowaway.on('debug', debug => { cli.notify(`DEBUG: ${debug}`); });
+		stowaway.on('decryption failure', message => {
+			cli.notify(`failed to decrypt message from ${message.author.tag} on ${message.channel.name}`);
+		});
+		// cli.screen.on('resize', () => { cli.render(); });
+
+		stowaway.launch(client, key, passphrase);
 
 		//   COOMPOSITING  //
 
@@ -42,17 +54,6 @@ async function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATI
 		const revoker = new Revoker(stowaway, client, PRIVATE_KEY, REVOCATION_CERTIFICATE).setKey(key);
 		const hMediator = new HandshakedMediator(await (new HandshakedModel()).initialize(stowaway, client, db), db);
 		const cMediator = new ChannelsMediator(await (new ChannelsModel()).initialize(stowaway, client, db), invite);
-
-		//  COMMAND LINE INTERFACE  //
-
-		cli = new StowawayCLI(SCREEN_TITLE, client.user.tag, invite);
-		stowaway.on('error', error => { cli.warn(error); });
-		stowaway.on('debug', debug => { cli.notify(`DEBUG: ${debug}`); });
-		stowaway.on('decryption failure', message => {
-			cli.notify(`failed to decrypt message from ${message.author.tag} on ${message.channel.name}`);
-		});
-		// cli.screen.on('resize', () => { cli.render(); });
-
 		//  UPDATE LISTENING TO RENDER //
 
 		hMediator.on('update', text => {
@@ -70,15 +71,15 @@ async function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATI
 			cli.navigation.setScrollPerc(hMediator.percentage);
 		});
 		const messages = new MessagesModel(stowaway);
-		messages.on('update',text => {
+		messages.on('update', text => {
 			cli.messages.setContent(text);
-			if (cli.channelScrollPerc === 100 || cli.channelHeight >= cli.channelScrollHeight) {
-				cli.scrollChannelPerc(100);
+			if (cli.messages.getScrollPerc() === 100 || cli.messages.height >= cli.messages.getScrollHeight()) {
+				cli.messages.setScrollPerc(100);
 			}
 			cli.render();
 		});
 
-		//  FSM BUILDER  //https://www.youtube.com/watch?v=rVLIdFk-8no
+		//  FSM BUILDER
 
 		const fsm = new FSMBuilder()
 			.navigate(() => {
@@ -92,9 +93,9 @@ async function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATI
 			})
 			.handshake(prevState => {
 				cli.stateText = `HANDSHAKE | from: ${prevState.name} | more information will be shown here next release`;
-				cli.stateColor = prevState.color;
+				cli.stateColor = HandshakeColor;
 				cli.select(box => {
-					box.setLabel(' Select an available server to handshake; [Enter] to handshake selected, [Escape] to return ');
+					box.setLabel(' Select an available channel to handshake ');
 					box.setContent(cMediator.text);
 					box.setScrollPerc(cMediator.percentage);
 					box.on('resize', () => {
@@ -142,11 +143,11 @@ async function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATI
 				cli.input.clearValue();
 				cli.screen.focusPop();
 			})
-			.member(() => {
+			.member(prevState => {
 				cli.select(box => {
 					box.setLabel(' Loading channel information. ');
 					box.setContent('loading...');
-					cli.stateText = 'MEMBERS | more information will be shown here next release ';
+					cli.stateText = `MEMBERS | from: ${prevState.name} | more information will be shown here next release`;
 					mPromise.then(mediator => {
 						box.setLabel(` Members of {underline}${mediator.channel.guild.name}{/underline} #${mediator.channel.name} `);
 						mediator.on('update', text => {
@@ -182,7 +183,7 @@ async function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATI
 				const challenge = phrase();
 				revoker.challenge = challenge;
 				cli.stateText = `REVOKE | from: ${prevState.name} | STEP 1: CHALLENGE | WARNING: revoking a key is irreversible!`;
-				cli.stateColor = prevState.color;
+				cli.stateColor = RevokeColor;
 				cli.revoke.show();
 				const temp = `; press [Escape] to return to ${prevState.name}`;
 				const label = `Enter '${challenge}' then press [Enter] to begin revoking your key${temp}`;
@@ -404,6 +405,22 @@ async function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATI
 			}
 			fsm.read();
 		};
+		const fetchNewer = function (channelId, messageId) {
+			if (channelId != null && messageId != null) {
+				const stop = cli.spin('fetching newer messages');
+				client.channels.fetch(channelId)
+				.then(channel => stowaway.fetchNewer(channel, messageId))
+				.finally(stop);
+			}
+		};
+		const fetchOlder = function (channelId, messageId) {
+			if (channelId != null && messageId != null) {
+				const stop = cli.spin('fetching older messages');
+				client.channels.fetch(channelId)
+				.then(channel => stowaway.fetchOlder(channel, messageId))
+				.finally(stop);
+			}
+		};
 
 		// STOWAWAY EVENT LISTENING //
 
@@ -433,9 +450,9 @@ async function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATI
 				fsm.read();
 			}
 		});
-		fsm.on('channel members', () => {
+		fsm.on('channel members', state => {
 			if (hMediator.readingId != null) {
-				fsm.member();
+				fsm.member(state);
 			}
 		});
 		fsm.on('clear favorite', navigatorFlag => {
@@ -489,8 +506,25 @@ async function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATI
 		fsm.on('messages top', () => { cli.messages.setScrollPerc(0); });
 		fsm.on('messages bottom', () => { cli.messages.setScrollPerc(100); });
 		fsm.on('scroll messages', offset => {
-			cli.messages.scroll(offset);
-			// TODO
+			if (cli.messages.height >= cli.messages.getScrollHeight()) {
+				if (offset > 0) {
+					fetchNewer(hMediator.readingId, messages.newestId);
+				}
+				else {
+					fetchOlder(hMediator.readingId, messages.oldestId);
+				}
+			}
+			else {
+				if (cli.messages.getScrollPerc() === 0 && offset < 0) {
+					fetchOlder(hMediator.readingId, messages.oldestId);
+				}
+				else if (cli.messages.getScrollPerc() === 100 && offset > 0) {
+					fetchNewer(hMediator.readingId, messages.newestId);
+				}
+				else {
+					cli.messages.scroll(offset);
+				}
+			}
 		});
 		fsm.on('clear input', () => {
 			cli.input.clearValue();
@@ -558,138 +592,8 @@ async function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATI
 		cli.screen.key('&', () => { fsm.shift7(); });
 		cli.screen.key('*', () => { fsm.shift8(); });
 		cli.screen.key('(', () => { fsm.shift9(); });
-		// cli.screen.key('linefeed', () => { fsm.ctrlEnter(); }); // linefeed is ctrl-enter
-		// cli.screen.key(['backspace', 'delete' ], () => { fsm.backspace(); });
-		// const model = new SingleChannel();
-		// cli = new SingleCLI(SCREEN_TITLE, '{bold}[Ctrl-C] to quit{/bold}', `${channel.guild.name} {green-fg}#${channel.name}{/}`, client.user.tag);
-		// stowaway.on('message', model.message);
-		// stowaway.on('error', err => { cli.error(err); });
-		// stowaway.on('timestamp', (ts, id) => { model.timestamp(ts, id); });
-		// stowaway.on('failed decrypt', model.decryptionFailure);
-		// stowaway.on('handshake', model.handshake);
-		// stowaway.on('notify', message => { cli.notify(message); });
-		// stowaway.on('debug', message => { cli.warning(`DEBUG: ${message}`); });
-		// stowaway.on('channel delete', () => { cli.error(`${channel.name} deleted!`); });
-		// stowaway.on('channel update', ch => {
-		// 	cli.notify('channel updated!');
-		// 	cli.channelLabel = `${ch.guild.name} {green-fg}#${ch.name}{/}`;
-		// 	cli.render();
-		// });
-		// stowaway.on('bad handshake', user => {
-		// 	cli.warning(`BAD HANDSHAKE from ${user.tag}`);
-		// });
-		// stowaway.on('handshake', (ts, date, user) => {
-		// 	cli.handshake(`HANDSHAKE from ${user.tag}`);
-		// });
-		// model.on('update', () => {
-		// 	const flag = cli.channelScrollPerc === 100 || cli.channelHeight >= cli.channelScrollHeight;
-		// 	cli.messages = model.text;
-		// 	if (flag) {
-		// 		cli.scrollChannelPerc(100);
-		// 	}
-		// 	else {
-		// 		cli.render();
-		// 	}
-		// });
-		// stowaway.launch(client, key);
-		// // stowaway.launch(client);
-		// stowaway.on('message', (ts, date, author, content) => {
-		// 	cli.encrypted(`new message from ${author.tag}`);
-		// });
-		// cli.messages = model.text;
-		// const fsm = new FSMBuilder()
-		// .enterRead(() => {
-		// 	cli.stateBG = 'magenta';
-		// 	cli.stateText = 'READING -- [SPACE] begin writing; [W] scroll up/fetch older messages; [S] scroll down/fetch newer messages; [1] to jump to bottom';
-		// 	cli.render();
-		// })
-		// .enterWrite(() => {
-		// 	if (!cli.inputBox.focused) {
-		// 		cli.screen.focusPush(cli.inputBox);
-		// 		cli.stateBG = 'green';
-		// 		cli.stateText = 'WRITING -- [ESCAPE] to stop writing; [ENTER] to send';
-		// 		cli.render();
-		// 	}
-		// })
-		// .exitWrite(() => {
-		// 	if (cli.inputBox.focused) {
-		// 		cli.screen.focusPop();
-		// 		cli.render();
-		// 	}
-		// })
-		// .build();
-		// fsm.on('quit', () => {
-		// 	client.destroy();
-		// 	db.persistence.compactDatafile();
-		// 	return process.exit(0);
-		// });
-		// cli.screen.key(['space'], () => {
-		// 	fsm.onSpace();
-		// });
-		// cli.screen.key(['C-c'], () => {
-		// 	fsm.onCtrlC();
-		// });
-		// cli.screen.key(['enter'], () => {
-		// 	fsm.onEnter();
-		// });
-		// cli.screen.key(['escape'], () => {
-		// 	fsm.onEsc();
-		// });
-		// cli.screen.key(['w'], () => {
-		// 	fsm.onW();
-		// });
-		// cli.screen.key(['s'], () => {
-		// 	fsm.onS();
-		// });
-		// cli.inputBox.key(['C-c'], () => {
-		// 	fsm.onCtrlC();
-		// });
-		// cli.inputBox.key(['enter'], () => {
-		// 	fsm.onEnter();
-		// });
-		// cli.inputBox.key(['escape'], () => {
-		// 	fsm.onEsc();
-		// });
-		// cli.screen.key(['1'], () => {
-		// 	cli.scrollChannelPerc(100);
-		// });
-		// fsm.on('send input', () => {
-		// 	stowaway.encrypt(cli.submitInput());
-		// });
-		// fsm.on('clear input', () => {
-		// 	cli.cancelInput();
-		// });
-		// const fetchOlder = function () {
-		// 	stowaway.fetchOlder(model.oldest)
-		// 	.then(() => { cli.notify('fetched older messages!'); });
-		// };
-		// const fetchNewer = function () {
-		// 	stowaway.fetchNewer(model.newest)
-		// 	.then(() => { cli.notify('fetched newer messages!'); });
-		// };
-		// fsm.on('scroll', offset => {
-		// 	if (cli.channelHeight >= cli.channelScrollHeight) {
-		// 		if (offset > 0) {
-		// 			fetchNewer();
-		// 		}
-		// 		else if (offset < 0) {
-		// 			fetchOlder();
-		// 		}
-		// 	}
-		// 	else {
-		// 		if (cli.channelScrollPerc === 0 && offset < 0) {
-		// 			fetchOlder();
-		// 		}
-		// 		else if (cli.channelScrollPerc === 100 && offset > 0) {
-		// 			fetchNewer();
-		// 		}
-		// 		else {
-		// 			cli.scrollChannel(offset);
-		// 		}
-		// 	}
-		// });
-	}
-	catch (err) {
+	})
+	.catch(err => {
 		if (cli != null) {
 			cli.destroy();
 		}
@@ -701,7 +605,7 @@ async function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATI
 		}
 		console.log('\nPass --help to see usage information');
 		console.log('Press [Ctrl-C] to quit');
-	}
+	});
 }
 
 module.exports = main;

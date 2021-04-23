@@ -89,7 +89,7 @@ class ReadState extends State {
 	}
 
 	m () {
-		this.emit('to member');
+		this.emit('to member', this);
 	}
 
 	w () {

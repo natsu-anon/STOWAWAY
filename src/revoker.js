@@ -63,6 +63,7 @@ class Revoker {
 			});
 			try {
 				key = await this.stowaway.revokeKey(this.client, this.key, key, this.revocationCertificate);
+				this.stowaway.passphrase = this.passphrase;
 				await writeFile(this.revocationPath, revocationCertificate);
 				await writeFile(this.keyPath, (await openpgp.encryptKey({
 					privateKey: key,

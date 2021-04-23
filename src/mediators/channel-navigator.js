@@ -96,7 +96,10 @@ class ChannelNavigator {
 
 	_nextChannel () {
 		if (this.struct.numChannels() > 0) {
-			if (this._position.channel + 1 < this.data[this._position.server].channels.length) {
+			if (this._index == null) {
+				return this._firstChannel();
+			}
+			else if (this._position.channel + 1 < this.data[this._position.server].channels.length) {
 				this._index++;
 				this._position.channel++;
 				return true;
@@ -121,7 +124,10 @@ class ChannelNavigator {
 
 	_prevChannel () {
 		if (this.struct.numChannels() > 0) {
-			if (this._position.channel > 0) {
+			if (this._index == null) {
+				return this._firstChannel();
+			}
+			else if (this._position.channel > 0) {
 				this._index--;
 				this._position.channel--;
 				return true;
@@ -146,18 +152,23 @@ class ChannelNavigator {
 
 	_nextServer () {
 		if (this.struct.numChannels() > 0) {
-			let temp = this.data[this._position.server].channels.length - this._position.channel + 1;
-			for (let i = this._position.server + 1; i < this.data.length; i++) {
-				if (this.data[i].channels.length > 0) {
-					this.setPosition(i, 0);
-					this._index += temp;
-					return true;
-				}
-				else {
-					temp++;
-				}
+			if (this._index == null) {
+				return this._firstChannel();
 			}
-			return this._firstChannel();
+			else {
+				let temp = this.data[this._position.server].channels.length - this._position.channel + 1;
+				for (let i = this._position.server + 1; i < this.data.length; i++) {
+					if (this.data[i].channels.length > 0) {
+						this.setPosition(i, 0);
+						this._index += temp;
+						return true;
+					}
+					else {
+						temp++;
+					}
+				}
+				return this._firstChannel();
+			}
 		}
 		else {
 			return false;
@@ -167,7 +178,10 @@ class ChannelNavigator {
 	// actually takes you to the 1st channel in server if not already at 1st
 	_prevServer () {
 		if (this.struct.numChannels() > 0) {
-			if (this._position.channel > 0) {
+			if (this._index == null) {
+				return this._firstChannel();
+			}
+			else if (this._position.channel > 0) {
 				this._index -= this._position.channel;
 				this._position.channel = 0;
 				return true;

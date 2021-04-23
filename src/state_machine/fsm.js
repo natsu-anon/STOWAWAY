@@ -39,7 +39,7 @@ class FSM extends EventEmitter {
 			state.on('to handshake', s => { this.handshake(s); });
 			state.on('to read', enterFlag => { this.emit('read channel', enterFlag); });
 			state.on('to write', publicFlag => { this.write(publicFlag); });
-			state.on('to member', () => { this.emit('channel members'); });
+			state.on('to member', s => { this.emit('channel members', s); });
 			state.on('to revoke', s => { this.revoke(s); });
 			state.on('to about', s => { this.about(s); });
 			state.on('to keybinds', s => { this.keybind(s); });
@@ -120,10 +120,8 @@ class FSM extends EventEmitter {
 		this._current.Enter(publicFlag);
 	}
 
-	member (args) {
-		this._current.Exit();
-		this._current = this._member;
-		this._current.Enter(args);
+	member (state) {
+		this._transition(this._member, state);
 	}
 
 	revoke (state) {

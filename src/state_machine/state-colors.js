@@ -2,5 +2,8 @@ module.exports = {
 	NavigateColor: 'blue',
 	ReadColor: 'magenta',
 	WriteColor: 'green',
-	MemberColor: 'red'
+	HandshakeColor: 'yellow',
+	MemberColor: 'cyan',
+	RevokeColor: 'red',
+	FallbackColor: 'black'
 };

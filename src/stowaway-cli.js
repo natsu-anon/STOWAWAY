@@ -35,7 +35,7 @@ const spinner = [
 
 class StowawayCLI {
 
-	constructor (title, userTag, invite) {
+	constructor (screen, title, userTag, invite) {
 		const LANDING = `This message will vanish when you begin reading a channel.
 
 If there are no channels in the navigation box to your right you must add your bot to a server & make sure it has the proper permissions in order use said channels.
@@ -55,6 +55,7 @@ To learn more about the WTFPL that STOWAWAY is licensed under see: {underline}ht
 
 Thanks for downloading & I hope you find this software useful
 <3`;
+		/*
 		this.screen = blessed.screen({
 			smartcsr: true,
 			autopadding: true,
@@ -62,7 +63,9 @@ Thanks for downloading & I hope you find this software useful
 			dockborders: true,
 			fullunicode: true, // allows for meme double-wide characters
 		});
-		this.screen.title = title;
+		*/
+		screen.title = title;
+		this.screen = screen;
 		blessed.box({
 			parent: this.screen,
 			content: '[Ctrl-C] to close; [Ctrl-R] to revoke key; [Ctrl-A] for about; [Ctrl-K] for keybinds',
@@ -240,7 +243,8 @@ Thanks for downloading & I hope you find this software useful
 	}
 
 	set stateColor (color) {
-		this.stateLine.style = { fg: 'white', bg: color };
+		this.stateLine.style.fg = 'white';
+		this.stateLine.style.bg = color;
 	}
 
 	enableInput () {
@@ -309,7 +313,8 @@ Thanks for downloading & I hope you find this software useful
 	warn (text) {
 		const box = blessed.box({
 			parent: this.screen,
-			label: ' ***WARNING*** Press [Escape] to close ',
+			tags: true,
+			label: ' {underline}WARNING{/underline} Press [Escape] to close ',
 			content: text,
 			top: 'center',
 			left: 'center',

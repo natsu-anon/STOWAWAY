@@ -82,7 +82,7 @@ class NavigateState extends State {
 	}
 
 	m () {
-		this.emit('to member');
+		this.emit('to member', this);
 	}
 
 	w () {

@@ -1,11 +1,14 @@
 const State = require('./state.js');
+// const { HandshakeColor } = require('./state-colors.js');
+const { HandshakeColor } = require('./state-colors.js');
+
 const KEYBINDS =
 `[Enter] handshake selected channel (if permissions allow) & begin reading it
 [Escape] return to previous state
 [W/S] scroll to previous/next channel
 [A/D] jump to first channel in previous/next server
-[Tab] begin reading current channel displayed in messages box (if possible)
 [M] view members of current channel displayed in messages box (if possible)`;
+// [Tab] begin reading current channel displayed in messages box (if possible)
 
 class HandshakeState extends State {
 
@@ -23,30 +26,29 @@ class HandshakeState extends State {
 		return KEYBINDS;
 	}
 
+	get name () {
+		return 'Handshake';
+	}
+
+	get color () {
+		return HandshakeColor;
+	}
+
 	Enter (state) {
-		this._enter(state);
+		if (state != null) {
+			this.previousState = state;
+			this._enter(state);
+		}
+		else if (this.previousState != null) {
+			this._enter(this.previousState);
+		}
+		else {
+			throw Error('Unable to complete state transition in HandshakeState.Enter()');
+		}
 	}
 
 	Exit () {
 		this._exit();
-	}
-
-	ctrlR () {
-		if (this.previousState != null) {
-			this.emit('to revoke', this.prevState);
-		}
-	}
-
-	ctrlA () {
-		if (this.previousState != null) {
-			this.emit('to about', this.prevState);
-		}
-	}
-
-	ctrlQ () {
-		if (this.previousState != null) {
-			this.emit('to keybinds', this.prevState);
-		}
 	}
 
 	escape () {
@@ -59,12 +61,14 @@ class HandshakeState extends State {
 		this.emit('handshake');
 	}
 
+	/*
 	tab () {
 		this.emit('to read', false);
 	}
+	*/
 
 	m () {
-		this.emit('to member');
+		this.emit('to member', this.previousState);
 	}
 
 	w () {

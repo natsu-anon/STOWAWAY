@@ -3,7 +3,7 @@ const Model = require('./model.js');
 class ChannelMessage {
 	constructor (date, member, verified, signed, plainText) {
 		this.date = date;
-		this.name = signed ? member.displayName : `{green-fg}${member.displayName}{/green-fg}`;
+		this.name = signed ? `{green-fg}${member.displayName}{/green-fg}` : member.displayName;
 		this.verified = verified;
 		this.plainText = plainText;
 	}
@@ -56,7 +56,7 @@ class SignedKey {
 	}
 
 	get text () {
-		return `\t{cyan-bg}{black-fg}${this.name} (${this.author.tag}) signed your key at ${this.date.toLocaleDateString()} ${this.date.toLocaleTimesString()}{/}`;
+		return `\t{cyan-bg}{black-fg}${this.name} (${this.tag}) signed your key at ${this.date.toLocaleDateString()} ${this.date.toLocaleTimesString()}{/}`;
 	}
 }
 
@@ -68,7 +68,7 @@ class KeyUpdate {
 	}
 
 	get text () {
-		return `\t{cyan-bg}{black-fg}${this.name} (${this.author.tag}) updated his key at ${this.date.toLocaleDateString()} ${this.date.toLocaleTimesString()}{/}`;
+		return `\t{cyan-bg}{black-fg}${this.name} (${this.tag}) updated his key at ${this.date.toLocaleDateString()} ${this.date.toLocaleTimesString()}{/}`;
 	}
 }
 
@@ -82,13 +82,13 @@ class Revocation {
 
 	get text () {
 		if (this.blockReason != null) {
-			let res = `\t{red-bg}{underline}BLOCKED {black-fg}$this.name ${this.author.tag} from revoking his key at ${this.date.toLocaleDateString()} ${this.date.toLocaleTimeString()}{/}\n`;
+			let res = `\t{red-bg}{underline}BLOCKED {black-fg}$this.name ${this.tag} from revoking his key at ${this.date.toLocaleDateString()} ${this.date.toLocaleTimeString()}{/}\n`;
 			res += `{red-fg}{underline}REASON{/underline}: ${this.blockReason}{/}`;
 			return res;
 
 		}
 		else {
-			return `\t{green-bg}{black-fg}${this.name} (${this.author.tag}) revoked his key at ${this.date.toLocaleDateString()} ${this.date.toLocaleTimesString()}{/}`;
+			return `\t{green-bg}{black-fg}${this.name} (${this.tag}) revoked his key at ${this.date.toLocaleDateString()} ${this.date.toLocaleTimesString()}{/}`;
 		}
 	}
 }
@@ -99,11 +99,11 @@ class MessagesModel extends Model {
 	constructor (stowaway) {
 		super();
 		stowaway.on('channel message', (message, data) => { this._channelMessage(message, data); });
-		stowaway.on('decryption failure', this._decryptionFailure);
-		stowaway.on('handshake', (accepted, message) => { this._handshake(message, accepted); });
-		stowaway.on('signed key', this._signedKey);
-		stowaway.on('key update', this._keyUpdate);
-		stowaway.on('revocation', this._keyUpdate);
+		stowaway.on('decryption failure', message => { this._decryptionFailure(message); });
+		stowaway.on('handshake', (message, accepted) => { this._handshake(message, accepted); });
+		stowaway.on('signed key', message => { this._signedKey(message); });
+		stowaway.on('key update', message => { this._keyUpdate(message); });
+		stowaway.on('revocation', (message, blockReason) => { this._revocation(message, blockReason); });
 	}
 
 	listen (channelId) {
@@ -113,11 +113,11 @@ class MessagesModel extends Model {
 	}
 
 	get oldestId () {
-		return this._messages[0].id;
+		return this._messages.length > 0 ? this._messages[0].id : null;
 	}
 
 	get newestId () {
-		return this._messages[this._messages.length - 1].id;
+		return this._messages.length > 0 ? this._messages[this._messages.length - 1].id : null;
 	}
 
 	get text () {

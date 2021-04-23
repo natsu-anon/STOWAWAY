@@ -105,12 +105,12 @@ function init (BANNER, SCREEN_TITLE, DATABASE, API_TOKEN, PRIVATE_KEY, VERSION, 
 			const stowaway = new Stowaway(db, PRIVATE_KEY, VERSION);
 			return new Promise((res, rej) => {
 				keyInit(PRIVATE_KEY, REVOCATION_CERTIFICATE, stowaway, client, cli)
-				.then(key => { // key is decrypted
+				.then(({ key, passphrase }) => { // key is decrypted
 					cli.cat('{green-fg}DONE!{/}');
-					cli.log('>{black-fg}{green-bg}STOWING AWAY!{/}');
+					cli.log('{black-fg}{green-bg}>>STOWING AWAY!{/}');
 					setTimeout(() => {
 						cli.decouple();
-						res({ stowaway, client, key, db, screen: cli.screen });
+						res({ stowaway, client, key, passphrase, db, screen: cli.screen });
 					}, 500);
 				})
 				.catch(rej);

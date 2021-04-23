@@ -134,8 +134,64 @@ async function test() {
 	}
 }
 
+
+async function testSingle () {
+	const rl = require('readline').createInterface({
+		input: process.stdin,
+		output: process.stdout
+	});
+	const onEnter = async function (text, callback) {
+		return new Promise(resolve => {
+			rl.question(text, () => { callback(resolve); });
+		});
+	};
+	const VERSION = '1.0.0-testing';
+	const { key, revocationCertificate } = await genKey();
+	const client = await clientLogin(token1);
+	const stowaway = new Stowaway(new Datastore(), keyPath1, VERSION);
+	stowaway.on('test', text => {
+		console.log(`${client.user.tag}: ${text}`);
+	});
+	stowaway.on('notify', (color, text) => {
+		console.log(`\t${client.user.tag} ${color}: ${text}`);
+	});
+	stowaway.on('error', text => {
+		console.error(`${client.user.tag}: ${text}`);
+	});
+	stowaway.launch(client, key);
+	const channel = await client.channels.fetch(channels1[0]);
+	await onEnter('Press [Enter] to handshake channel', resolve => {
+		stowaway.loadChannel(channel)
+		.then(() => { resolve(); });
+	});
+	await onEnter('Press [Enter] to send a public & signed messages to channel', resolve => {
+		Promise.all([
+			stowaway.messagePublic(channel, 'HELLO (publicly)'),
+			stowaway.messageSigned(channel, 'HELLO (privately)')
+		])
+		.then(() => { resolve(); });
+	});
+	await onEnter ('Press [Enter] to sign a key', resolve => {
+		stowaway.signKey(channel, '757737270051733604')
+		.then(() => { resolve(); });
+	});
+	await onEnter('Press [Enter] to send a public & signed messages to channel', resolve => {
+		Promise.all([
+			stowaway.messagePublic(channel, 'bruh (publicly)'),
+			stowaway.messageSigned(channel, 'bruh (privately)')
+		])
+		.then(() => { resolve(); });
+	});
+	await onEnter('Press [Enter] to revoke your key', resolve => {
+		genKey().then(({ key: temp }) => stowaway.revokeKey(client, key, temp, revocationCertificate))
+		.then(() => { resolve(); });
+	});
+	process.exit(0);
+}
+
 if (require.main === module) {
-	test();
+	// test();
+	testSingle();
 }
 
 module.exports = {

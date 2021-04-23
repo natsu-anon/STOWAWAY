@@ -37,7 +37,9 @@ function existingKey (lockedKey, keyPath, revocationPath, stowaway, client, cli)
 					privateKey: lockedKey,
 					passphrase: phrase
 				})
-				.then(resolve)
+				.then(key => {
+					resolve({ key, passphrase: phrase });
+				})
 				.catch(() => {
 					reject(Error('Failed to decrypt key!  Consider revoking your key if you have forgotten your password!'));
 				});
@@ -60,9 +62,9 @@ function existingKey (lockedKey, keyPath, revocationPath, stowaway, client, cli)
 							generateKey(keyPath, revocationPath, cli, false)
 							.then(({ key, revocationCertificate, passphrase }) => {
 								stowaway.revokeKey(client, lockedKey, key, data)
-								.then(signedKey => {
+								.then(k => {
 									openpgp.encryptKey({
-										privateKey: signedKey,
+										privateKey: k,
 										passphrase
 									})
 									.then(encryptedKey => {
@@ -72,7 +74,7 @@ function existingKey (lockedKey, keyPath, revocationPath, stowaway, client, cli)
 										]);
 									})
 									.then(() => {
-										resolve(signedKey);
+										resolve({ key: k, passphrase });
 									});
 								})
 								.catch(reject);
@@ -241,7 +243,7 @@ function init (keyPath, revocationPath, stowaway, client, cli) {
 							cli.log(`\t- key nickname: {underline}${key.getUserIds()}{/}, key fingerprint: {underline}${key.getFingerprint()}{/} `);
 							return existingKey(key, keyPath, revocationPath, stowaway, client, cli);
 						})
-						.then(resolve)
+						.then(({ key, passphrase }) => { resolve({ key, passphrase }); })
 						.catch(reject);
 					}
 				});
@@ -250,7 +252,7 @@ function init (keyPath, revocationPath, stowaway, client, cli) {
 				cli.cat('{yellow-fg}No existing keys found!{/}');
 				cli.log('\t- Generating new private key... ');
 				generateKey(keyPath, revocationPath, cli, true)
-				.then(({ key }) => { resolve(key); })
+				.then(({ key, passphrase }) => { resolve({ key, passphrase }); })
 				.catch(reject);
 			}
 		});

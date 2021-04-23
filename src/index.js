@@ -25,6 +25,12 @@ else if (process.argv.length > 2 && (process.argv[2] === '--help' || process.arg
 	require('./help.js')();
 }
 else if (process.argv.length > 2 && process.arg[2] === '--revoke') {
+	if (process.argv.length > 3) {
+		// process.arg[3] is the path to the revocation certificate
+	}
+	else {
+		// revocation certificate path is REVOCATION_CERTIFICATE
+	}
 	console.log('todo'); // needs everything that Stowaway.revokeKey() needs
 }
 else if (process.argv.length > 2 && process.argv[2] === '--leave-server') {
