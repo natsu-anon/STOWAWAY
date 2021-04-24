@@ -111,9 +111,7 @@ async function generateKey (keyPath, revocationPath, cli, writeFlag) {
 				type: 'ecc',
 				curve: 'curve25519',
 				passphrase: phrase,
-				userIds: [{
-					name: nickname,
-				}]
+				userIds: [{ name: nickname }]
 			});
 			cli.log(`\t- Key nickanme: {underline}${nickname}{/}, key fingerprint: {underline}${key.getFingerprint()}{/}`);
 			if (writeFlag) {
