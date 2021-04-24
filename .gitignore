@@ -1,3 +1,12 @@
+# the DO_NOT_SHARE dir
+DO_NOT_SHARE/
+
+# testing stuff
+_test*
+
+# the revocation certificate
+stowaway.revoke
+
 # discord bot token
 token*
 

@@ -34,8 +34,8 @@ const spinner = [
 ];
 
 class BlessedInit {
-	constructor (banner,  title, process) {
-		let screen = blessed.screen({
+	constructor (banner, title, process) {
+		const screen = blessed.screen({
 			smartcsr: true,
 			autopadding: true,
 			tabSize: 2,
@@ -43,13 +43,23 @@ class BlessedInit {
 			fullunicode: true,
 		});
 		screen.title = title;
-		this.content = [ `{cyan-fg}${banner}{/}` ];
+		this.content = [ banner ];
 		this.background = blessed.box({
 			parent: screen,
 			width: '100%',
-			height: '100%',
+			height: '100%-1',
 			tags: true,
 			content: this.content[0],
+		});
+		blessed.box({
+			parent: screen,
+			width: '100%',
+			height: 1,
+			tags: true,
+			top: '100%-1',
+			fg: 'black',
+			bg: 'white',
+			content: ' Press [Ctrl-C] to quit'
 		});
 		this.popup = blessed.box({
 			parent: screen,
@@ -65,7 +75,7 @@ class BlessedInit {
 			border : {
 				type: 'line',
 			},
-		})
+		});
 		screen.key(['C-c'], () => {
 			return process.exit(0);
 		});
@@ -73,60 +83,54 @@ class BlessedInit {
 		this.screen = screen;
 	}
 
+	decouple () {
+		this.screen.children.forEach(child => {
+			child.destroy();
+		});
+	}
+
 	destroy () {
 		this.screen.destroy();
 	}
 
 	question (prompt, censor=false) {
-		let textbox;
-		if (censor) {
-			textbox = blessed.textbox({
-				parent: this.screen,
-				left: 'center',
-				top: 'center',
-				tags: true,
-				width: 80,
-				height: 3,
-				inputOnFocus: true,
-				label: ` ${prompt} `,
-				border: { type: 'line' },
-				censor: true,
-			});
-		}
-		else {
-			textbox = blessed.textbox({
-				parent: this.screen,
-				left: 'center',
-				top: 'center',
-				tags: true,
-				width: 80,
-				height: 3,
-				inputOnFocus: true,
-				label: ` ${prompt} `,
-				border: { type: 'line' },
-			});
-		}
+		const textbox = blessed.textbox({
+			parent: this.screen,
+			left: 'center',
+			top: 'center',
+			tags: true,
+			width: 80,
+			height: 5,
+			padding: 1,
+			inputOnFocus: true,
+			label: ` ${prompt} `,
+			border: { type: 'line' },
+			censor: censor,
+		});
+		textbox.onceKey(['C-c'], () => {
+			return process.exit(0);
+		});
 		textbox.focus();
 		textbox.setFront();
 		this.screen.render();
-		return new Promise((resolve, reject) => {
-			textbox.once('submit', (val) => {
+		return new Promise(resolve => {
+			textbox.once('submit', value => {
 				textbox.destroy();
 				this.screen.render();
-				resolve(val);
+				resolve(value);
 			});
 		});
 	}
 
 	select (setup) {
-		let box = blessed.textbox({
+		const box = blessed.textbox({
 			parent: this.screen,
 			tags: true,
 			height: '80%',
 			width: 80,
 			top: 'center',
 			left: 'center',
-			content: "loading...",
+			content: 'loading...',
 			padding: 1,
 			/* NOT WORKING ???
 			scrollable: true,
@@ -162,6 +166,18 @@ class BlessedInit {
 		this.screen.render();
 	}
 
+	pauseLog (text) {
+		this.content.push(text);
+		this.content.push('Press [Enter] to continue...');
+		this.background.setContent(this.content.join('\n'));
+		this.screen.render();
+		return new Promise(resolve => {
+			this.screen.onceKey(['enter'], () => {
+				resolve();
+			});
+		});
+	}
+
 	cr (text) {
 		if (this.content.length > 0) {
 			this.content[this.content.length - 1] = text;
@@ -169,7 +185,7 @@ class BlessedInit {
 			this.screen.render();
 		}
 		else {
-			log(text);
+			this.log(text);
 		}
 	}
 
@@ -180,7 +196,7 @@ class BlessedInit {
 			this.screen.render();
 		}
 		else {
-			log(text);
+			this.log(text);
 		}
 	}
 
@@ -188,19 +204,90 @@ class BlessedInit {
 		this.popup.show();
 		this.popup.setLabel(label);
 		let timeout;
-		const cycle = (i) => {
+		const cycle = i => {
 			this.popup.setContent(spinner[i++]);
 			this.screen.render();
 			timeout = setTimeout(() => {
 				cycle(i % spinner.length);
 			}, 40);
-		}
+		};
 		cycle(0);
 		return () => {
 			clearTimeout(timeout);
 			this.popup.hide();
 			this.screen.render();
 		};
+	}
+
+	notify (text) {
+		const chars = text.split('\n').map(x => x.length);
+		let max = 0;
+		for (let i = 0; i < chars.length; i++) {
+			if (chars[i] > max) {
+				max = chars[i];
+			}
+		}
+		const box = blessed.box({
+			parent: this.screen,
+			left: 'center',
+			top: 'center',
+			tags: true,
+			width: parseInt(max) + 4,
+			height: chars.length + 4,
+			valign: 'middle',
+			padding: 1,
+			label: ' Press [Enter] to continue ',
+			content: text,
+			border: { type: 'line' },
+		});
+		box.focus();
+		this.screen.render();
+		box.onceKey('C-c', () => {
+			return process.exit(0);
+		});
+		return new Promise(resolve => {
+			box.key('enter', () => {
+				box.destroy();
+				this.screen.render();
+				resolve();
+			});
+		});
+	}
+
+	toggleQuestion (prompt0, prompt1, toggleKey) {
+		let flag = true;
+		const toggleBox = prompt => {
+			const length = prompt.text.length + 6;
+			const box = blessed.textbox({
+				parent: this.screen,
+				left: 'center',
+				top: 'center',
+				tags: true,
+				width: (length > 80 ? length : 80),
+				height: 5,
+				padding: 1,
+				inputOnFocus: true,
+				label: ` ${prompt.text} `,
+				border: { type: 'line' },
+				censor: prompt.censor == null ? false : prompt.censor,
+			});
+			box.focus();
+			this.screen.render();
+			box.onceKey([toggleKey], () => {
+				box.destroy();
+				flag ? toggleBox(prompt1) : toggleBox(prompt0);
+				flag = !flag;
+			});
+			box.onceKey(['C-c'], () => {
+				return process.exit(0);
+			});
+			box.once('submit', value => {
+				box.destroy();
+				this.screen.render();
+				prompt.callback(value);
+			});
+		};
+		toggleBox(prompt0);
 	}
 
 	render () {

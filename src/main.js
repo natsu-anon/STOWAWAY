@@ -1,395 +1,617 @@
-const fs = require('fs');
-const readline = require('readline');
-const EventEmitter = require('events');
-const https = require('https');
 const process = require('process');
-const openpgp = require('openpgp');
-const blessed = require('blessed');
-const { Client, MessageAttachment } = require('discord.js');
+const fs = require('fs');
 
-// just JUST my shit up fam
-const ABOUT = "--about";
-const ABOUT_RESPONSE = "TODO";
-const HANDSHAKE_REQUEST = "#### HANDSHAKE 0 ####";
-const HANDSHAKE_RESPONSE = "#### HANDSHAKE 1 ####";
-const ENCRYPTED_MESSAGE = "#### STOWAWAY ####"
-const KEYFILE = "pubkey.txt";
-const MSGFILE = "pgpmsg.txt";
-// TODO later versions: revocation & signature
+const phrase = require('./nato-phrase.js');
+const versionCheck = require('./version-check.js');
+const initialize = require('./initialization.js');
+const StowawayCLI = require('./stowaway-cli.js');
+const { Permissions, Messenger } = require('./stowaway.js');
+const { NavigateColor, ReadColor, WriteColor, HandshakeColor, MemberColor, RevokeColor,  } = require('./state_machine/state-colors.js');
+const FSMBuilder = require('./state_machine/fsm-builder.js');
+const { Revoker } = require('./revoker.js');
+const MemberFactory = require('./member-factory.js');
+const { ChannelsMediator, HandshakedMediator } = require('./mediators.js');
+const { ChannelsModel, HandshakedModel, MessagesModel } = require('./models.js');
 
-console.log(fs.readFileSync('./banner.txt', 'utf8'));
-console.log("This software is licensed under the WTFPL\n");
+// NOTE update url to use main branch
+const VERSION_URL = 'https://raw.githubusercontent.com/natsu-anon/STOWAWAY/main/version.json';
+const SCREEN_TITLE = 'ＳＴＯＷＡＷＡＹ';
+const ERR_LOG = './error.log';
 
-function empty () {}
-
-const messages = [];
-
-// create an console interface
-const rl = readline.createInterface({
-	input: process.stdin,
-	output: process.stdout
-});
-
-const clientEvents = new EventEmitter();
-/* EVENTS:
-	error
-	handshake - user
-	bad handshake - user
-	bad stowaway - channel, user, timestamp
-	bad decrypt - channel, user, timestamp
-	encrypted - channel, user, timestamp, decrypted content
-	plaintext - channel, user, timestamp, content, attachments
-*/
-// subscribe to events with event.on(eventName, callback);
-// raise events with event.emit(eventName, [...args]);
-
-function attachText (text, name) {
-	return new MessageAttachment(Buffer.from(text, 'utf8'), name);
-}
-
-function readAttached (url) {
-	return new Promise((resolve, reject) => {
-		https.get(url, (response) => {
-			response.on('data', (d) => { resolve(d.toString()); });
-			response.on('error', (e) => { reject(e); });
+function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CERTIFICATE) {
+	let cli, client;
+	const errStream = fs.createWriteStream(ERR_LOG);
+	// const check = await versionCheck(VERSION_URL, VERSION);
+	versionCheck(VERSION_URL, VERSION)
+	.then(check => initialize(BANNER, SCREEN_TITLE, DATABASE, API_TOKEN, PRIVATE_KEY, VERSION, REVOCATION_CERTIFICATE, check))
+	.then(async ({ stowaway, client, key, passphrase, db, screen }) => {
+		let allowTab = false; // block tabbing into read state until navigated away from the landing page & to a proper channel
+		const ABOUT = require('./about.js')(BANNER);
+		const invite = await client.generateInvite({
+			permissions: [
+				'VIEW_CHANNEL',
+				'SEND_MESSAGES',
+				'READ_MESSAGE_HISTORY',
+				'CHANGE_NICKNAME'
+			]
 		});
-	});
-}
 
-function handshake (channel, key, id, str) {
-	const attachment = attachText(key.toPublic().armor(), KEYFILE);
-	channel.send(str, attachment);
-}
+		//  COMMAND LINE INTERFACE  //
 
-function handshakeGuild (guild, db, key) {
-	guild.members.fetch()
-	.then((members) => {
-		members.filter((members) => { member.user.bot && member.user.id != client.user.id })
-		.each((member) => {
-			db.findOne({ id: member.user.id }, (err, doc) => {
-				if (err) {
-					clientEvents.emit('error', err);
-				}
-				else if (doc == null) {
-					member.createDM()
-					.then((channel) => {
-						handshake(channel, key, HANDHSAKE_REQUEST);
-					})
-				}
-			});
+		cli = new StowawayCLI(screen, SCREEN_TITLE, client.user.tag, invite);
+		stowaway.on('error', error => { errStream.write(error); });
+		// stowaway.on('debug', debug => { cli.notify(`DEBUG: ${debug}`); });
+		// stowaway.on('decryption failure', message => {
+		// 	cli.notify(`failed to decrypt message from ${message.author.tag} on ${message.channel.name}`);
+		// });
+		// cli.screen.on('resize', () => { cli.render(); });
+
+		await stowaway.launch(client, key, passphrase);
+
+		//   COOMPOSITING  //
+
+		const messenger = new Messenger(stowaway);
+		const mFactory = new MemberFactory(stowaway, db);
+		let mPromise;
+		const revoker = new Revoker(stowaway, client, PRIVATE_KEY, REVOCATION_CERTIFICATE).setKey(key);
+		const hMediator = new HandshakedMediator(await (new HandshakedModel()).initialize(stowaway, client, db), db);
+		const cMediator = new ChannelsMediator(await (new ChannelsModel()).initialize(stowaway, client, db), invite);
+		//  UPDATE LISTENING TO RENDER //
+
+		hMediator.on('update', text => {
+			cli.navigation.setContent(text);
+			cli.navigation.setScrollPerc(hMediator.percentage);
+			cli.render();
 		});
-	})
-	.catch((err) => { clientEvents.emit('error', err) });
-}
-
-// NOTE key is an optional argument
-function receiveHandshake (user, keyURL, db, key) {
-	db.findOne({ id: user.id }, (err, doc) => {
-		if (err) {
-			clientEvents.emit('error', err);
-		}
-		else if (doc == null) {
-			readAttached(keyURL)
-			.then((keyStr) => {
-				openpgp.key.readArmored(keyStr)
-				.then(({ key, err }) => {
-					if (err != null) {
-						db.insert({ id: user.id, key: keys[0] });
-						if (key != null) {
-							user.createDM()
-							.then((channel) => {
-								handshake(channel, key, HANDSHAKE_RESPONSE);
-							});
-						}
-						clientEvents.emit('handshake', user);
-					}
-					else {
-						clientEvents.emit('bad handshake', user);
-					}
-				})
-			})
-			.catch((err) => { clientEvents.emit('bad handshake', user); })
-		}
-	});
-}
-
-function decrypt (channel, user, timestamp, messageURL, key) {
-	readAttached(messageURL)
-	.then((message) => {
-		console.log('plaintext downloaded');
-		return openpgp.message.readArmored(message);
-	})
-	.then((message) => {
-		console.log('decrypting');
-		return openpgp.decrypt({
-			message: message,
-			privateKeys: key
+		hMediator.on('resize', () => {
+			cli.navigation.setScrollPerc(hMediator.percentage);
+			cli.render();
 		});
-	})
-	.then((res) => {
-		clientEvents.emit('encrypted', channel, user, timestamp, res.data);
-	})
-	.catch((err) => {
-		console.error(err);
-		clientEvents.emit('bad decrypt', channel, user, timestamp);
-	})
-	.finally(() => { console.log('DECYPTION COMPLETE'); });
-	// })
-	// .catch((err) => { clientEvents.emit('bad stowaway', channel, user, timestamp); });
-}
-
-function prepClient ({ database: db, key: key }) {
-	/* Client events to subscribe to:
-	*  N E C E S S A R Y
-	*    guildCreate -
-	*    message -
-	*
-	*  Nice to have
-	*    error - for debugging & error logging
-	*    invalidated
-	*    channelCreate
-	*    channelDelete
-	*    channelUpdate
-	*    guildBanAdd
-	*    guildBanRemove
-	*    guildDelete -
-	*    guildMemberAdd
-	*    guildMemberRemove
-	*    guildMemberUpdate
-	*    guildUnavailable
-	*    guildUpdate
-	*    messageUpdate
-	*    presenceUpdate
-	*    userUpdate
-	*/
-	return (client) => {
-		client.on('guildCreate', (guild) => {
-			handshakeGuild(guild, db, key);
+		hMediator.representation()
+		.then(text => {
+			cli.navigation.setContent(text);
+			cli.navigation.setScrollPerc(hMediator.percentage);
 		});
-		client.on('message', (message) => {
-			// console.log('message!');
-			if (message.author.id != client.user.id) {
-				if (message.content === ABOUT) {
-					message.channel.send(ABOUT_RESPONSE);
-				}
-				else if (message.content === HANDSHAKE_REQUEST && message.attachments.size > 0) {
-					const keyfile = message.attachments.find(attachment => attachment.name === KEYFILE);
-					if (keyfile != null) {
-						receiveHandshake(message.author, keyfile.url, db, key);
-					}
-					else {
-						clientEvents.emit('bad handshake', message.author);
-					}
-				}
-				else if (message.content === HANDSHAKE_RESPONSE && message.attachments.size > 0) {
-					const keyfile = message.attachments.find(attachment => attachment.name === KEYFILE);
-					if (keyfile != null) {
-						receiveHandshake(message.author, keyfile.url, db);
-					}
-					else {
-						clientEvents.emit('bad handshake', message.author);
-					}
-				}
+		const messages = new MessagesModel(stowaway);
+		messages.on('update', text => {
+			cli.messages.setContent(text);
+			if (cli.messages.getScrollPerc() === 100 || cli.messages.height >= cli.messages.getScrollHeight()) {
+				cli.messages.setScrollPerc(100);
 			}
-			if (message.content === ENCRYPTED_MESSAGE && message.attachments.size > 0) {
-				// if it's an encrypted message attempt todecrypt then display
-				console.log('encrypted message!');
-				const msgfile = message.attachments.find(attachment => attachment.name === MSGFILE);
-				if (msgfile != null) {
-					console.log('decrypting!');
-					decrypt(message.channel, message.author, message.createdAt, msgfile.url, key);
+			cli.render();
+		});
+
+		//  FSM BUILDER
+
+		const fsm = new FSMBuilder()
+			.navigate(() => {
+				cli.stateText = `NAVIGATE | more information will be shown here next release`;
+				cli.stateColor = NavigateColor;
+				cli.navigation.style.border.fg = 'green';
+				cli.render();
+			},
+			() => {
+				cli.navigation.style.border.fg = 'white';
+			})
+			.handshake(prevState => {
+				cli.stateText = `HANDSHAKE | from: ${prevState.name} | more information will be shown here next release`;
+				cli.stateColor = HandshakeColor;
+				cli.select(box => {
+					box.setLabel(' Select an available channel to handshake ');
+					box.setContent(cMediator.text);
+					box.setScrollPerc(cMediator.percentage);
+					box.on('resize', () => {
+						box.setScrollPerc(cMediator.percentage);
+						cli.render();
+					});
+					cMediator.on('update', text => {
+						box.setContent(text);
+						box.setScrollPerc(cMediator.percentage);
+						cli.render();
+					});
+				});
+				cli.render();
+			},
+			() => {
+				cMediator.removeAllListeners('update');
+				cli.selector.removeAllListeners('resize');
+				cli.selector.hide();
+			})
+			.read(() => {
+				cli.stateText = `READ | more information will be shown here next release`; // eventually spit out a buncha information (including session)
+				cli.stateColor = ReadColor;
+				cli.messages.style.border.fg = 'green';
+				cli.render();
+			},
+			() => {
+				cli.messages.style.border.fg = 'white';
+			})
+			.write(publicFlag => {
+				cli.input.focus();
+				if (publicFlag) {
+					cli.input.setLabel(` All stowaways will receive this message `);
 				}
 				else {
-					clientEvents.emit('bad stowaway', message.channel, message.author, message.createdAt);
+					cli.input.setLabel(` Only members whose keys you have signed will receive this message `);
+				}
+				cli.stateText = `WRITE | more information will be shown here next release`; // eventually sepcify session as well
+				cli.stateColor = WriteColor;
+				messenger.publicFlag = publicFlag;
+				cli.input.style.border.fg = 'green';
+				cli.render();
+			},
+			() => {
+				cli.input.style.border.fg = 'white';
+				cli.input.clearValue();
+				cli.screen.focusPop();
+			})
+			.member(prevState => {
+				cli.select(box => {
+					box.setLabel(' Loading channel information. ');
+					box.setContent('loading...');
+					cli.stateText = `MEMBERS | from: ${prevState.name} | more information will be shown here next release`;
+					mPromise.then(mediator => {
+						box.setLabel(` Members of {underline}${mediator.channel.guild.name}{/underline} #${mediator.channel.name} `);
+						mediator.on('update', text => {
+							box.setScrollPerc(mediator.percentage);
+							box.setContent(text);
+							cli.render();
+						});
+						box.on('resize', () => {
+							box.setScrollPerc(mediator.percentage);
+							cli.render();
+						});
+						fsm.on('scroll members', next => { mediator.scrollMembers(next); });
+						fsm.on('sign member', () => { mediator.signMember(); });
+						return mediator.representation();
+					})
+					.then(text => {
+						box.setContent(text);
+						cli.render();
+					});
+				});
+				cli.stateColor = MemberColor;
+				cli.render();
+			},
+			() => {
+				cli.selector.removeAllListeners('resize');
+				mPromise.then(() => {
+					fsm.removeAllListeners('scroll members');
+					fsm.removeAllListeners('sign member');
+				});
+				cli.selector.hide();
+			})
+			.revoke(prevState => {
+				const challenge = phrase();
+				revoker.challenge = challenge;
+				cli.stateText = `REVOKE | from: ${prevState.name} | STEP 1: CHALLENGE | WARNING: revoking a key is irreversible!`;
+				cli.stateColor = RevokeColor;
+				cli.revoke.show();
+				const temp = `; press [Escape] to return to ${prevState.name}`;
+				const label = `Enter '${challenge}' then press [Enter] to begin revoking your key${temp}`;
+				cli.revokeLabel = label;
+				cli.revoke.focus();
+				cli.revoke.censor = false;
+				// revocation sequence:
+				// nickname
+				// password #1
+				// password #2
+				// read revocation cert from disk
+				// display nickname & fingerprint
+				new Promise((resolve, reject) => {
+					cli.revoke.once('submit', () => {
+						if (revoker.checkChallenge(cli.revoke.value)) {
+							resolve();
+						}
+						else {
+							reject();
+						}
+					});
+				})
+				.then(() => {
+					cli.revoke.focus();
+					cli.revoke.clearValue();
+					cli.revokeLabel = `Enter a valid nickname for your new key then press [Enter] to proceed${temp}`;
+					cli.stateText = `REVOKE | from: ${prevState.name} | STEP 2: NICKNAME | WARNING: revoking a key is irreversible!`;
+					cli.render();
+					return new Promise((resolve, reject) => {
+						cli.revoke.once('submit', () => {
+							if (cli.revoke.value.length > 0) {
+								resolve(cli.revoke.value);
+							}
+							else {
+								reject();
+							}
+						});
+					});
+				})
+				.then(nickname => {
+					cli.revoke.focus();
+					cli.revoke.clearValue();
+					revoker.setNickname(nickname);
+					cli.revoke.censor = true;
+					cli.revokeLabel = `Enter a passphrase for your new key then press [Enter] to continue${temp}`;
+					cli.stateText = `REVOKE | from: ${prevState.name} | NICKNAME: ${nickname} | STEP 3: PASSPHRASE | WARNING: revoking a key is irreversible!`;
+					cli.render();
+					return new Promise((resolve, reject) => {
+						cli.revoke.once('submit', () => {
+							if (cli.revoke.value.length > 0) {
+								resolve(cli.revoke.value);
+							}
+							else {
+								reject();
+							}
+						});
+					});
+				})
+				.then(passphrase => {
+					cli.revoke.focus();
+					cli.revoke.clearValue();
+					cli.revokeLabel = `Re-enter the passphrase then press [Enter] to continue${temp}`;
+					cli.stateText = `REVOKE | from: ${prevState.name} | NICKNAME: ${revoker.nickname} | STEP 4: PASSPHRASE CONFIRMATION | WARNING: revoking a key is irreversible!`;
+					cli.render();
+					return new Promise((resolve, reject) => {
+						cli.revoke.once('submit', () => {
+							if (cli.revoke.value === passphrase) {
+								resolve(passphrase);
+							}
+							else {
+								reject();
+							}
+						});
+					});
+					
+				})
+				.then(passphrase => {
+					fsm.revokeLock();
+					revoker.setPassphrase(passphrase);
+					cli.screen.focusPop();
+					cli.revoke.hide();
+					const stopSpinning = cli.spin('reading revocation certificate from disk...');
+					cli.stateText = `REVOKE | from: ${prevState.name} | NICKNAME: ${revoker.nickname} | STEP 5: reading revocation certificate | IT'S TOO LATE`;
+					cli.revoke.clearValue();
+					return new Promise((resolve, reject) => {
+						fs.readFile(REVOCATION_CERTIFICATE, (err, data) => {
+							if (err != null) {
+								reject(err);
+							}
+							else {
+								resolve(data);
+							}
+						});
+					})
+					.finally(() => {
+						stopSpinning();
+					});
+				})
+				.then(revocationCertificate => {
+					cli.stateText = `REVOKE | from: ${prevState.name} | REVOKING KEY | IT'S TOO LATE`;
+					const stopSpinning = cli.spin('revoking key...');
+					return revoker.setRevocationCertificate(revocationCertificate).revoke()
+					.finally(() => { stopSpinning(); });
+
+				})
+				.then(({ nickname, fingerprint }) => {
+					cli.stateText = `REVOKE | from: ${prevState.name} | REVOCATION PROCESS COMPLETE`;
+					let temp = 'Always check that your key\'s nickname & fingerprint match what you remember!\n';
+					temp += `> key nickname: {underline}${nickname}{/underline}\n`;
+					temp += `> key fingerprint: {underline}${fingerprint}{/underline}\n`;
+					temp += 'Move your new revocation ceritifcate to an offline storage device.';
+					const box = cli.keyData(temp);
+					return new Promise(resolve => {
+						box.once('destroy', () => {
+							resolve();
+						});
+					});
+				})
+				.then(() => {
+					fsm.revokeUnlock();
+					fsm.escape();
+				})
+				.catch(err => {
+					if (err != null) {
+						cli.warn(`Error while revoking:\n${err}`);
+					}
+					cli.revoke.clearValue();
+					cli.revoke.removeAllListeners('submit');
+					fsm.revoke(prevState);
+				})
+				.finally(() => {
+					fsm.revokeUnlock();
+				});
+				cli.render();
+			}, () => {
+				cli.revoke.clearValue();
+				cli.screen.focusPop();
+				cli.revoke.hide();
+			})
+			.about(prevState => {
+				cli.stateText = `ABOUT | from: ${prevState.name} | STOWAWAY version: ${VERSION}`;
+				cli.setPopup('About STOWAWAY; [Escape] to return', ABOUT);
+				cli.stateColor = prevState.color;
+				cli.render();
+			}, () => {
+				cli.popup.hide();
+			})
+			.keybinds(prevState => {
+				cli.stateText = `KEYBINDS | from: ${prevState.name}`;
+				cli.stateColor = prevState.color;
+				cli.setPopup(`Keybinds for ${prevState.name} state controls; [Escape] to return`, prevState.keybinds);
+				cli.render();
+			}, () => {
+				cli.popup.hide();
+			})
+			.build();
+
+		// CLIENT EVENTS //
+
+		client.on('channelUpdate', (channel0, channel1) => {
+			if (channel0.id === hMediator.readingId) {
+				const permissions = Permissions(channel1, client.user).valid;
+				if (permissions.valid) {
+					if (channel1.topic != null) {
+						cli.messages.setLabel(` #${channel1.name} | ${channel1.topic} `);
+					}
+					else {
+						cli.messages.setLabel(` #${channel1.name} `);
+					}
+				}
+				else {
+					const temp = [];
+					if (!permissions.viewable) {
+						temp.push('{underline}VIEW CHANNEL{/underline}');
+					}
+					if (!permissions.sendable) {
+						temp.push('{underline}MESSAGE CHANNEL{/underline}');
+					}
+					if (!permissions.readable) {
+						temp.push('{underline}READ MESSAGE HISTORY{/underline}');
+					}
+					if (channel0.topic != null) {
+						cli.messages.setLabel(` {red-fg}#${channel0.name} | ${channel0.topic} | LACKING PERMISSIONS: ${temp.join(', ')}{/} `);
+					}
+					else {
+						cli.messages.setLabel(` {red-fg}#${channel0.name} | LACKING PERMISSIONS: ${temp.join(', ')}{/} `);
+					}
 				}
 			}
-			else if (message.attachments.size > 0) {
-				clientEvents.emit('plaintext', message.channel, message.author, message.createdAt, message.cleanContent, message.attachments);
+		});
+		client.on('channelDelete', channel => {
+			if (channel.id === hMediator.readingId) {
+				let temp = '{red-fg}';
+				if (channel.name != null) {
+					temp += ` ${channel.name} |`;
+				}
+				if (channel.topic != null) {
+					temp += ` ${channel.topic} |`;
+				}
+				temp += ' CHANNEL DELETED{/} ';
+				cli.messages.setLabel(temp);
+			}
+		});
+
+		// HELPFUL FUNCTIONS //
+
+		const enterChannel = function (channel) {
+			allowTab = true;
+			cli.enableInput();
+			messenger.channel = channel;
+			hMediator.read(channel.id);
+			mPromise = mFactory.mediator(channel);
+			cli.input.setLabel(` Message #${channel.name} `);
+			if (channel.topic != null) {
+				cli.messages.setLabel(` ${channel.guild.name} #${channel.name} | ${channel.topic} `);
 			}
 			else {
-				// console.log(`${channel.name}(\x1b[32m${channel.id}\x1b[0m)\n${user.tag} - ${content}`);
-				clientEvents.emit('plaintext', message.channel, message.author, message.createdAt, message.cleanContent);
+				cli.messages.setLabel(` ${channel.guild.name} #${channel.name} `);
+			}
+			fsm.read();
+		};
+		const fetchNewer = function (channelId, messageId) {
+			if (channelId != null && messageId != null) {
+				const stop = cli.spin('fetching newer messages');
+				client.channels.fetch(channelId)
+				.then(channel => stowaway.fetchNewer(channel, messageId))
+				.finally(stop);
+			}
+		};
+		const fetchOlder = function (channelId, messageId) {
+			if (channelId != null && messageId != null) {
+				const stop = cli.spin('fetching older messages');
+				client.channels.fetch(channelId)
+				.then(channel => stowaway.fetchOlder(channel, messageId))
+				.finally(stop);
+			}
+		};
+
+		// STOWAWAY EVENT LISTENING //
+
+		stowaway.on('read channel', channel => {
+			enterChannel(channel);
+		});
+
+		//  FSM EVENT LISTENING  //
+
+		fsm.on('quit', () => {
+			cli.destroy();
+			client.destroy();
+			db.persistence.compactDatafile();
+			return process.exit(0);
+		});
+		fsm.on('read channel', enterFlag => {
+			if (enterFlag) {
+				const channelId = hMediator.channelId();
+				if (channelId != null) {
+					messages.listen(channelId);
+					client.channels.fetch(channelId)
+					.then(channel => { stowaway.loadChannel(channel); })
+					.catch(err => { throw err; });
+				}
+			}
+			else {
+				fsm.read();
 			}
 		});
-		return client;
-	};
-}
-
-require('./database.js').Init(rl, openpgp)
-.then((data) => {
-	return new Promise((resolve, reject) => {
-		require('./client.js').Login(fs, Client, prepClient(data))
-		.then((client) => {
-			data.client = client
-			resolve(data);
-		})
-		.catch(reject);
-	});
-})
-.then(({key: key, database: db, client: client}) =>  {
-	console.log(`logged in as ${client.user.tag}\tid: ${client.user.id}`);
-	clientEvents.on('encrypted', (channel, author, timestamp, content) => {
-		messages.push({ encrypted: true, channel: channel, author: author, timestamp: timestamp, content: content});
-	});
-	clientEvents.on('plaintext', (channel, author, timestamp, content, attachments) => {
-		messages.push({ encrypted: false, channel: channel, author: author, timestamp: timestamp, content: content, attachments: attachments });
-	});
-	main(key, db, client);
-	// console.log(client.guilds);
-	// console.log(client.users);
-	// console.log(client.guilds);
-	// console.log(client.channels);
-	// const res = client.guilds.cache.array();
-	// console.log(res);
-	// for (let i = 0; i < res.length; i++) {
-	// 	console.log(res[i]);
-	// }
-	// console.log(client.channels);
-	// console.log("\n#### CACHE");
-	// console.log(client.channels.cache);
-	/*
-	client.guilds.cache.each((guild) => {
-		// console.log("\n### GUILD");
-		// console.log(guild);
-		// console.log(guild.members);
-		// console.log("\n### MEMBERS");
-		// guild.members.cache.each((member)  => {
-		// 	console.log(member);
-		// });
-		// console.log("\n### MEMBERS FETCH");
-		guild.members.fetch()
-			.then((members) => {
-				members
-				.filter((m) => m.user.bot && m.user.id != client.user.id)
-				.each((m) => console.log(m.user.tag));
-				// console.log(res);
-				// console.log(res.size);
-				// for (int i = 0; i < res.length; i++) {
-				// 	console.log(res[i]);
-				// }
-			})
-			.catch(console.error)
-			.finally(() => { console.log("\n### FETCHED "); });
-	});
-	*/
-	// console.log(client.users);
-	// client.channels.each(channel => { console.log(channel); });
-		// .filter(channel => channel.istText())
-		// .each(channel => console.log(channel));
-	// client.guilds.cache.each((guild) => {
-	// 	console.log(guild.channels);
-	// 	// console.log("\n#### MEMBERS ####\n");
-	// 	// guild.members.cache.each(member => console.log(member));
-	// 	// console.log(guild.presences);
-	// });
-	// console.log(client.guilds);
-	// client.guilds.cache.each((guild) => {
-	// 	// console.log(guild.members)
-	// 	guild.members.fetch({ force: true })
-	// 		.then(console.log)
-	// 		.catch(console.error)
-	// 		.finally(() => { console.log("\n\n#### FETCH COMPLETE"); });
-	// });
-	// for (let guild in client.guilds) {
-	// 	console.log(guild);
-	// }
-
-})
-.catch((err) => { console.error(err); });
-
-
-/* STOWAWAY VERSION 0.0.1 */
-
-const ENCRYPTED = /encrypted\s+(?<channel>\d+)\s+(?<message>.+)/;
-const PLAINTEXT = /plaintext\s+(?<channel>\d+)\s+(?<message>.+)/;
-
-function main (key, db, client) {
-	rl.question(messages.length > 0 ? `${messages.length} new messages!, enter 'messages' to read them!\n>` : '>', (input) => {
-		if (input === 'list') {
-			client.guilds.cache.each((guild) => {
-				console.log(`${guild.name}`);
-				guild.channels.cache.filter(channel => channel.isText())
-				.each(channel => console.log(`- \x1b[32m${channel.id}\x1b[0m ${channel.name}`));
-			});
-			main(key, db, client);
-			// list all the text channels
-		}
-		else if (input === 'messages') {
-			// list all recieved messages
-			let message;
-			while (messages.length > 0) {
-				message = messages.pop();
-				if (message.encrypted) {
-					console.log(`\x1b[42m\x1b[30mENCRYPTED\x1b[0m ${message.channel.name}(\x1b[32m${message.channel.id}\x1b[0m) ${message.author.tag}\n\t${message.content}`);
-				}
-				else {
-					console.log(`PLAINTEXT ${message.channel.name}(\x1b[32m${message.channel.id}\x1b[0m) ${message.author.tag}\n\t${message.content}`);
+		fsm.on('channel members', state => {
+			if (hMediator.readingId != null) {
+				fsm.member(state);
+			}
+		});
+		fsm.on('clear favorite', navigatorFlag => {
+			if (navigatorFlag) {
+				const channelId = hMediator.channelId();
+				if (channelId != null) {
+					hMediator.clearFavorite(channelId);
 				}
 			}
-			main(key, db, client);
+			else if (hMediator.readingId != null) {
+				hMediator.clearFavorite(hMediator.readingId);
+			}
+		});
+		fsm.on('set favorite', (navigatorFlag, number) => {
+			if (navigatorFlag) {
+				const channelId = hMediator.channelId();
+				if (channelId != null) {
+					hMediator.setFavorite(number, channelId);
+				}
+			}
+			else if (hMediator.readingId != null) {
+				hMediator.setFavorite(number, hMediator.readingId);
+			}
+		});
+		fsm.on('to favorite', number => {
+			hMediator.favoriteId(number)
+			.then(channelId => {
+				if (channelId != null) {
+					messages.listen(channelId);
+					client.channels.fetch(channelId)
+					.then(channel => { stowaway.loadChannel(channel); })
+					.catch(err => { throw err; });
+				}
+			});
+		});
+
+		//  STOWAWAY EVENT LISTENING  //
+
+		fsm.on('navigate channels', next => { hMediator.scrollChannels(next); });
+		fsm.on('navigate servers', next => { hMediator.scrollServers(next); });
+		fsm.on('perform handshake', () => {
+			const channel = cMediator.channelData();
+			if (channel.valid) {
+				messages.listen(channel.id);
+				client.channels.fetch(channel.id)
+				.then(channel => { stowaway.loadChannel(channel); });
+			}
+		});
+		fsm.on('handshake channels', next => { cMediator.scrollChannels(next); });
+		fsm.on('handshake servers', next => { cMediator.scrollServers(next); });
+		fsm.on('messages top', () => { cli.messages.setScrollPerc(0); });
+		fsm.on('messages bottom', () => { cli.messages.setScrollPerc(100); });
+		fsm.on('scroll messages', offset => {
+			if (cli.messages.height >= cli.messages.getScrollHeight()) {
+				if (offset > 0) {
+					fetchNewer(hMediator.readingId, messages.newestId);
+				}
+				else {
+					fetchOlder(hMediator.readingId, messages.oldestId);
+				}
+			}
+			else {
+				if (cli.messages.getScrollPerc() === 0 && offset < 0) {
+					fetchOlder(hMediator.readingId, messages.oldestId);
+				}
+				else if (cli.messages.getScrollPerc() === 100 && offset > 0) {
+					fetchNewer(hMediator.readingId, messages.newestId);
+				}
+				else {
+					cli.messages.scroll(offset);
+				}
+			}
+		});
+		fsm.on('clear input', () => {
+			cli.input.clearValue();
+			fsm.read();
+		});
+
+		//  CLI DRIVEN STATE TRANSITIONS  //
+
+		cli.input.on('submit', () => {
+			if (messenger.message(cli.input.value)) {
+				fsm.read();
+			}
+		});
+
+		//  KEYBINDING  //
+
+		cli.screen.onceKey('C-c', () => { fsm.ctrlC(); });
+		cli.input.onceKey('C-c', () => { fsm.ctrlC(); });
+		cli.revoke.onceKey('C-c', () => { fsm.ctrlC(); });
+		cli.screen.key('C-r', () => { fsm.ctrlR(); });
+		cli.input.key('C-r', () => { fsm.ctrlR(); });
+		cli.screen.key('C-a', () => { fsm.ctrlA(); });
+		cli.input.key('C-a', () => { fsm.ctrlA(); });
+		cli.revoke.key('C-a', () => { fsm.ctrlA(); });
+		cli.screen.key('C-k', () => { fsm.ctrlK(); });
+		cli.input.key('C-k', () => { fsm.ctrlK(); });
+		cli.revoke.key('C-k', () => { fsm.ctrlA(); });
+		cli.screen.key('escape', () => { fsm.escape(); });
+		cli.input.key('escape', () => { fsm.escape(); });
+		cli.revoke.key('escape', () => { fsm.escape(); });
+		// these work in all states but input
+		cli.screen.key(['h', 'S-h'], () => { fsm.h(); });
+		cli.screen.key(['m', 'S-m'], () => { fsm.m(); });
+		cli.screen.key(['`', '~'], () => { fsm.backtick(); });
+		// state specific
+		cli.screen.key('enter', () => { fsm.enter(); });
+		cli.screen.key('linefeed', () => { fsm.ctrlEnter(); });
+		cli.screen.key('tab', () => {
+			if (allowTab) {
+				fsm.tab();
+			}
+		});
+		cli.screen.key(['w', 'S-w'], () => { fsm.w(); });
+		cli.screen.key(['s', 'S-s'], () => { fsm.s(); });
+		cli.screen.key(['a', 'S-a'], () => { fsm.a(); });
+		cli.screen.key(['d', 'S-d'], () => { fsm.d(); });
+		cli.screen.key(['backspace', 'delete'], () => { fsm.backspace(); });
+		cli.screen.key('0', () => { fsm.num0(); });
+		cli.screen.key('1', () => { fsm.num1(); });
+		cli.screen.key('2', () => { fsm.num2(); });
+		cli.screen.key('3', () => { fsm.num3(); });
+		cli.screen.key('4', () => { fsm.num4(); });
+		cli.screen.key('5', () => { fsm.num5(); });
+		cli.screen.key('6', () => { fsm.num6(); });
+		cli.screen.key('7', () => { fsm.num7(); });
+		cli.screen.key('8', () => { fsm.num8(); });
+		cli.screen.key('9', () => { fsm.num9(); });
+		cli.screen.key(')', () => { fsm.shift0(); });
+		cli.screen.key('!', () => { fsm.shift1(); });
+		cli.screen.key('@', () => { fsm.shift2(); });
+		cli.screen.key('#', () => { fsm.shift3(); });
+		cli.screen.key('$', () => { fsm.shift4(); });
+		cli.screen.key('%', () => { fsm.shift5(); });
+		cli.screen.key('^', () => { fsm.shift6(); });
+		cli.screen.key('&', () => { fsm.shift7(); });
+		cli.screen.key('*', () => { fsm.shift8(); });
+		cli.screen.key('(', () => { fsm.shift9(); });
+	})
+	.catch(err => {
+		if (cli != null) {
+			cli.destroy();
 		}
-		// else if (input === 'help') {
-		// lmao get fucked
-		// 	// show the help string
-		// 	main(key, db, client);
-		// }
-		else if (input === 'handshake') {
-			console.log('handhsake every bot user of every guild fuggit');
-			main(key, db, client);
+		if (client != null) {
+			client.destroy();
 		}
-		else if (input === 'quit') {
-			process.exit();
-			main(key, db, client);
+		if (err != null) {
+			errStream.write(`TERMINAL ERROR:\n${err}`);
+			console.error(err);
 		}
-		else if (PLAINTEXT.test(input)) {
-			const res = PLAINTEXT.exec(input);
-			new Promise((resolve, reject) => {
-				client.channels.fetch(res.groups.channel)
-				.then((channel) => {
-					channel.send(res.groups.message)
-					.catch((err) => {
-						console.log(`\x1b[31munexpected failure sending plaintext message to ${channel.name}\x1b[0m`);
-					})
-					.finally(resolve);
-				})
-				.catch((err) => {
-					console.log(`\x1b[31mcould not find channel with supplied id: \x1b[4m${res.groups.channel}\x1b[0m`);
-					resolve();
-				})
-			})
-			.finally(() => { main(key, db, client); });
-		}
-		else if (ENCRYPTED.test(input)) {
-			const res = ENCRYPTED.exec(input);
-			// console.log(`encrypted message to: ${res.groups.channel}\n${res.groups.message}`);
-			new Promise((resolve, reject) => {
-				client.channels.fetch(res.groups.channel)
-				.then((channel) => {
-					// console.log(channel.name);
-					// GET ALL THE KEYS PLS
-					openpgp.encrypt({
-						message: openpgp.message.fromText(res.groups.message),
-						publicKeys: [ key ]
-					})
-					.then((encrypted) => {
-						const attachment = attachText(encrypted.data, MSGFILE);
-						return channel.send(ENCRYPTED_MESSAGE, attachment);
-					})
-					.catch((err) => {
-						console.log(`\x1b[31munexpected failure sending encrypted message to ${channel.name}\x1b[0m`);
-					})
-					.finally(resolve)
-				})
-				.catch((err) => {
-					console.log(`\x1b[31mcould not find channel with supplied id: \x1b[4m${res.groups.channel}\x1b[0m`);
-				})
-				.finally(resolve);
-			})
-			.finally(() => { main(key, db, client); });
-		}
-		else {
-			console.log(`failed to recognize input '${input}', enter 'help' to list commands`);
-			main(key, db, client);
-		}
+		errStream.end();
+		console.log('If you believe a bug caused this you can report it here: \x1b[4mhttps://github.com/natsu-anon/STOWAWAY/issues/new/choose\x1b[0m');
+		console.log('See \'error.log\' for the error log');
+		console.log('\nPass --help to see usage information');
+		console.log('Press [Ctrl-C] to quit');
 	});
 }
+
+module.exports = main;

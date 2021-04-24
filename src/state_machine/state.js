@@ -1,4 +1,4 @@
-const EventEmitter = require('events')
+const EventEmitter = require('events');
 
 class State extends EventEmitter {
 	constructor () {
@@ -6,37 +6,104 @@ class State extends EventEmitter {
 		if (new.target === State) {
 			throw new TypeError('Abstract class "State" cannot be instantiated directly');
 		}
-		if (this.enter === undefined) {
-			throw new TypeError('Subclasses of "State" must implement this.enter')
+		if (this.Enter === undefined) {
+			throw new TypeError('Subclasses of "State" must implement this.enter');
 		}
-		if (this.exit === undefined) {
-			throw new TypeError('Subclasses of "State" must implement this.exit')
+		if (this.Exit === undefined) {
+			throw new TypeError('Subclasses of "State" must implement this.exit');
 		}
 	}
 
-	onCtrlC () {
-		// QUIT
+	get name () {
+		return 'BENIS';
 	}
 
-	onBacktick () {
-		// jump to news item
+	get color () {
+		return 'green';
 	}
 
-	onSpace () {}
+	get keybinds () {
+		return 'FUG :DDDDDDDD';
+	}
 
-	onEnter () {}
+	ctrlC () {}
 
-	onEsc () {}
+	ctrlR () {}
 
-	onTab () {}
+	ctrlA () {}
 
-	onW () {}
+	ctrlK () {}
 
-	onA () {}
+	escape () {}
 
-	onS () {}
+	backtick () {}
 
-	onD () {}
+	ctrlEnter () {} // this is the 'linefeed' sequence
+
+	enter () {}
+
+	backspace () {}
+
+	tab () {}
+
+	ctrlW () {}
+
+	ctrlS () {}
+
+	w () {}
+
+	s () {}
+
+	a () {}
+
+	d () {}
+
+	// e () {}
+
+	h () {}
+
+	m () {}
+
+	shift0 () {}
+
+	shift1 () {}
+
+	shift2 () {}
+
+	shift3 () {}
+
+	shift4 () {}
+
+	shift5 () {}
+
+	shift6 () {}
+
+	shift7 () {}
+
+	shift8 () {}
+
+	shift9 () {}
+
+	// jump to previously favorited channel (if not writing)
+	num0 () {}
+
+	num1 () {}
+
+	num2 () {}
+
+	num3 () {}
+
+	num4 () {}
+
+	num5 () {}
+
+	num6 () {}
+
+	num7 () {}
+
+	num8 () {}
+
+	num9 () {}
 }
 
 module.exports = State;

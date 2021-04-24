@@ -1,0 +1,87 @@
+STATES:
+	navigation state
+	read state
+	write state
+	help state
+	member state (for signing & seeing whomstve signed whose key)
+	revoke sequence
+	NOTE: leave room for sessions
+	NOTE: maybe leave room for event log
+
+all states:
+	[Ctrl-C] quit
+	[Ctrl-R] initiate revoke sequence (except self)
+	[Ctrl-A] about (except self)
+	[Ctrl-K] to show controls/basic gestalt for current state (except self) -- CTRL-H is BACKSPACE -- GONNA BE USING THAT
+	[`] to jump to notification item (except write & if there is any
+
+
+navigation state:
+	- NOTE: only show handshaked channels -- don't bother with category channels
+	- NOTE: saved channels are green w/ jump number to the side
+	- NOTE: currently selected channel is inverted w/ > to the side
+	[Enter] begin reading selected channel
+	[W/S] navigate to prev/next channel (or server if at first/last channel of current server)
+	[A/D] navigate to first channel of prev/next server (loops)
+	[H] enter handshake state
+	[M] enter member state
+	[Ctrl + Number] to save a jump to curently selected channel
+	[Backspace/Delete] remove favorite  of currently selected channel (if any)
+	[Tab] enter read state
+	[Number] jump to previously saved channel (if unavailable do nothing) & enter read state
+
+handshake state:
+	- NOTE: unavaible channels are shown in red w/ reason why in parens.  unable to handshake
+	[Enter] handshake selected channel, then enter read state w/ newly handshaked channel
+	[Escape] return to previous state (navigate)
+	[W/S] scroll to prev/next channel (loops)
+	[A/D] scroll to first channel of prev/next server (loops)
+	[tab] to go to read state
+	[M] go to member state (if possible);
+
+read state:
+	- NOTE: unverified messages are entirely yellow
+	- NOTE: messages from signed keys have sender & date underlined
+	[W/S] scroll up/down
+	[A/D] jump to top/bottom
+	[H] enter handshake state
+	[M] enter member view for channel
+	[Enter] begin writing public message
+	[Ctrl + Number] favorite current channel
+	[Backspace/Delete] remove favorite from current channel (if possible)
+	[Ctrl-Enter] begin writing trusted message (only to signed keys)
+	[Tab] enter navigation state
+	[Number] jump to previously saved channel (if unavailable do nothing)
+	[`] to jump to notification item (if there is any)
+
+write state:
+	- NOTE: the write box element itself only appears when viewing a channel
+	- NOTE: height should increase as needed
+	[escape] stop writing & clearout the text
+	[enter] send message
+
+keybind state:
+	- NOTE: popup window that covers majority (but not all) of screen
+	[W/S] scroll up/down (if needed)
+	[escape] return to previous state
+
+about state:
+	- NOTE: popup window that covers majority (but not all) of screen
+	[W/S] scroll up/down (if needed)
+	[escape] return to previous state
+
+member state
+	- NOTE: restrict to known members
+	[W/S] scroll up/down - show known signers in a sidebar, highlight those whose key you have also signed
+	[escape] return to previous state (read state)
+	[enter] sign currently selected (unless already signed)
+	[tab] to go to read state
+	[H] go to handshake state
+
+revoke sequence:
+	- NOTE: WARN THAT THIS IS IRREVOCABLE & SHOULD ONLY BE USED IF YOU:
+		1) think someone else has your private key
+		2) think someone else knows your passphrase
+		3) both of the above
+	- NOTE: make user enter "randomly" generated phrase to revoke key
+	[Escape] end revoke sequence & return to previous state

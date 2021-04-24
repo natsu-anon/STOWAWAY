@@ -1,0 +1,60 @@
+All messages use "#### STOWAWAY #### (maybe some meme about the version or linking the github)" now.
+All messages attach stowaway.json
+NOTE: encrypted is encrypted.  Clearly.  But I need to write about what's in there.
+
+ALL HAVE A VERSION KEY & VALUE FOR VERSIONING (to allow for backwards compatibility)
+
+SENDING A MESSAGE:
+json:
+{
+	type: 'channel_message',
+	public: true/false -- if false only sends message to recipients whose key you HAVE signed o.w. everyone in the channel
+	message: the encrypted message itself
+}
+
+then when message recieved:
+1. get stowaway.json
+2. see if type == message
+3. attempt to decrypte encrypted
+4. if successful:
+  a. verify message signature (if not verified add a warning -- protects against token compromise)
+  b. display message
+  c. if old key in fingerprint respond with current key provenance protocol from fingerprinted key
+
+
+HANDSHAKE:
+json:
+{
+	type: 'handshake',
+	respond: true/false,
+	publicKey: armored public key
+	revocations: [
+		armored public revokingKey0, (can get the fingerprint of the original key from it)
+		armored public revokingKey1, (can get the fingerprint of the original key from it)
+		...
+		armored public revokingKeyN, (can get the fingerprint of the original key from it)
+	]
+}
+
+then when message recieved
+1. get attached json & check type
+2. old handhsake protocol with publicKey value
+
+KEY SIGNATURE:
+NOTE: signer doesn't update his own keys, only after receiving KEY UPDATE does anyone (aside from recipient) update their public keys
+json:
+{
+	type: 'signed_key',
+	recipient: snowflake (discord id) of intended recipient,
+	publicKey: signed key
+}
+
+KEY REVOCATION:
+json:
+{
+	type: 'revocation'
+	revocation: armored public revocation
+	publicKey: armored public key
+}
+
+recipient still checks if fingerprints match, and if they do then update
