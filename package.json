@@ -23,7 +23,6 @@
 		"build": "pkg -t latest-win --public -o STOWAWAY .",
 		"build-all": "pkg -t latest-win,latest-linux,latest-macos --public --out-path releases .",
 		"prep": "prepare.bat",
-		"debug": "debug.bat",
 		"deadhead": "node --trace-warnings deadhead.js",
 		"start": "node src/index.js",
 		"about": "node src/index.js --about",
