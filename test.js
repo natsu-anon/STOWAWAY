@@ -46,7 +46,6 @@ async function genKey () {
 async function test() {
 	const VERSION = '1.0.0-testing';
 	try {
-
 		// SETUP
 
 		const { key: key0, revocationCertificate: rCert0 } = await genKey();
@@ -74,8 +73,8 @@ async function test() {
 		stowaway1.on('error', text => {
 			console.error(`${client1.user.tag}: ${text}`);
 		});
-		stowaway0.launch(client0, key0);
-		stowaway1.launch(client1, key1);
+		stowaway0.launch(client0, key0, 'test');
+		stowaway1.launch(client1, key1, 'test');
 
 
 		// TESTING
@@ -158,7 +157,7 @@ async function testSingle () {
 	stowaway.on('error', text => {
 		console.error(`${client.user.tag}: ${text}`);
 	});
-	stowaway.launch(client, key);
+	stowaway.launch(client, key, 'test');
 	const channel = await client.channels.fetch(channels1[0]);
 	await onEnter('Press [Enter] to handshake channel', resolve => {
 		stowaway.loadChannel(channel)
