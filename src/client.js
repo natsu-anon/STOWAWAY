@@ -1,8 +1,11 @@
+const fs = require('fs');
+const { Client } = require('discord.js');
+
 function badtoken (tokenPath) {
 	return Error(`Failed to login with token.  Check file "${tokenPath}" to make sure your token is correct & that you are connected to the internet`);
 }
 
-function init (tokenPath, fs, cli, Client,) {
+function init (tokenPath, cli) {
 	const clientLogin = function (token) {
 		const stop = cli.spin('logging in with token');
 		return new Promise((resolve, reject) => {
@@ -46,7 +49,7 @@ function init (tokenPath, fs, cli, Client,) {
 					// cli.log('{green-fg}Supplied token accepted!{/}');
 					// console.log("\x1b[1m\x1b[32mSupplied token accepted!\x1b[0m");
 					fs.writeFile(tokenPath, client.token, 'utf8', err => {
-						if (err) {
+						if (err != null) {
 							reject(err);
 						}
 						else {
@@ -60,4 +63,51 @@ function init (tokenPath, fs, cli, Client,) {
 	});
 }
 
-module.exports = init;
+function saveToken (token, tokenPath) {
+	const client = new Client();
+	return new Promise((resolve, reject) => {
+		client.once('ready', () => {
+			fs.writeFile(tokenPath, token, 'utf8', err => {
+				if (err != null) {
+					console.error(`Error while writing the token to ${tokenPath}`);
+					reject(err);
+				}
+				else {
+					console.log(`logged in as ${client.user.tag}\ntoken saved to ${tokenPath}`);
+					client.destroy();
+					resolve();
+				}
+			});
+		});
+		client.login(token).catch(() => {
+			reject(Error('Failed to login in with supplied token!  Make sure you are connected to the internet.'));
+		});
+	});
+}
+
+function login (tokenPath) {
+	const client = new Client();
+	return new Promise((resolve, reject) => {
+		client.once('ready', () => {
+			console.log(`logged in as ${client.user.tag}`);
+			resolve(client);
+		});
+		fs.readFile(tokenPath, 'utf8', (err, data) => {
+			if (err) {
+				reject(err);
+			}
+			else {
+				console.log('attempting to log in with existing token... ');
+				client.login(data).catch(() => {
+					reject(badtoken(tokenPath));
+				});
+			}
+		});
+	});
+}
+
+module.exports = {
+	login,
+	initialization: init,
+	token: saveToken
+};
