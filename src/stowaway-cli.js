@@ -36,12 +36,12 @@ const spinner = [
 class StowawayCLI {
 
 	constructor (screen, title, userTag, invite) {
-		const LANDING = `This message will vanish when you begin reading a channel.
-
-If there are no channels in the navigation box to your right you must add your bot to a server & make sure it has the proper permissions in order use said channels.
-	- invitation link: {underline}${invite}{/underline}
+		const LANDING =
+`If there are no channels in the navigation box to your right you must add your bot to a server & make sure it has the proper permissions in order use said channels.  - invitation link: {underline}${invite}{/underline}
 	- see: {underline}https://github.com/natsu-anon/STOWAWAY#add-your-bot-to-a-server{/underline} for how to add your bot to a server.
 	- pass '--channels' to STOWAWAY to list all channels availbale to your bot & any necessary permissions it lacks that it needs.
+
+If you'd like to make a suggestion you can open up a new suggestion issue here: {underline}https://github.com/natsu-anon/STOWAWAY/issues/new/choose{/underline}
 
 STOWAWAY is Free/Libre Open Source Software.  If you like it consider donating!
 	- BTC Wallet: {underline}bc1q9c4cy76wpe84tcxftjw9k7wmshdndf32npkgg3{/underline}
@@ -49,7 +49,7 @@ STOWAWAY is Free/Libre Open Source Software.  If you like it consider donating!
 	- DOGE Wallet: {underline}DS87ZXf2vXoUQmy3Wr5nNNNSiSGM55uGJs{/underline}
 If you have diamond hands you can donate fiat currency via:
 	- Ko-fi: {underline}https://ko-fi.com/natsusoft{/underline} (this uses paypal)
-If you'd like to donate but can't use any of the above or want to donate an unlisted crypto create an issue at {underline}https://github.com/natsu-anon/STOWAWAY/issues{/underline} and I'll get to it quick.
+If you'd like to donate but can't use any of the above or want to donate an unlisted crypto create an issue at {underline}https://github.com/natsu-anon/STOWAWAY/issues/new/choose{/underline} and I'll get to it quick.
 
 To learn more about the WTFPL that STOWAWAY is licensed under see: {underline}https://www.wtfpl.net{/underline}
 

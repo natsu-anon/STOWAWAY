@@ -14,11 +14,13 @@ const { ChannelsMediator, HandshakedMediator } = require('./mediators.js');
 const { ChannelsModel, HandshakedModel, MessagesModel } = require('./models.js');
 
 // NOTE update url to use main branch
-const VERSION_URL = 'https://raw.githubusercontent.com/natsu-anon/STOWAWAY/development/version.json';
+const VERSION_URL = 'https://raw.githubusercontent.com/natsu-anon/STOWAWAY/main/version.json';
 const SCREEN_TITLE = 'ＳＴＯＷＡＷＡＹ';
+const ERR_LOG = './error.log';
 
 function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CERTIFICATE) {
 	let cli, client;
+	const errStream = fs.createWriteStream(ERR_LOG);
 	// const check = await versionCheck(VERSION_URL, VERSION);
 	versionCheck(VERSION_URL, VERSION)
 	.then(check => initialize(BANNER, SCREEN_TITLE, DATABASE, API_TOKEN, PRIVATE_KEY, VERSION, REVOCATION_CERTIFICATE, check))
@@ -37,14 +39,14 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 		//  COMMAND LINE INTERFACE  //
 
 		cli = new StowawayCLI(screen, SCREEN_TITLE, client.user.tag, invite);
-		stowaway.on('error', error => { cli.warn(error); });
-		stowaway.on('debug', debug => { cli.notify(`DEBUG: ${debug}`); });
-		stowaway.on('decryption failure', message => {
-			cli.notify(`failed to decrypt message from ${message.author.tag} on ${message.channel.name}`);
-		});
+		stowaway.on('error', error => { errStream.write(error); });
+		// stowaway.on('debug', debug => { cli.notify(`DEBUG: ${debug}`); });
+		// stowaway.on('decryption failure', message => {
+		// 	cli.notify(`failed to decrypt message from ${message.author.tag} on ${message.channel.name}`);
+		// });
 		// cli.screen.on('resize', () => { cli.render(); });
 
-		stowaway.launch(client, key, passphrase);
+		await stowaway.launch(client, key, passphrase);
 
 		//   COOMPOSITING  //
 
@@ -601,8 +603,12 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 			client.destroy();
 		}
 		if (err != null) {
+			errStream.write(`TERMINAL ERROR:\n${err}`);
 			console.error(err);
 		}
+		errStream.end();
+		console.log('If you believe a bug caused this you can report it here: \x1b[4mhttps://github.com/natsu-anon/STOWAWAY/issues/new/choose\x1b[0m');
+		console.log('See \'error.log\' for the error log');
 		console.log('\nPass --help to see usage information');
 		console.log('Press [Ctrl-C] to quit');
 	});

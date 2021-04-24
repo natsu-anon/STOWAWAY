@@ -18,6 +18,24 @@ class Members extends Mediator {
 		this.id = stowaway.id;
 		this.stowaway = stowaway;
 		this.channel = channel;
+		this.channelId = channel.id;
+		this.guildID = channel.guild.id;
+		const memberRemove = member => { this.memberRemove(member); };
+		const memberUpdate = (member0, member1) => { this.memberUpdate(member0, member1); };
+		const handshake = (message, accepted) => { this.handshake(message, accepted); };
+		const update = message => { this.update(message); };
+		stowaway.client.on('guildMemberRemove', memberRemove);
+		stowaway.client.on('guildMemberUpdate', memberUpdate);
+		stowaway.on('handshake', handshake);
+		stowaway.on('key update', update);
+		stowaway.on('revocation', update);
+		this.unsubscribe = () => {
+			stowaway.client.removeListener('guildMemberRemove', memberRemove);
+			stowaway.client.removeListener('guildMemberUpdate', memberUpdate);
+			stowaway.removeListener('handshake', handshake);
+			stowaway.removeListener('key update', update);
+			stowaway.removeListener('revocation', update);
+		};
 	}
 
 	get percentage () {
@@ -48,8 +66,11 @@ class Members extends Mediator {
 	}
 
 	handshake (message, accepted) {
-		if (accepted && message.author.id !== this.id && message.channel.id === this.channel.id) {
+		if (accepted && message.author.id !== this.id && message.channel.id === this.channelId) {
 			try {
+				if (this.data === undefined) {
+					throw Error(`FUG\n${Object.keys(this)}`);
+				}
 				if (this.data.findIndex(({ id }) => message.member.id === id) === -1) {
 					this.data.push(message.member);
 					if (this.index == null) {
@@ -60,17 +81,22 @@ class Members extends Mediator {
 				this.representation().then(text => { this.emit('update', text); });
 			}
 			catch (err) {
-				throw Error(`Error!
-				authorId: ${message.author.id},
-				selfId: ${this.id},
-				channelId: ${this.channelId}`);
+				if (err != null) {
+					throw Error(`Error in Members.handshake(), ${err.stack}`);
+				}
+				else {
+					throw Error(`Unexpected Error!
+					authorId: ${message.author.id},
+					selfId: ${this.id},
+					channelId: ${this.channelId}`);
+				}
 			}
 		}
 	}
 
 	memberRemove (member) {
 		const index = this.data.indexOf(member);
-		if (member.guild.id === this.channel.guild.id && index > -1) {
+		if (member.guild.id === this.guildId && index > -1) {
 			this.data.splice(index, 1);
 			if (this.data.length <= 0) {
 				this.index = null;
@@ -91,7 +117,7 @@ class Members extends Mediator {
 	}
 
 	update (message) {
-		if (message.author.id === this.id && message.channel.id === this.channel.id) {
+		if (message.author.id === this.id && message.channel.id === this.channelId) {
 			this.representation().then(text => { this.emit('update', text); });
 		}
 	}
@@ -142,11 +168,7 @@ class MembersFactory {
 
 	mediator (channel) {
 		if (this.current != null) {
-			this.stowaway.removeListener('handshake', this.current.handshake);
-			this.stowaway.client.removeListener('guildMemberRemove', this.current.memberRemove);
-			this.stowaway.client.removeListener('guildMemberUpdate', this.current.memberUpdate);
-			this.stowaway.removeListener('key update', this.current.keyUpdate);
-			this.stowaway.removeListener('revocation', this.current.keyRevocation);
+			this.current.unsubscribe();
 		}
 		return new Promise((resolve, reject) => {
 			this.db.find({ user_id: { $exists: true } }, (err, docs) => {
@@ -163,11 +185,6 @@ class MembersFactory {
 						}
 					});
 					this.current = new Members(data, this.stowaway, channel);
-					this.stowaway.client.on('guildMemberRemove', this.current.memberRemove);
-					this.stowaway.client.on('guildMemberUpdate', this.current.memberUpdate);
-					this.stowaway.on('handshake', this.current.handshake);
-					this.stowaway.on('key update', this.current.update);
-					this.stowaway.on('revocation', this.current.update);
 					resolve(this.current);
 				}
 			});

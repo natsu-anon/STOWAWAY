@@ -1,32 +1,30 @@
-const fs = require('fs');
 const process = require('process');
-const { Client } = require('discord.js');
 
 const InitCLI = require('./init-cli.js');
 const dbInit = require('./database.js');
-const clientInit = require('./client.js');
+const { initialization: clientInit } = require('./client.js');
 const keyInit = require('./key.js');
 const { Stowaway } = require('./stowaway.js');
 
 const WARNING = `
-{black-fg}{yellow-bg}## {underline}WARNING{/underline} ##########################################{/}
-{black-fg}{yellow-bg}#                                                   #{/}
-{black-fg}{yellow-bg}#  ENSURE YOUR EXECUTABLE/SOURCE CODE IS FROM:      #{/}
-{black-fg}{yellow-bg}#  {underline}github.com/natsu-anon/STOWAWAY{/underline}                   #{/}
-{black-fg}{yellow-bg}#  DO NOT SHARE stowaway.db WITH ANYONE.            #{/}
-{black-fg}{yellow-bg}#  DO NOT SHARE stowaway.key WITH ANYONE.           #{/}
-{black-fg}{yellow-bg}#  DO NOT SHARE stowaway.token WITH ANYONE.         #{/}
-{black-fg}{yellow-bg}#  DO NOT SHARE stowaway.revoke WITH ANYONE.        #{/}
-{black-fg}{yellow-bg}#                                                   #{/}
-{black-fg}{yellow-bg}#  DO NOT TRUST THE GOVERNMENT.                     #{/}
-{black-fg}{yellow-bg}#  DO NOT TRUST CORPORATIONS & COMPANIES.           #{/}
-{black-fg}{yellow-bg}#  {underline}DO NOT TRUST GROOMERS.{/underline}                           #{/}
-{black-fg}{yellow-bg}#                                                   #{/}
-{black-fg}{yellow-bg}#  THIS SOFTWARE DOES NOT WORK AGAINST KEYLOGGERS.  #{/}
-{black-fg}{yellow-bg}#  - NOR -                                          #{/}
-{black-fg}{yellow-bg}#  {underline}PEOPLE STANDING BEHIND YOU.{/underline}                      #{/}
-{black-fg}{yellow-bg}#                                                   #{/}
-{black-fg}{yellow-bg}#####################################################{/}
+	{black-fg}{yellow-bg}## {underline}WARNING{/underline} ##########################################{/}
+	{black-fg}{yellow-bg}#                                                   #{/}
+	{black-fg}{yellow-bg}#  THIS SOFTWARE DOES NOT WORK AGAINST KEYLOGGERS.  #{/}
+	{black-fg}{yellow-bg}#  - NOR -                                          #{/}
+	{black-fg}{yellow-bg}#  {underline}PEOPLE STANDING BEHIND YOU.{/underline}                      #{/}
+	{black-fg}{yellow-bg}#                                                   #{/}
+	{black-fg}{yellow-bg}#  ENSURE YOUR EXECUTABLE/SOURCE CODE IS FROM:      #{/}
+	{black-fg}{yellow-bg}#  {underline}github.com/natsu-anon/STOWAWAY{/underline}                   #{/}
+	{black-fg}{yellow-bg}#  DO NOT SHARE stowaway.db WITH ANYONE.            #{/}
+	{black-fg}{yellow-bg}#  DO NOT SHARE stowaway.key WITH ANYONE.           #{/}
+	{black-fg}{yellow-bg}#  DO NOT SHARE stowaway.token WITH ANYONE.         #{/}
+	{black-fg}{yellow-bg}#  DO NOT SHARE stowaway.revoke WITH ANYONE.        #{/}
+	{black-fg}{yellow-bg}#                                                   #{/}
+	{black-fg}{yellow-bg}#  DO NOT TRUST THE GOVERNMENT.                     #{/}
+	{black-fg}{yellow-bg}#  DO NOT TRUST CORPORATIONS NOR COMPANIES.         #{/}
+	{black-fg}{yellow-bg}#  {underline}DO NOT TRUST GROOMERS.{/underline}                           #{/}
+	{black-fg}{yellow-bg}#                                                   #{/}
+	{black-fg}{yellow-bg}#####################################################{/}
 \n`;
 
 /* LANCH PROCEDURE:
@@ -90,7 +88,7 @@ function init (BANNER, SCREEN_TITLE, DATABASE, API_TOKEN, PRIVATE_KEY, VERSION, 
 			cli.cat('{green-fg}DONE!{/}');
 			cli.log('>initializing discord client... ');
 			return new Promise((res, rej) => {
-				clientInit(API_TOKEN, fs, cli, Client)
+				clientInit(API_TOKEN, cli)
 				.then(client => {
 					client.user.setStatus('dnd');
 					cli.cat('{green-fg}DONE!{/}');

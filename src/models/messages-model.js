@@ -1,19 +1,22 @@
 const Model = require('./model.js');
 
 class ChannelMessage {
-	constructor (date, member, verified, signed, plainText) {
+	constructor (publicFlag, date, member, verified, signed, plainText) {
+		this.publicFlag = publicFlag;
 		this.date = date;
 		this.name = signed ? `{green-fg}${member.displayName}{/green-fg}` : member.displayName;
-		this.verified = verified;
+		if (!verified) {
+			this.name = `${this.name}{yellow-fg} (UNVERIFIED){/yellow-fg}`;
+		}
 		this.plainText = plainText;
 	}
 
 	get text () {
-		if (this.verified) {
+		if (this.publicFlag) {
 			return `{blue-fg}[${this.date.toLocaleDateString()} ${this.date.toLocaleTimeString()}] <{/}${this.name}{blue-fg}>{/} ${this.plainText}{/}`;
 		}
 		else {
-			return `{yellow-fg}[${this.date.toLocaleDateString()} ${this.date.toLocaleTimeString()}] <{/}${this.name}{yellow-fg}>{/} ${this.plainText}{/}`;
+			return `{cyan-fg}[${this.date.toLocaleDateString()} ${this.date.toLocaleTimeString()}] <{/}${this.name}{cyan-fg}>{/} ${this.plainText}{/}`;
 		}
 	}
 }
@@ -56,7 +59,7 @@ class SignedKey {
 	}
 
 	get text () {
-		return `\t{cyan-bg}{black-fg}${this.name} (${this.tag}) signed your key at ${this.date.toLocaleDateString()} ${this.date.toLocaleTimesString()}{/}`;
+		return `\t{cyan-bg}{black-fg}${this.name} (${this.tag}) signed your key at ${this.date.toLocaleDateString()} ${this.date.toLocaleTimeString()}{/}`;
 	}
 }
 
@@ -88,7 +91,7 @@ class Revocation {
 
 		}
 		else {
-			return `\t{green-bg}{black-fg}${this.name} (${this.tag}) revoked his key at ${this.date.toLocaleDateString()} ${this.date.toLocaleTimesString()}{/}`;
+			return `\t{yellow-bg}{black-fg}${this.name} (${this.tag}) revoked his key at ${this.date.toLocaleDateString()} ${this.date.toLocaleTimeString()}, if you signed his old key consider signing his new one (if you trust this revocation){/}`;
 		}
 	}
 }
@@ -98,7 +101,7 @@ class MessagesModel extends Model {
 
 	constructor (stowaway) {
 		super();
-		stowaway.on('channel message', (message, data) => { this._channelMessage(message, data); });
+		stowaway.on('channel message', (message, data, publicFlag) => { this._channelMessage(message, data, publicFlag); });
 		stowaway.on('decryption failure', message => { this._decryptionFailure(message); });
 		stowaway.on('handshake', (message, accepted) => { this._handshake(message, accepted); });
 		stowaway.on('signed key', message => { this._signedKey(message); });
@@ -124,12 +127,12 @@ class MessagesModel extends Model {
 		return this._messages.map(message => message.content.text).join('\n');
 	}
 
-	_channelMessage (message, data) {
+	_channelMessage (message, data, publicFlag) {
 		if (message.channel.id === this.channelId) {
 			this._messages.push({
 				id: message.id,
 				timestamp: message.createdTimestamp,
-				content: new ChannelMessage(message.createdAt, message.member, data.verified, data.signed, data.plainText)
+				content: new ChannelMessage(publicFlag, message.createdAt, message.member, data.verified, data.signed, data.plainText)
 			});
 			this._sortThenUpdate();
 		}

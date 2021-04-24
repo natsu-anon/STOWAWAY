@@ -317,6 +317,14 @@ class Stowaway extends EventEmitter {
 				});
 			}
 		});
+		return new Promise((resolve, reject) => {
+			this._revocations
+			.then(result => {
+				this.oldKeys = result;
+				resolve();
+			})
+			.catch(reject);
+		});
 	}
 
 	// handshakes channel if not in database
@@ -487,6 +495,25 @@ class Stowaway extends EventEmitter {
 					// const key = await key1.signPrimaryUser(revocations);
 					const publicKeyArmored = key1.toPublic().armor();
 					const armoredRevocation = revocation.toPublic().armor();
+					this.key = key1;
+					if (this.oldKeys != null) {
+						this.oldKeys.push(revocation);
+					}
+					Promise.all(channelIds.map(channelId => {
+						return new Promise((res, rej) => {
+							client.channels.fetch(channelId, false)
+							.then(channel => this._send(channel, this._attachJSON({
+								type: REVOCATION,
+								revocation: armoredRevocation,
+								publicKey: publicKeyArmored
+							}, FILE)))
+							.then(res)
+							.catch(rej);
+						});
+					}))
+					.then(() => { resolve(key1); })
+					.catch(reject);
+					/*
 					docs.filter(x => x.channel_id != null).forEach(doc => {
 						client.channels.fetch(doc.channel_id, false)
 						.then(channel => {
@@ -497,9 +524,12 @@ class Stowaway extends EventEmitter {
 							}, FILE));
 						});
 					});
+					*/
 				}
-				this.key = key1;
-				resolve(key1);
+				else {
+					this.key = key1;
+					resolve(key1);
+				}
 			});
 		});
 	}
@@ -828,13 +858,13 @@ class Stowaway extends EventEmitter {
 		.then(res => openpgp.decrypt({
 			message: res,
 			publicKeys: publicKey,
-			privateKeys: this.key,
+			privateKeys: this.oldKeys.concat(this.key),
 		}))
 		.then(decrypted => {
 			return this._verifyMessage(decrypted, publicKey);
 		})
 		.then(result => {
-			this.emit('channel message', message, result);
+			this.emit('channel message', message, result, publicFlag);
 			// this.emit('test', `${publicFlag? 'public' : 'signed-only'} message from ${message.author.tag}: (signed: ${result.signed}, verified: ${result.verified}) ${result.plainText}`);
 			this._updateLatests(message.channel.id, message.id, message.createdTimestamp);
 		})
@@ -892,16 +922,17 @@ class Stowaway extends EventEmitter {
 	// figure out why linter says this is wrong
 	_handshake (armoredKey, plsRespond, revocations, message) {
 		return new Promise(resolve => {
-			this._findUser(message.author.id, async (err, doc) => {
+			const userId = message.author.id;
+			this._findUser(userId, async (err, doc) => {
 				if (err) {
-					this.emit('error', `database error in Stowaway._handshake() user id argument: ${message.author.id}`);
+					this.emit('error', `database error in Stowaway._handshake() user id argument: ${userId}`);
 					resolve('red', `Unexpected database error while processing handshake from ${message.author.tag}`);
 				}
 				else if (doc == null) {
 					try {
 						await openpgp.readKey({ armoredKey }); // do this just to check it's armored key is actually a key
 						this.db.insert({
-							user_id: message.author.id,
+							user_id: userId,
 							public_key: armoredKey,
 							// armor_hash: hash(armoredKey)
 						});
@@ -914,8 +945,14 @@ class Stowaway extends EventEmitter {
 							text: `New handshake from ${message.member.displayName} on ${message.guild.name} _${message.channel.name}`
 						});
 					}
-					catch {
+					catch (err) {
 						this.emit('handshake', message, false);
+						if (err != null) {
+							this.emit('error', `Error in Stowaway._handshake():\n${err.stack}`);
+						}
+						else {
+							this.emit('error', `Unexpected error in Stowaway._handshake()`);
+						}
 						resolve({
 							color: 'yellow',
 							text: `Improper amrmored key in handshake from ${message.author.tag}`
@@ -983,6 +1020,9 @@ class Stowaway extends EventEmitter {
 			}
 			else if (err != null) {
 				this.emit('error', `unexpected error in Stowaway._signedKey()\n${err.stack}`);
+			}
+			else if (this.passphrase == null) {
+				this.emit('error', 'passphrase not set!');
 			}
 			else {
 				this.emit('error', `unexpected error in Stowaway._signedKey()`);
