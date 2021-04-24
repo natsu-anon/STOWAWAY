@@ -43,7 +43,7 @@ class BlessedInit {
 			fullunicode: true,
 		});
 		screen.title = title;
-		this.content = [ `{cyan-fg}${banner}{/}` ];
+		this.content = [ banner ];
 		this.background = blessed.box({
 			parent: screen,
 			width: '100%',
