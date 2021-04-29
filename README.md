@@ -99,7 +99,7 @@ When you launch ＳＴＯＷＡＷＡＹ, you must provide your bot's token to u
 [//]: # (TODO: write this up with screenshots)
 
 ### Add your bot to a server
-1. Go to your application's "General Information" page
+1. Go to your application's "OAuth2" page
 2. Copy your client id
 
 ![get client id](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/main/screenshots/server1.PNG)
