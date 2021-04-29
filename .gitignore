@@ -1,6 +1,11 @@
 # the DO_NOT_SHARE dir
 DO_NOT_SHARE/
 
+# emacs stuff
+\#*\#
+*~
+.dir-locals.el
+
 # testing stuff
 _test*
 
