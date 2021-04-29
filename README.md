@@ -9,11 +9,8 @@ This software is licensed under the WTFPL
 >
 > -Edward Snowden
 
-
 An End-to-End PGP encryption layer for Discord focused on making privacy easy & accesible via bots [(instructions included)](#create-a-bot).
 This means that the keys used to encrypt & decrypt messages are different.  The keys to encrypt are *public*, the keys to decrypt are *private* and should __NEVER__ be shared.
-
-**NOTE ＳＴＯＷＡＷＡＹ v0.2.x & v0.3.x  currently only supports connecting to a _single server channel_ at a time, I will add support to navigate between multiple servers, channels, and direct messages SOON:tm:**
 
 ![spurdo](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/main/screenshots/spurdo.PNG)
 
@@ -55,7 +52,7 @@ you can run ＳＴＯＷＡＷＡＹ from source with [Node.js](https://nodejs.o
 - [blessed](https://github.com/chjj/blessed) version 0.1.81
 - [NeDB](https://github.com/louischatriot/nedb/) version 1.8.0
 
-Once all the packages are installed you can launch ＳＴＯＷＡＷＡＹ with `npm run start [channel_id]`[(see usage for command line launch)](#usage)
+Once all the packages are installed you can launch ＳＴＯＷＡＷＡＹ with `npm run start`[(see usage for command line launch)](#usage)
 
 ### Create a Bot
 If you know how to do this go ahead and skip to parts 8 and 9.
@@ -134,9 +131,17 @@ Just run it!
 
 ### Launching from command line
 If you don't pass any optional flags ＳＴＯＷＡＷＡＹ will launch regularly.
-However, you can also pass `-c` or `--channels` to print out all the channels available/inavailable to your bot with reasons why.
 
 ![add to server](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/single-channel/screenshots/permissions.PNG)
+
+#### Command line options
+1. Pass `-a` or `--about` to read about basic ＳＴＯＷＡＷＡＹ information
+2. Pass `-h` or `--help` for help.
+3. Pass `-v` or `--version` for the version number.
+4. Pass `-t` or `--token` with a discord bot api token to supply a token to use (if it works).
+5. Pass `-c` or `--channels` to list available & inavailable channels with reasons why ___requires a valid token file___.
+6. Pass `--leave-server` and a server id to leave the server with the given id ___requires a valid token file___.
+7. Pass `--revoke` and a server id to leave the server with the given id ___requires a valid token file___.
 
 Additionally,  pass `-h` or `--help` for help.  Pass `-v` or `--version` for the version number.  Pass `-a` or `--about` for some basic information about ＳＴＯＷＡＷＡＹ.
 And if you're running ＳＴＯＷＡＷＡＹ from source you can use `npm run start` to launch ＳＴＯＷＡＷＡＹ, and `npm run channels`, `npm run help`, `npm run version`, and `npm run about` for their respective flags.
@@ -153,16 +158,16 @@ And if you're running ＳＴＯＷＡＷＡＹ from source you can use `npm run 
 >
 > -Upton Sinclar in **The Profits of Religion**
 
-1. Navigate through all servers & channels available to the bot
-2. nicknames
-3. **UPDATE REMINDERS**
-4. WASM
-5. option to display nickname associated w/ key
-6. password encrypted private key?
-7. Handshake protocol performed through DM's (can bots DM each other?)
-8. More PGP features (key + message signing & key revoking)
-9. See who's signed whose keys for a "web of trust".
-10. Humans dm the bot `about` to find out more w/ link to repo
+1. **DYNAMIC UPDATES**
+2. More PGP features
+   - session keys (psuedo-dm)
+   - see who has signed whose keys for a "web of trust"
+3. User customziation
+   - keybinds
+   - colors
+4. bots change their nicknames on a server (haha, yes I sneakily updated the bot invite link with proper permissions already)
+5. WASM
+6. ~~Handshake protocol performed through DM's (can bots DM each other?)~~ bots CANNOT direct message :(
 
 And in general I need to check out v8 options to see what'd I should bake into the executables
 
