@@ -1,0 +1,15 @@
+#+date: 2021-05-03
+
+* TODO fix the bugs
+
+* TODO tidy up the repo
+- [ ] delete all extraneous files
+- [ ] update README.md
+  + [ ] new pictures!
+	1. [ ] intro pics
+	2. [X] create a bot pics
+	3. [X] usage pics
+  + [X] console commands
+  + [X] future development
+  + [ ] running from source requirements
+- [ ] new kino ascii banner
