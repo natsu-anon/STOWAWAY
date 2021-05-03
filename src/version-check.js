@@ -46,6 +46,9 @@ function versionCheck (url, version) {
 						else if (json.version != null) {
 							if (lessThan(version, json.version)) {
 								let result = `\x1b[42m\x1b[30mSTOWAWAY version ${json.version} available!\x1b[0m\n\n`;
+								if (json.url != null) {
+									result += `get the newest release from here: \x1b[4m${json.url}\x1b[0m`;
+								}
 								if (json.text != null) {
 									result += json.text;
 								}
