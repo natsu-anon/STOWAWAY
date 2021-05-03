@@ -1,4 +1,13 @@
 {
-	"version": "1.0.0",
-	"ignore": "bruh"
+	"version": "1.0.1",
+	"ignore": "i cant spel"
+	"url": "https://github.com/natsu-anon/STOWAWAY/releases"
+	"text": "I mistyped the function that displayed the date as 'toLocalTimesString' instead of 'toLocalTimeString' (did you spot the difference--because I sure didn't) and the consequences were worse than I expected.  Sorry I spent time learning emacs instead of fixing this first.  Go to https://github.com/natsu-anon/STOWAWAY/releases for the download!"
+	"changelog" : [
+		"Removed one 's'"
+		"Handshake repeats is limited to the first time STOWAWAY fails a decryption it thinks it shouldn't have"
+		"verison checker also displays url of where to go to get the new release"
+		"un-swapped the license & readme file"
+		"using 7zip now because tar isn't playing well with my batch file that I use to for all the releases )^:<"
+	]
 }
