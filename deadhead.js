@@ -2,7 +2,7 @@ const process = require('process');
 const { Stowaway } = require('./src/stowaway.js');
 const Datastore = require('nedb');
 const { clientLogin, genKey, loadKey } = require('./test.js');
-const { token1,  keyPath1, db1, channels1 } = require('./test-data.js');
+const { token1, keyPath1, db1, channels1 } = require('./test-data.js');
 
 async function launch (freshFlag) {
 	const VERSION = '1.0.0-daemon';
