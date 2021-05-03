@@ -9,7 +9,6 @@ function log (text, pad=0) {
 module.exports = (tokenPath) => {
 	login(tokenPath)
 	.then(client => {
-		console.log(`logged in as ${client.user.tag}`);
 		let info = 'In order for a server channel to be usable by STOWAWAY your bot must be able to:\n';
 		info += '  1. view the channel\n';
 		info += '  2. send messages to the channel\n';
