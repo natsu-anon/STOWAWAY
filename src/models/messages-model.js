@@ -71,7 +71,7 @@ class KeyUpdate {
 	}
 
 	get text () {
-		return `\t{cyan-bg}{black-fg}${this.name} (${this.tag}) updated his key at ${this.date.toLocaleDateString()} ${this.date.toLocaleTimesString()}{/}`;
+		return `\t{cyan-bg}{black-fg}${this.name} (${this.tag}) updated his key at ${this.date.toLocaleDateString()} ${this.date.toLocaleTimeString()}{/}`;
 	}
 }
 
