@@ -1,8 +1,8 @@
 {
 	"version": "1.0.1",
-	"ignore": "i cant spel"
-	"url": "https://github.com/natsu-anon/STOWAWAY/releases"
-	"text": "I mistyped the function that displayed the date as 'toLocalTimesString' instead of 'toLocalTimeString' (did you spot the difference--because I sure didn't) and the consequences were worse than I expected.  Sorry I spent time learning emacs instead of fixing this first.  Go to https://github.com/natsu-anon/STOWAWAY/releases for the download!"
+	"ignore": "i cant spel",
+	"url": "https://github.com/natsu-anon/STOWAWAY/releases",
+	"text": "I mistyped the function that displayed the date as 'toLocalTimesString' instead of 'toLocalTimeString' (did you spot the difference--because I sure didn't) and the consequences were worse than I expected.  Sorry I spent time learning emacs instead of fixing this first.  Go to https://github.com/natsu-anon/STOWAWAY/releases for the download!",
 	"changelog" : [
 		"Removed one 's'"
 		"Handshake repeats is limited to the first time STOWAWAY fails a decryption it thinks it shouldn't have"
