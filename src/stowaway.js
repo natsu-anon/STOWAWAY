@@ -877,8 +877,21 @@ class Stowaway extends EventEmitter {
 				if (publicFlag) {
 					// if you're here it's possible you (1) the author doesn't have your public key or (2) author has one of your revoked public keys
 					this.emit('decryption failure', message);
+					const channelId = message.channel.id;
+					this.db.findOne({ channel_id: channelId }, (err, doc) => {
+						if (err != null) {
+							this.emit('error', `database error in SingleStowaway._decrypt() channel id argument: ${channelId}`);
+						}
+						else if (doc.decryption_failures == null) {
+							this.db.update({ channel_id: channelId }, { $set: { decryption_failrues: [ message.id ] } });
+							this._sendHandshake(message.channel, false);
+						}
+						else if (!doc.decryption_failures.contains(message.id)) {
+							this.db.update({ channel_id: channelId }, { $push: { decryption_failures: message.id } });
+							this._sendHandshake(message.channel, false);
+						}
+					});
 					this.emit('error', `failed to decrypt a public message from ${message.author.tag} on ${message.channel.guild.name} _${message.channel.name}`);
-					this._sendHandshake(message.channel, false);
 				}
 			}
 			else {
