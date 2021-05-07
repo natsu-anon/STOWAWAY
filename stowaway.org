@@ -1,6 +1,22 @@
+_LEARN_ smart parens & org PLEASE
+
+
+#+date: 2021-05-07
+
+* TODO swap out nedb with lokijs for RAISINS https://github.com/techfort/LokiJS
+- [X] replace in database.js
+- [ ] TEST
+- [ ] fully integrate
+  - [ ] stowaway
+  - [ ] wherever else nedb was used (models maybe?)
+  - [ ] command line stuff
+
 #+date: 2021-05-03
 
-* TODO fix the bugs
+* TODO fix the bug(s)
+- [X] was it just 'this.date.toLocaleTimesString'?
+- [X] update version.json
+- [X] cache message ids of shit you re-handshaked to -- don't repeat yourself
 
 * TODO tidy up the repo
 - [ ] delete all extraneous files

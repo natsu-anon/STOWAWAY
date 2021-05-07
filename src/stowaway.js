@@ -130,9 +130,12 @@ class Messenger {
 */
 class Stowaway extends EventEmitter {
 
-	constructor (db, keyFile, version, comment='') {
+	constructor (db, channels, peers, revocations, keyFile, version, comment='') {
 		super();
 		this.db = db;
+		this.channels = channels;
+		this.peers = peers;
+		this.revocations = revocations;
 		this.keyFile = keyFile;
 		this.version = version;
 		this.discordMessage = `${STOWAWAY}\nVERSION: ${version}`;
@@ -488,7 +491,11 @@ class Stowaway extends EventEmitter {
 						revocationCertificate
 					});
 					revocation = await revocation.signPrimaryUser([ key1 ]);
-					this.db.insert({ fingerprint: revocation.getFingerprint(), revocation_certificate: revocation.armor() });
+					// this.db.insert({ fingerprint: revocation.getFingerprint(), revocation_certificate: revocation.armor() });
+					this.revocations.insert({
+						fingerprint: revocation.getFingerprint(),
+						revocation_certificate: revocation.armor()
+					});
 					revocations = await Promise.all(revocations.map(armor => openpgp.readKey({ armoredKey: armor })));
 					revocations = await Promise.all(revocations.map(r => r.signPrimaryUser([ key1 ])));
 					revocations.push(revocation);

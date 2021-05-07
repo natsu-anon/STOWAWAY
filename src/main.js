@@ -19,12 +19,12 @@ const SCREEN_TITLE = 'ＳＴＯＷＡＷＡＹ';
 const ERR_LOG = './error.log';
 
 function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CERTIFICATE) {
-	let cli, client;
+	let cli, client, db;
 	const errStream = fs.createWriteStream(ERR_LOG);
 	// const check = await versionCheck(VERSION_URL, VERSION);
 	versionCheck(VERSION_URL, VERSION)
 	.then(check => initialize(BANNER, SCREEN_TITLE, DATABASE, API_TOKEN, PRIVATE_KEY, VERSION, REVOCATION_CERTIFICATE, check))
-	.then(async ({ stowaway, client, key, passphrase, db, screen }) => {
+	.then(async ({ stowaway, client, key, passphrase, db, channels, peers, revocations, screen }) => {
 		let allowTab = false; // block tabbing into read state until navigated away from the landing page & to a proper channel
 		const ABOUT = require('./about.js')(BANNER);
 		const invite = await client.generateInvite({
@@ -602,8 +602,11 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 		if (client != null) {
 			client.destroy();
 		}
+		if (db != null) {
+			db.close();
+		}
 		if (err != null) {
-			errStream.write(`TERMINAL ERROR:\n${err}`);
+			errStream.write(`CRITICAL ERROR:\n${err}`);
 			console.error(err);
 		}
 		errStream.end();

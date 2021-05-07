@@ -1,5 +1,4 @@
 const process = require('process');
-
 const InitCLI = require('./init-cli.js');
 const dbInit = require('./database.js');
 const { initialization: clientInit } = require('./client.js');
@@ -43,40 +42,6 @@ const WARNING = `
  * 5. STOWAWAY
 */
 
-function sleep (ms) {
-	return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-async function initAsync (BANNER, SCREEN_TITLE, DATABASE, API_TOKEN, PRIVATE_KEY, VERSION, REVOCATION_CERTIFICATE, versionText) {
-	const cli = new InitCLI(BANNER, SCREEN_TITLE, process);
-	if (versionText != null) {
-		await cli.pauseLog(versionText);
-	}
-	cli.log(WARNING);
-	cli.log('>initializing database... ');
-	const db = await dbInit(DATABASE);
-	cli.cat('{green-fg}DONE!{/}');
-	cli.log('>initializing discord client... ');
-	try {
-		const client = await clientInit(API_TOKEN, fs, cli, Client);
-		client.user.setStatus('dnd');
-		cli.cat('{green-fg}DONE!{/}');
-		cli.log(`>logged in as {green-fg}{underline}${client.user.tag}{/}`);
-		cli.log('>initializing PGP key... ');
-		const stowaway = new Stowaway(db, PRIVATE_KEY, VERSION);
-		const key = await keyInit(PRIVATE_KEY, REVOCATION_CERTIFICATE, stowaway, client, cli);
-		cli.cat('{green-fg}DONE!{/}');
-		cli.log('{black-fg}{green-bg}>>STOWING AWAY!{/}');
-		await sleep(500);
-		cli.decouple();
-		return { stowaway, client, key, db, screen: cli.screen };
-	}
-	catch (err) {
-		cli.destroy();
-		throw err;
-	}
-}
-
 function init (BANNER, SCREEN_TITLE, DATABASE, API_TOKEN, PRIVATE_KEY, VERSION, REVOCATION_CERTIFICATE, versionText) {
 	const cli = new InitCLI(BANNER, SCREEN_TITLE, process);
 	return new Promise((resolve, reject) => {
@@ -84,23 +49,31 @@ function init (BANNER, SCREEN_TITLE, DATABASE, API_TOKEN, PRIVATE_KEY, VERSION, 
 		.then(() => {
 			cli.log(WARNING);
 			cli.log('>initializing database... ');
-			const db = dbInit(DATABASE);
-			cli.cat('{green-fg}DONE!{/}');
-			cli.log('>initializing discord client... ');
+			return new Promise((res, rej) => {
+				dbInit(DATABASE) // ree package that does the indenting
+				.then(({ db, channels, peers, revocations }) => {
+					cli.cat('{green-fg}DONE!{/}');
+					cli.log('>initializing discord client... ');
+					res({ db, channels, peers, revocations });
+				})
+				.catch(rej);
+			});
+		})
+		.then(({ db, channels, peers, revocations }) => {
 			return new Promise((res, rej) => {
 				clientInit(API_TOKEN, cli)
 				.then(client => {
 					client.user.setStatus('dnd');
 					cli.cat('{green-fg}DONE!{/}');
 					cli.log(`>logged in as {green-fg}{underline}${client.user.tag}{/}`);
-					res({ client, db });
+					res({ client, db, channels, peers, revocations });
 				})
 				.catch(rej);
 			});
 		})
-		.then(({ client, db }) => {
+		.then(({ client, db, channels, peers, revocations }) => {
 			cli.log('>initializing PGP key... ');
-			const stowaway = new Stowaway(db, PRIVATE_KEY, VERSION);
+			const stowaway = new Stowaway(db, channels, peers, revocations, PRIVATE_KEY, VERSION);
 			return new Promise((res, rej) => {
 				keyInit(PRIVATE_KEY, REVOCATION_CERTIFICATE, stowaway, client, cli)
 				.then(({ key, passphrase }) => { // key is decrypted
@@ -108,7 +81,7 @@ function init (BANNER, SCREEN_TITLE, DATABASE, API_TOKEN, PRIVATE_KEY, VERSION, 
 					cli.log('{black-fg}{green-bg}>>STOWING AWAY!{/}');
 					setTimeout(() => {
 						cli.decouple();
-						res({ stowaway, client, key, passphrase, db, screen: cli.screen });
+						res({ stowaway, client, key, passphrase, db, channels, peers, revocations, screen: cli.screen });
 					}, 500);
 				})
 				.catch(rej);
