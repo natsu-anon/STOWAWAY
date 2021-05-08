@@ -12,7 +12,7 @@ items.insert({ name : 'tyrfing', owner: 'Svafrlami', maker: 'dwarves' });
 items.insert({ name : 'draupnir', owner: 'odin', maker: 'elves' });
 
 // Find and update an existing document
-var tyrfing = items.findOne({'name': 'tyrfing'});
+var tyrfing = items.findOne({name: 'tyrfing'});
 tyrfing.owner = 'arngrim';
 items.update(tyrfing);
 
@@ -21,10 +21,12 @@ console.log(('tyrfing value :'));
 // logObject(tyrfing);
 console.log(tyrfing);
 console.log('odins items');
-console.log(items.find({ 'owner': 'odin' }));
-console.log('odins 1st item');
-console.log(items.findOne({ 'owner': 'odin' }));
-console.log(items.data);
+console.log(items.find({ owner: 'odin' }));
+console.log('owner exists');
+console.log(items.find({ owner: { $exists: true } }));
+// console.log('odins 1st item');
+// console.log(items.findOne({ 'owner': 'odin' }));
+// console.log(items.data);
 
 // This statement sends to Inspector
 // inspectObject(db);

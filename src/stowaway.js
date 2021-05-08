@@ -305,7 +305,7 @@ class Stowaway extends EventEmitter {
 			status: 'online'
 		});
 		// remove deleted channels from database (channels model checks independently)
-		this.db.find({ channel_id: { $exists: true } }, (err, docs) => {
+		const channels = this.channels.find({ channel_id: { $exists: true } }, (err, docs) => {
 			if (err != null) {
 				throw err;
 			}
@@ -491,11 +491,12 @@ class Stowaway extends EventEmitter {
 						revocationCertificate
 					});
 					revocation = await revocation.signPrimaryUser([ key1 ]);
-					// this.db.insert({ fingerprint: revocation.getFingerprint(), revocation_certificate: revocation.armor() });
-					this.revocations.insert({
-						fingerprint: revocation.getFingerprint(),
-						revocation_certificate: revocation.armor()
-					});
+					this.db.insert({ fingerprint: revocation.getFingerprint(), revocation_certificate: revocation.armor() });
+					// TODO uncomment below, comment out above
+					// this.revocations.insert({
+					// 	fingerprint: revocation.getFingerprint(),
+					// 	revocation_certificate: revocation.armor()
+					// });
 					revocations = await Promise.all(revocations.map(armor => openpgp.readKey({ armoredKey: armor })));
 					revocations = await Promise.all(revocations.map(r => r.signPrimaryUser([ key1 ])));
 					revocations.push(revocation);

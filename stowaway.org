@@ -1,6 +1,5 @@
 _LEARN_ smart parens & org PLEASE
 
-
 #+date: 2021-05-07
 
 * TODO swap out nedb with lokijs for RAISINS https://github.com/techfort/LokiJS
