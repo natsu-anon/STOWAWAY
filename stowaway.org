@@ -5,9 +5,25 @@ _LEARN_ smart parens & org PLEASE
 * TODO swap out nedb with lokijs for RAISINS https://github.com/techfort/LokiJS
 - [X] replace in database.js
 - [ ] TEST
+  - [ ] collections
+	- [ ] basic queries
+	- [ ] fancier queries
+		- [ ] $exists
+		- [ ] $set
+		- [ ] $unset
+		- [ ] $push
+	- [ ] chaining
+	- [ ] updating 
+	- [ ] removing
+	- [ ] autoupdate callbacks?
+  - [ ] dynamic views vs collections
+  - [ ] serializing
 - [ ] fully integrate
   - [ ] stowaway
   - [ ] wherever else nedb was used (models maybe?)
+	- [ ] handshake model
+	- [ ] channel model
+	- [ ] member factory
   - [ ] command line stuff
 
 #+date: 2021-05-03
