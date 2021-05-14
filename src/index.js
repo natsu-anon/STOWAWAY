@@ -1,8 +1,8 @@
 const process = require('process');
-const fs = require('fs');
 const openpgp = require('openpgp');
 const dbInit = require('./database.js');
 const { token, login } = require('./client.js');
+const { readFile, writeFile } = require('./utils.js');
 // const { Revoker } = require('./revoker.js');
 const { Stowaway } = require('./stowaway.js');
 const SAVE_DIR = './DO_NOT_SHARE/';
@@ -16,32 +16,6 @@ const BANNER = `      _  __ __        __        __
  //  /_\` / / / | | | /_/ | | | /_/ /_/  //
 //  ._/ / /_/  |/|/ / /  |/|/ / /  /   //  v ${VERSION}
 This software is licensed under the WTFPL`;
-
-function readFile (path, encoding='utf8') {
-	return new Promise((resolve, reject) => {
-		fs.readFile(path, encoding, (err, data) => {
-			if (err != null) {
-				reject(err);
-			}
-			else {
-				resolve(data);
-			}
-		});
-	});
-}
-
-function writeFile (path, data, encoding='utf8') {
-	return new Promise((resolve, reject) => {
-		fs.writeFile(path, data, encoding, err => {
-			if (err != null) {
-				reject(err);
-			}
-			else {
-				resolve();
-			}
-		});
-	});
-}
 
 if (process.argv.length > 2 && (process.argv[2] === '--channels' || process.argv[2] === '-c')) {
 	require('./list-channels.js')(API_TOKEN);
