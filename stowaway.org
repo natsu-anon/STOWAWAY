@@ -36,7 +36,7 @@ _LEARN_ smart parens & org PLEASE
 	- [X] autoupdate callbacks?  Don't bother
   - [X] dynamic views vs collections
   - [ ] serializing
-- [-] fully integrate [25%]
+- [-] fully integrate [20%]
   - [ ] last_channel now a bool property of channel entries!  Change accordingly!
   - [X] stowaway [5/5]
 	- [X] cache the _handleNotify stuff
@@ -60,6 +60,7 @@ _LEARN_ smart parens & org PLEASE
 	- [ ] member factory
 	- [ ] update the main stuff
   - [ ] command line stuff
+  - [ ] double check stowaway -- it's VITAL
 
 #+date: 2021-05-03
 
