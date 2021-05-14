@@ -1,46 +1,80 @@
 _LEARN_ smart parens & org PLEASE
 
-#+date: 2021-05-07
+* TODO collect a buncha odds & ends into a utilities thing (maybe even set-up a blessed-utils thing also)
+  - [-] rewrite [4/6]
+	- [ ] stowaway
+	  - [ ] make _handleActive() & _handleCache() (formerly _handleNotify) return promises
+	  - [ ] see new constructor -- apply appropriately
+	  - [ ] revokeKey()
+	- [X] key.js
+	- [X] main
+	- [X] index
+	- [X] client
+	- [ ] everything else
+  - [X] stowaway refactoring
+	- [X] _handleActive()
+	- [X] _handleNotify() now _handleCache()
+	- [X] cache successfully processed messages
+  - [X] NATO phrase
+  - [X] all the read/write file stuff
 
-* TODO swap out nedb with lokijs for RAISINS https://github.com/techfort/LokiJS
+* TODO swap out nedb with lokijs for RAISINS https://github.com/techfort/LokiJS [1/3]
 - [X] replace in database.js
-- [ ] TEST
-  - [ ] collections
-	- [ ] basic queries
-	- [ ] fancier queries
-		- [ ] $exists
-		- [ ] $set
-		- [ ] $unset
-		- [ ] $push
-	- [ ] chaining
-	- [ ] updating 
-	- [ ] removing
-	- [ ] autoupdate callbacks?
-  - [ ] dynamic views vs collections
+- [-] TEST [2/3]
+  - [X] collections [6/6]
+	- [X] basic queries
+	- [X] fancier queries see https://github.com/techfort/LokiJS/wiki/Query-Examples
+	  - [X] $exists
+	  - [X] $or
+	- [X] chaining -- just remember to .data() at the end
+	- [X] updating -- just do what you want on the variable then do collection.update(variable), use delete to delete a property from an object
+	  - [X] $set -- DOES NOT EXIST
+	  - [X] $unset -- DOES NOT EXIST
+	  - [X] $push -- DOES NOT EXIST
+	- [X] removing
+	- [X] autoupdate callbacks?  Don't bother
+  - [X] dynamic views vs collections
   - [ ] serializing
-- [ ] fully integrate
-  - [ ] stowaway
+- [-] fully integrate [0%]
+  - [ ] last_channel now a bool property of channel entries!  Change accordingly!
+  - [-] stowaway [3/6]
+	- [ ] Stowaway.numberStowaways() no longer returns a promise! (update appropriately)
+	- [X] cache the _handleNotify stuff
+	- [-] replace all 'this.db' with appropriate collection operations
+	  - [ ] revokeKey()
+	  - [X] everywhere else
+	- [X] rewrite db query functions
+	  - [X] _allChannels
+	  - [X] _allUsers -- renamed to _allPeers
+	  - [X] _findChannel
+	  - [X] _findUser -- renamed to _findPeer
+	- [X] rewrite usage of db query functions
+	  - [X] _allChannels
+	  - [X] _allPeers
+	  - [X] _findChannel
+	  - [X] _findPeer
+	- [ ] see TODO in launch() -- get this.oldKeys from revocations
   - [ ] wherever else nedb was used (models maybe?)
-	- [ ] handshake model
 	- [ ] channel model
+	- [ ] handshake model
 	- [ ] member factory
   - [ ] command line stuff
 
 #+date: 2021-05-03
 
-* TODO fix the bug(s)
+* TODO fix the bug(s) [4/4]
 - [X] was it just 'this.date.toLocaleTimesString'?
+- [X] was it in Stowaway._updatePrivateKey() also?
 - [X] update version.json
 - [X] cache message ids of shit you re-handshaked to -- don't repeat yourself
 
-* TODO tidy up the repo
+* TODO tidy up the repo [0/2]
 - [ ] delete all extraneous files
-- [ ] update README.md
-  + [ ] new pictures!
-	1. [ ] intro pics
-	2. [X] create a bot pics
-	3. [X] usage pics
-  + [X] console commands
-  + [X] future development
-  + [ ] running from source requirements
-- [ ] new kino ascii banner
+- [-] update README.md [2/4]
+  - [-] new pictures! [2/3]
+	- [ ] intro pics
+	- [X] create a bot pics
+	- [X] usage pics
+  - [X] console commands
+  - [X] future development
+  - [ ] running from source requirements
