@@ -2,15 +2,16 @@ _LEARN_ smart parens & org PLEASE
 
 * TODO collect a buncha odds & ends into a utilities thing (maybe even set-up a blessed-utils thing also)
   - [-] rewrite [4/6]
-	- [ ] stowaway
-	  - [ ] make _handleActive() & _handleCache() (formerly _handleNotify) return promises
-	  - [ ] see new constructor -- apply appropriately
-	  - [ ] revokeKey()
+	- [-] stowaway
+	  - [ ] Stowaway.numberStowaways() no longer returns a promise! (update appropriately) WHERESTVE IS IT USED???
+	  - [X] make _handleActive() & _handleCache() (formerly _handleNotify) return promises
+	  - [X] see new constructor -- apply appropriately
+	  - [X] revokeKey()
 	- [X] key.js
 	- [X] main
 	- [X] index
 	- [X] client
-	- [ ] everything else
+	- [ ] everything else -- whatstve exactly?
   - [X] stowaway refactoring
 	- [X] _handleActive()
 	- [X] _handleNotify() now _handleCache()
@@ -35,13 +36,12 @@ _LEARN_ smart parens & org PLEASE
 	- [X] autoupdate callbacks?  Don't bother
   - [X] dynamic views vs collections
   - [ ] serializing
-- [-] fully integrate [0%]
+- [-] fully integrate [25%]
   - [ ] last_channel now a bool property of channel entries!  Change accordingly!
-  - [-] stowaway [3/6]
-	- [ ] Stowaway.numberStowaways() no longer returns a promise! (update appropriately)
+  - [X] stowaway [5/5]
 	- [X] cache the _handleNotify stuff
-	- [-] replace all 'this.db' with appropriate collection operations
-	  - [ ] revokeKey()
+	- [X] replace all 'this.db' with appropriate collection operations
+	  - [X] revokeKey()
 	  - [X] everywhere else
 	- [X] rewrite db query functions
 	  - [X] _allChannels
@@ -53,11 +53,12 @@ _LEARN_ smart parens & org PLEASE
 	  - [X] _allPeers
 	  - [X] _findChannel
 	  - [X] _findPeer
-	- [ ] see TODO in launch() -- get this.oldKeys from revocations
+	- [X] see TODO in launch() -- get this.oldKeys from revocations
   - [ ] wherever else nedb was used (models maybe?)
 	- [ ] channel model
 	- [ ] handshake model
 	- [ ] member factory
+	- [ ] update the main stuff
   - [ ] command line stuff
 
 #+date: 2021-05-03

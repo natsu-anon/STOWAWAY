@@ -49,6 +49,7 @@ class ChannelsModel extends Model {
 		});
 	}
 
+	// NOTE don't use db use channels collection
 	initialize (stowaway, client, db) {
 		client.on('guildCreate', guild => {
 			guild.channels.cache.filter(ch => ch.isText()).each(ch => {
