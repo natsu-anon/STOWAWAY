@@ -12,7 +12,6 @@ const MemberFactory = require('./member-factory.js');
 const { ChannelsMediator, HandshakedMediator } = require('./mediators.js');
 const { ChannelsModel, HandshakedModel, MessagesModel } = require('./models.js');
 
-// NOTE update url to use main branch
 const VERSION_URL = 'https://raw.githubusercontent.com/natsu-anon/STOWAWAY/main/version.json';
 const SCREEN_TITLE = 'ＳＴＯＷＡＷＡＹ';
 const ERR_LOG = './error.log';
