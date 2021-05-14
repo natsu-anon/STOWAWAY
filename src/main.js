@@ -1,7 +1,6 @@
 const process = require('process');
-const fs = require('fs');
 
-const phrase = require('./nato-phrase.js');
+const { natoPhrase, readFile, writeStream } = require('./utils.js');
 const versionCheck = require('./version-check.js');
 const initialize = require('./initialization.js');
 const StowawayCLI = require('./stowaway-cli.js');
@@ -20,7 +19,7 @@ const ERR_LOG = './error.log';
 
 function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CERTIFICATE) {
 	let cli, client, db;
-	const errStream = fs.createWriteStream(ERR_LOG);
+	const errStream = writeStream(ERR_LOG);
 	// const check = await versionCheck(VERSION_URL, VERSION);
 	versionCheck(VERSION_URL, VERSION)
 	.then(check => initialize(BANNER, SCREEN_TITLE, DATABASE, API_TOKEN, PRIVATE_KEY, VERSION, REVOCATION_CERTIFICATE, check))
@@ -182,7 +181,7 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 				cli.selector.hide();
 			})
 			.revoke(prevState => {
-				const challenge = phrase();
+				const challenge = natoPhrase();
 				revoker.challenge = challenge;
 				cli.stateText = `REVOKE | from: ${prevState.name} | STEP 1: CHALLENGE | WARNING: revoking a key is irreversible!`;
 				cli.stateColor = RevokeColor;
@@ -260,7 +259,6 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 							}
 						});
 					});
-					
 				})
 				.then(passphrase => {
 					fsm.revokeLock();
@@ -270,19 +268,7 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 					const stopSpinning = cli.spin('reading revocation certificate from disk...');
 					cli.stateText = `REVOKE | from: ${prevState.name} | NICKNAME: ${revoker.nickname} | STEP 5: reading revocation certificate | IT'S TOO LATE`;
 					cli.revoke.clearValue();
-					return new Promise((resolve, reject) => {
-						fs.readFile(REVOCATION_CERTIFICATE, (err, data) => {
-							if (err != null) {
-								reject(err);
-							}
-							else {
-								resolve(data);
-							}
-						});
-					})
-					.finally(() => {
-						stopSpinning();
-					});
+					return readFile(REVOCATION_CERTIFICATE).finally(stopSpinning);
 				})
 				.then(revocationCertificate => {
 					cli.stateText = `REVOKE | from: ${prevState.name} | REVOKING KEY | IT'S TOO LATE`;
