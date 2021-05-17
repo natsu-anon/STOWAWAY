@@ -22,7 +22,7 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 	// const check = await versionCheck(VERSION_URL, VERSION);
 	versionCheck(VERSION_URL, VERSION)
 	.then(check => initialize(BANNER, SCREEN_TITLE, DATABASE, API_TOKEN, PRIVATE_KEY, VERSION, REVOCATION_CERTIFICATE, check))
-	.then(async ({ stowaway, client, key, passphrase, db, channels, peers, revocations, screen }) => {
+	.then(async ({ stowaway, client, key, passphrase, db, channels, peers, screen }) => {
 		let allowTab = false; // block tabbing into read state until navigated away from the landing page & to a proper channel
 		const ABOUT = require('./about.js')(BANNER);
 		const invite = await client.generateInvite({
@@ -49,11 +49,10 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 		//   COOMPOSITING  //
 
 		const messenger = new Messenger(stowaway);
-		const mFactory = new MemberFactory(stowaway, db);
-		let mPromise;
+		const mFactory = new MemberFactory(stowaway, peers);
 		const revoker = new Revoker(stowaway, client, PRIVATE_KEY, REVOCATION_CERTIFICATE).setKey(key);
-		const hMediator = new HandshakedMediator(await (new HandshakedModel()).initialize(stowaway, client, db), db);
-		const cMediator = new ChannelsMediator(await (new ChannelsModel()).initialize(stowaway, client, db), invite);
+		const hMediator = new HandshakedMediator(await (new HandshakedModel()).initialize(stowaway, client, channels), channels);
+		const cMediator = new ChannelsMediator(await (new ChannelsModel()).initialize(stowaway, client, channels), invite);
 		//  UPDATE LISTENING TO RENDER //
 
 		hMediator.on('update', text => {
@@ -148,7 +147,8 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 					box.setLabel(' Loading channel information. ');
 					box.setContent('loading...');
 					cli.stateText = `MEMBERS | from: ${prevState.name} | more information will be shown here next release`;
-					mPromise.then(mediator => {
+					if (mFactory.current != null) {
+						const mediator = mFactory.current;
 						box.setLabel(` Members of {underline}${mediator.channel.guild.name}{/underline} #${mediator.channel.name} `);
 						mediator.on('update', text => {
 							box.setScrollPerc(mediator.percentage);
@@ -161,22 +161,22 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 						});
 						fsm.on('scroll members', next => { mediator.scrollMembers(next); });
 						fsm.on('sign member', () => { mediator.signMember(); });
-						return mediator.representation();
-					})
-					.then(text => {
-						box.setContent(text);
-						cli.render();
-					});
+						box.setContent('loading...');
+						mediator.representation().then(text => {
+							box.setContent(text);
+							cli.render();
+						});
+					}
 				});
 				cli.stateColor = MemberColor;
 				cli.render();
 			},
 			() => {
 				cli.selector.removeAllListeners('resize');
-				mPromise.then(() => {
-					fsm.removeAllListeners('scroll members');
+				if (mFactory.current != null) {
+					fsm.removeAllListeners('scrollMembers');
 					fsm.removeAllListeners('sign member');
-				});
+				}
 				cli.selector.hide();
 			})
 			.revoke(prevState => {
@@ -382,7 +382,7 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 			cli.enableInput();
 			messenger.channel = channel;
 			hMediator.read(channel.id);
-			mPromise = mFactory.mediator(channel);
+			mFactory.mediator(channel);
 			cli.input.setLabel(` Message #${channel.name} `);
 			if (channel.topic != null) {
 				cli.messages.setLabel(` ${channel.guild.name} #${channel.name} | ${channel.topic} `);
