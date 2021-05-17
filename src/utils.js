@@ -50,7 +50,7 @@ function access (path) {
 				reject(err);
 			}
 		});
-	})
+	});
 }
 
 function writeFile (file, data, encoding='utf8') {
