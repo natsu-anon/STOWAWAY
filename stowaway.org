@@ -1,9 +1,15 @@
 _LEARN_ smart parens & org PLEASE
 
+* TODO TEST
+  - [X] TWO dummy accounts
+  - [ ] deadhead & test cli
+
+
 * TODO collect a buncha odds & ends into a utilities thing (maybe even set-up a blessed-utils thing also)
-  - [-] rewrite [4/6]
-	- [-] stowaway
-	  - [ ] Stowaway.numberStowaways() no longer returns a promise! (update appropriately) WHERESTVE IS IT USED???
+  - [-] rewrite [5/6]
+	- [X] stowaway
+	  - [X] Stowaway.numberStowaways() no longer returns a promise! (update appropriately) WHERESTVE IS IT USED???
+		- not used yet :P
 	  - [X] make _handleActive() & _handleCache() (formerly _handleNotify) return promises
 	  - [X] see new constructor -- apply appropriately
 	  - [X] revokeKey()
@@ -19,9 +25,9 @@ _LEARN_ smart parens & org PLEASE
   - [X] NATO phrase
   - [X] all the read/write file stuff
 
-* TODO swap out nedb with lokijs for RAISINS https://github.com/techfort/LokiJS [1/3]
+* TODO swap out nedb with lokijs for RAISINS https://github.com/techfort/LokiJS [2/3]
 - [X] replace in database.js
-- [-] TEST [2/3]
+- [X] TEST [3/3]
   - [X] collections [6/6]
 	- [X] basic queries
 	- [X] fancier queries see https://github.com/techfort/LokiJS/wiki/Query-Examples
@@ -35,9 +41,11 @@ _LEARN_ smart parens & org PLEASE
 	- [X] removing
 	- [X] autoupdate callbacks?  Don't bother
   - [X] dynamic views vs collections
-  - [ ] serializing
-- [-] fully integrate [20%]
-  - [ ] last_channel now a bool property of channel entries!  Change accordingly!
+  - [X] serializing
+	- it works, but you MUST use the method as used in database.init()
+- [-] fully integrate [60%]
+  - [ ] double check stowaway -- it's VITAL
+  - [X] last_channel now a bool property of channel entries!  Change accordingly!
   - [X] stowaway [5/5]
 	- [X] cache the _handleNotify stuff
 	- [X] replace all 'this.db' with appropriate collection operations
@@ -54,13 +62,12 @@ _LEARN_ smart parens & org PLEASE
 	  - [X] _findChannel
 	  - [X] _findPeer
 	- [X] see TODO in launch() -- get this.oldKeys from revocations
-  - [ ] wherever else nedb was used (models maybe?)
-	- [ ] channel model
-	- [ ] handshake model
-	- [ ] member factory
-	- [ ] update the main stuff
+  - [X] wherever else nedb was used (models maybe?)
+	- [X] channel model
+	- [X] handshake model
+	- [X] member factory -- maybe???
+	- [X] update the main stuff
   - [ ] command line stuff
-  - [ ] double check stowaway -- it's VITAL
 
 #+date: 2021-05-03
 
