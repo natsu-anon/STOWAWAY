@@ -73,7 +73,7 @@ function init (BANNER, SCREEN_TITLE, DATABASE, API_TOKEN, PRIVATE_KEY, VERSION, 
 		})
 		.then(({ client, db, channels, peers, revocations }) => {
 			cli.log('>initializing PGP key... ');
-			const stowaway = new Stowaway(db, channels, peers, revocations, PRIVATE_KEY, VERSION);
+			const stowaway = new Stowaway(channels, peers, revocations, PRIVATE_KEY, VERSION);
 			return new Promise((res, rej) => {
 				keyInit(PRIVATE_KEY, REVOCATION_CERTIFICATE, stowaway, client, cli)
 				.then(({ key, passphrase }) => { // key is decrypted
@@ -81,7 +81,7 @@ function init (BANNER, SCREEN_TITLE, DATABASE, API_TOKEN, PRIVATE_KEY, VERSION, 
 					cli.log('{black-fg}{green-bg}>>STOWING AWAY!{/}');
 					setTimeout(() => {
 						cli.decouple();
-						res({ stowaway, client, key, passphrase, db, channels, peers, revocations, screen: cli.screen });
+						res({ stowaway, client, key, passphrase, db, channels, peers, screen: cli.screen });
 					}, 500);
 				})
 				.catch(rej);
