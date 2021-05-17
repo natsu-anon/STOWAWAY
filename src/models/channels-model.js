@@ -49,8 +49,7 @@ class ChannelsModel extends Model {
 		});
 	}
 
-	// NOTE don't use db use channels collection
-	initialize (stowaway, client, db) {
+	initialize (stowaway, client, channels) {
 		client.on('guildCreate', guild => {
 			guild.channels.cache.filter(ch => ch.isText()).each(ch => {
 				this.struct.addChannel(ch);
@@ -106,17 +105,15 @@ class ChannelsModel extends Model {
 				throw Error('server-channel struct mismatch in channel-models.js, on stowaway.emit("handshakeChannel")');
 			}
 		});
-		return new Promise((resolve, reject) => {
-			db.find({ channel_id: { $exists: true } }, (err, docs) => {
-				if (err != null) {
-					reject(err);
-				}
-				else {
-					client.channels.cache.filter(ch => ch.type !== 'dm' && ch.isText())
-					.filter(ch => docs.findIndex(({ channel_id }) => ch.id === channel_id) === -1)
-					.each(ch => { this.struct.addChannel(ch, client.user); });
-					resolve(this);
-				}
+		return new Promise(resolve => {
+			Promise.allSettled(channels.data.map(channel => client.channels.fetch(channel.id, false)))
+			.then(result => {
+				result.forEach(res => {
+					if (res.status === 'fulfilled' && res.value.type !== 'dm' && res.value.isText()) {
+						this.struct.addChannel(res.value, client.user);
+					}
+				});
+				resolve(this);
 			});
 		});
 	}

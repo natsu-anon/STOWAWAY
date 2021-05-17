@@ -160,9 +160,9 @@ class Members extends Mediator {
 
 class MembersFactory {
 
-	constructor (stowaway, db) {
+	constructor (stowaway, peers) {
 		this.stowaway = stowaway;
-		this.db = db;
+		this.peersView = peers.getDynamicView('all_peers');
 		this.current = null;
 	}
 
@@ -170,25 +170,15 @@ class MembersFactory {
 		if (this.current != null) {
 			this.current.unsubscribe();
 		}
-		return new Promise((resolve, reject) => {
-			this.db.find({ user_id: { $exists: true } }, (err, docs) => {
-				if (err != null) {
-					reject(err);
-				}
-				else {
-					const data = [];
-					const userIds = docs.map(x => x.user_id);
-					channel.members.filter(x => userIds.includes(x.user.id))
-					.each(member => {
-						if (member.user.id !== this.stowaway.id) {
-							data.push(member);
-						}
-					});
-					this.current = new Members(data, this.stowaway, channel);
-					resolve(this.current);
-				}
-			});
+		const data = [];
+		const userIds = this.peersView.data().map(doc => doc.user_id);
+		channel.members.filter(member => userIds.includes(member.user.id))
+		.each(member => {
+			if (member.user.id !== this.stoawaway.id) {
+				data.push(member);
+			}
 		});
+		this.current = new Members(data, this.stowaway, channel);
 	}
 
 }
