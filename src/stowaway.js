@@ -108,6 +108,7 @@ class Stowaway extends EventEmitter {
 		super();
 		this.channels = channels;
 		this.peers = peers;
+		this.peersView = peers.getView('all_peers');
 		this.revocations = revocations;
 		this.keyFile = keyFile;
 		this.version = version;
@@ -259,13 +260,33 @@ class Stowaway extends EventEmitter {
 				this.channels.findAndRemove({ channel_id: ch0.id });
 			}
 		});
-		// do the same but with guild, guild update, guildMemberUpdate
-		// remove deleted channels from database (channels model checks independently)
+		client.on('guildDelete', guild => {
+			guild.channels.cache.each(channel => {
+				this.channels.findAndRemove({ channel_id: channel.id });
+			});
+		});
+		client.on('guildUpdate', (guild0, guild1) => {
+			guild1.channels.cache.each(channel => {
+				if (!Permissions(channel, client.user).valid) {
+					this.channels.findAndRemove({ channel_id: channel.id });
+				}
+			});
+		});
+		client.on('guildMemberUpdate', (member0, member1) => {
+			if (member0.id === this.id) {
+				member1.guild.channels.cache.each(channel => {
+					if (!Permissions(channel, member1.user).valid) {
+						this.channels.findAndRemove({ channel_id: channel.id });
+					}
+				});
+			}
+		});
+		this.lastChannel = this.channels.findOne({ last_channel: true });
 		return new Promise((resolve, reject) => {
-			Promise.all(this._allChannels().map(doc => new Promise(res => {
+			Promise.all(this.channels.data.map(doc => new Promise(res => {
 				client.channels.fetch(doc.channel_id, false)
 				.then(channel => {
-					if (channel.deleted) {
+					if (channel.deleted || !Permissions(channel, client.user).valid) {
 						this.channels.remove(doc);
 					}
 				})
@@ -418,7 +439,7 @@ class Stowaway extends EventEmitter {
 	// assume key1 is decrypted already
 	revokeKey (client, key0, key1, revocationCertificate) {
 		return new Promise(async (resolve, reject) => {
-			const channelIds = this._allChannels(x => x.channel_id);
+			const channelIds = this.channels.data.map(x => x.channel_id);
 			if (channelIds.length > 0) {
 				let revocations = this.revocations.data.map(x => x.revocation_certificate);
 				let { privateKey: revocation } = await openpgp.revokeKey({
@@ -494,12 +515,8 @@ class Stowaway extends EventEmitter {
 		return bonafides.find(x => x.valid) !== undefined;
 	}
 
-	_allChannels () {
-		return this.channels.data;
-	}
-
 	_allPeers () {
-		this.peers.find({ public_key: { $exists: true } });
+		this.peersView.data();
 	}
 
 	_attachJSON (json, name) {
@@ -1006,7 +1023,7 @@ class Stowaway extends EventEmitter {
 
 	async _updatePrivateKey (publicKey) {
 		await this.key.update(publicKey);
-		const docs = this._allChannels();
+		const docs = this.channels.data;
 		for (let i = 0; i < docs.length; i++) {
 			await this._sendHandshake((await this.client.channels.fetch(docs[i].channel_id, false)), false);
 		}
