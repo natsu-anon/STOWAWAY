@@ -415,12 +415,23 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 			enterChannel(channel);
 		});
 
+
+		// PROCESS EVENT LISTENING //
+
+		// emitted on Windows the console window is closed & on other platforms under similar conditions
+		// see https://nodejs.org/dist/latest-v14.x/docs/api/process.html#process_signal_events
+		process.on('SIGHUP', () => {
+			client.destroy();
+			db.close();
+			return process.exit(0);
+		});
+
 		//  FSM EVENT LISTENING  //
 
 		fsm.on('quit', () => {
 			cli.destroy();
 			client.destroy();
-			db.persistence.compactDatafile();
+			db.close();
 			return process.exit(0);
 		});
 		fsm.on('read channel', enterFlag => {
