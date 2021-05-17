@@ -15,6 +15,8 @@ function init (dbFilename) {
 				if (peers == null) {
 					peers = db.addCollection('peers');
 				}
+				peers.addDynamicView('all_peers')
+				.applyFind({ user_id: { $exists: true },  public_key: { $exists: true }});
 				let revocations = db.getCollection('revocations');
 				if (revocations == null) {
 					revocations = db.addCollection('revocations');
