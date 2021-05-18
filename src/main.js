@@ -64,11 +64,8 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 			cli.navigation.setScrollPerc(hMediator.percentage);
 			cli.render();
 		});
-		hMediator.representation()
-		.then(text => {
-			cli.navigation.setContent(text);
-			cli.navigation.setScrollPerc(hMediator.percentage);
-		});
+		cli.navigation.setContent(hMediator.text);
+		cli.navigation.setScrollPerc(hMediator.percentage);
 		const messages = new MessagesModel(stowaway);
 		messages.on('update', text => {
 			cli.messages.setContent(text);
@@ -166,6 +163,10 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 							box.setContent(text);
 							cli.render();
 						});
+						mediator.on('update', text => {
+							box.setContent(text);
+							cli.render();
+						});
 					}
 				});
 				cli.stateColor = MemberColor;
@@ -173,9 +174,10 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 			},
 			() => {
 				cli.selector.removeAllListeners('resize');
+				fsm.removeAllListeners('scrollMembers');
+				fsm.removeAllListeners('sign member');
 				if (mFactory.current != null) {
-					fsm.removeAllListeners('scrollMembers');
-					fsm.removeAllListeners('sign member');
+					mFactory.current.removeAllListeners('update');
 				}
 				cli.selector.hide();
 			})
