@@ -44,10 +44,10 @@ function access (path) {
 	return new Promise((resolve, reject) => {
 		fs.access(path, fs.constants.R_OK, err => {
 			if (err != null) {
-				resolve();
+				reject(err);
 			}
 			else {
-				reject(err);
+				resolve();
 			}
 		});
 	});
