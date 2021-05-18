@@ -126,7 +126,7 @@ function init (keyPath, revocationPath, stowaway, client, cli) {
 			})
 			.then(key => {
 				cli.cat('{green-fg}Found a key file!{/}');
-				cli.log(`\t- key nickname: {underline}${key.getUserIds()}{/}, key fingerprint: {underline}${key.getFingerprint()}{/} `);
+				cli.log(`\t- key nickname: {underline}${key.getUserIDs()}{/}, key fingerprint: {underline}${key.getFingerprint()}{/} `);
 				return existingKey(key, keyPath, revocationPath, stowaway, client, cli);
 			})
 			.then(({ key, passphrase }) => { resolve({ key, passphrase }); })
