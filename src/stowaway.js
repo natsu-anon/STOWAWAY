@@ -370,11 +370,11 @@ class Stowaway extends EventEmitter {
 		});
 	}
 
-	messagePublic (channel, plainText) {
+	messagePublic (channel, text) {
 		return new Promise(resolve => {
 			this._publicKeys(channel)
 			.then(publicKeys => openpgp.encrypt({
-				message: openpgp.Message.fromText(plainText),
+				message: openpgp.createMessage({ text }),
 				publicKeys: publicKeys.concat(this.key.toPublic()),
 				privateKeys: this.key
 			}))
@@ -385,12 +385,12 @@ class Stowaway extends EventEmitter {
 					message: armoredText
 				}, FILE));
 			})
-			.catch(err => { this.emit('error', `failed to encrypt: ${plainText}\n${err.stack}`); })
+			.catch(err => { this.emit('error', `failed to encrypt: ${text}\n${err.stack}`); })
 			.finally(resolve);
 		});
 	}
 
-	messageSigned (channel, plainText) {
+	messageSigned (channel, text) {
 		this._publicKeys(channel)
 		.then(publicKeys => {
 			const temp = [ this.key ];
@@ -408,7 +408,7 @@ class Stowaway extends EventEmitter {
 			});
 		})
 		.then(signedKeys => openpgp.encrypt({
-			message: openpgp.Message.fromText(plainText),
+			message: openpgp.createMessage({ text }),
 			publicKeys: signedKeys.concat(this.key.toPublic()),
 			privateKeys: this.key
 		}))
@@ -419,7 +419,7 @@ class Stowaway extends EventEmitter {
 				message: armoredText
 			}, FILE));
 		})
-		.catch(err => { this.emit('error', `failed to encrypt: ${plainText}\n${err.stack}`); });
+		.catch(err => { this.emit('error', `failed to encrypt: ${text}\n${err.stack}`); });
 	}
 
 	// NO LONGER A PROMISE
@@ -606,7 +606,7 @@ class Stowaway extends EventEmitter {
 	// AFTER 1.0.0: SESSION SUPPORT
 	// NOTE since only guild channel messages get processed you can use message.member to access the guildMember of the sender
 	_handleActive (message) {
-		return Promise(resolve => {
+		return new Promise(resolve => {
 			if (this._validMessage(message)) {
 				this._processJSON(message)
 				.then(json => {
@@ -676,7 +676,7 @@ class Stowaway extends EventEmitter {
 	}
 
 	_processMessage (json, message, notify, cached=false) {
-		return Promise(resolve => {
+		return new Promise(resolve => {
 			switch (json.type) {
 				case HANDSHAKE:
 					if (json.public_key != null && (typeof json.respond) === 'boolean' && Array.isArray(json.revocations))
