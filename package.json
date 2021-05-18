@@ -17,7 +17,6 @@
 		"blessed": "0.1.81",
 		"discord.js": "^12.5.3",
 		"lokijs": "^1.5.12",
-		"nedb": "1.8.0",
 		"openpgp": "^5.0.0-2"
 	},
 	"scripts": {
@@ -28,6 +27,7 @@
 		"start": "node src/index.js",
 		"about": "node src/index.js --about",
 		"channels": "node src/index.js --channels",
+		"token": "node src/index.js --token",
 		"help": "node src/index.js --help",
 		"version": "node src/index.js --version",
 		"query": "node src/query.js"
