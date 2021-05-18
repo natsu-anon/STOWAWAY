@@ -69,7 +69,7 @@ class HandshakedMediator extends Mediator {
 			return res.join('\n');
 		}
 		else {
-			return 'Press [E] to handshake & add a channel';
+			return 'Press [H] to handshake & add a channel';
 		}
 	}
 
