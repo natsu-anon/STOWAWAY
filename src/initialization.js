@@ -19,6 +19,8 @@ const WARNING = `
 	{black-fg}{yellow-bg}#  DO NOT SHARE stowaway.token WITH ANYONE.         #{/}
 	{black-fg}{yellow-bg}#  DO NOT SHARE stowaway.revoke WITH ANYONE.        #{/}
 	{black-fg}{yellow-bg}#                                                   #{/}
+	{black-fg}{red-bg}#  SPILL NOT BLOOD FOR THE PETRODOLLAR.             #{/}
+	{black-fg}{yellow-bg}#                                                   #{/}
 	{black-fg}{yellow-bg}#  DO NOT TRUST THE GOVERNMENT.                     #{/}
 	{black-fg}{yellow-bg}#  DO NOT TRUST CORPORATIONS NOR COMPANIES.         #{/}
 	{black-fg}{yellow-bg}#  {underline}DO NOT TRUST GROOMERS.{/underline}                           #{/}
