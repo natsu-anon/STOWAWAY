@@ -108,7 +108,7 @@ class Stowaway extends EventEmitter {
 		super();
 		this.channels = channels;
 		this.peers = peers;
-		this.peersView = peers.getView('all_peers');
+		this.peersView = peers.getDynamicView('all_peers');
 		this.revocations = revocations;
 		this.keyFile = keyFile;
 		this.version = version;
