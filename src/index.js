@@ -11,7 +11,7 @@ const API_TOKEN = SAVE_DIR + 'stowaway.token';
 const PRIVATE_KEY = SAVE_DIR + 'stowaway.key';
 const REVOCATION_CERTIFICATE = 'stowaway.revoke';
 
-const VERSION = '1.0.1';
+const VERSION = '1.1.0';
 const BANNER = `      _  __ __        __        __
  //  /_\` / / / | | | /_/ | | | /_/ /_/  //
 //  ._/ / /_/  |/|/ / /  |/|/ / /  /   //  v ${VERSION}
@@ -55,7 +55,7 @@ else if (process.argv.length > 2 && process.argv[2] === '--revoke') {
 			const { key: key1, revocationCertificate: rCert } = await openpgp.generateKey({
 				type: 'ecc',
 				curve: 'curve25519',
-				userIds: [{ name: nickname }]
+				userIDs: [{ name: nickname }]
 			});
 			console.log('Genertaed new key! Always check that your key\'s nickname & fingerprint match on subsequent launches');
 			console.log(`> key nickname: ${nickname}`);
@@ -66,7 +66,7 @@ else if (process.argv.length > 2 && process.argv[2] === '--revoke') {
 			console.log('old key revoked, saving new key!');
 			// encrypt key1 with passphrase then write to PRIVATE_KEY
 			const encryptedKey = await openpgp.encryptKey({
-				key: key1,
+				privateKey: key1,
 				passphrase: process.argv[4]
 			});
 			await writeFile(encryptedKey.armor(), PRIVATE_KEY);
