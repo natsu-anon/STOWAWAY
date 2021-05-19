@@ -309,7 +309,7 @@ class Stowaway extends EventEmitter {
 			if (doc == null) { // handshake new channel
 				this._sendHandshake(channel, true)
 				.then(message => {
-					// this.emit('test', `${message.createdTimestamp}`);
+					// this.emit('test', `handshake0 ${message.createdTimestamp}`);
 					this.channels.insert({
 						channel_id: channel.id,
 						last_channel: true,
@@ -373,8 +373,8 @@ class Stowaway extends EventEmitter {
 	messagePublic (channel, text) {
 		return new Promise(resolve => {
 			this._publicKeys(channel)
-			.then(publicKeys => openpgp.encrypt({
-				message: openpgp.createMessage({ text }),
+			.then(async (publicKeys) => openpgp.encrypt({
+				message: await openpgp.createMessage({ text }),
 				publicKeys: publicKeys.concat(this.key.toPublic()),
 				privateKeys: this.key
 			}))
@@ -407,8 +407,8 @@ class Stowaway extends EventEmitter {
 				});
 			});
 		})
-		.then(signedKeys => openpgp.encrypt({
-			message: openpgp.createMessage({ text }),
+		.then(async (signedKeys) => openpgp.encrypt({
+			message: await openpgp.createMessage({ text }),
 			publicKeys: signedKeys.concat(this.key.toPublic()),
 			privateKeys: this.key
 		}))
@@ -786,6 +786,7 @@ class Stowaway extends EventEmitter {
 	_channelMessage (armoredMessage, publicFlag, message) {
 		this._publicKey(message.author.id, 'Stowaway._channelMessage()')
 		.then(publicKey => {
+			this.emit('test', `processing message on ${message.channel.name} from ${message.member.name}`);
 			this._decrypt(publicKey, armoredMessage, message, publicFlag);
 		})
 		.catch(err => {
@@ -811,7 +812,7 @@ class Stowaway extends EventEmitter {
 		})
 		.then(result => {
 			this.emit('channel message', message, result, publicFlag);
-			// this.emit('test', `${publicFlag? 'public' : 'signed-only'} message from ${message.author.tag}: (signed: ${result.signed}, verified: ${result.verified}) ${result.plainText}`);
+			this.emit('test', `${publicFlag? 'public' : 'signed-only'} message from ${message.author.tag}: (signed: ${result.signed}, verified: ${result.verified}) ${result.plainText}`);
 			this._updateLatests(message.channel.id, message.id, message.createdTimestamp);
 		})
 		.catch(err => {
@@ -996,7 +997,7 @@ class Stowaway extends EventEmitter {
 					if (bonafides.find(x => x.valid) == null) {
 						await this._updatePrivateKey(publicKey);
 						this.emit('signed key', message);
-						// this.emit('test', `${message.author.tag} signed your key!`);
+						this.emit('test', `${message.author.tag} signed your key!`);
 						return {
 							cache: true,
 							text: `${message.author.tag} signed your key!`
