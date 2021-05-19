@@ -1,12 +1,14 @@
-_LEARN_ smart parens & org PLEASE
-
 * TODO TEST
   - [X] TWO dummy accounts
-  - [ ] deadhead & test cli
+  - [ ] test.js
+  - [ ] deadhead.js
+	
+* DONE aaaaaaaa openpgp changed stuff
 
+* DONE update version number to 1.1.0
 
-* TODO collect a buncha odds & ends into a utilities thing (maybe even set-up a blessed-utils thing also)
-  - [-] rewrite [5/6]
+* DONE collect a buncha odds & ends into a utilities thing (maybe even set-up a blessed-utils thing also)
+  - [X] rewrite [6/6]
 	- [X] stowaway
 	  - [X] Stowaway.numberStowaways() no longer returns a promise! (update appropriately) WHERESTVE IS IT USED???
 		- not used yet :P
@@ -17,7 +19,7 @@ _LEARN_ smart parens & org PLEASE
 	- [X] main
 	- [X] index
 	- [X] client
-	- [ ] everything else -- whatstve exactly?
+	- [X] everything else -- whatstve exactly?
   - [X] stowaway refactoring
 	- [X] _handleActive()
 	- [X] _handleNotify() now _handleCache()
@@ -25,7 +27,7 @@ _LEARN_ smart parens & org PLEASE
   - [X] NATO phrase
   - [X] all the read/write file stuff
 
-* TODO swap out nedb with lokijs for RAISINS https://github.com/techfort/LokiJS [2/3]
+* DONE swap out nedb with lokijs for RAISINS https://github.com/techfort/LokiJS [3/3]
 - [X] replace in database.js
 - [X] TEST [3/3]
   - [X] collections [6/6]
@@ -43,8 +45,8 @@ _LEARN_ smart parens & org PLEASE
   - [X] dynamic views vs collections
   - [X] serializing
 	- it works, but you MUST use the method as used in database.init()
-- [-] fully integrate [60%]
-  - [ ] double check stowaway -- it's VITAL
+- [X] fully integrate [100%]
+  - [X] double check stowaway -- it's VITAL
   - [X] last_channel now a bool property of channel entries!  Change accordingly!
   - [X] stowaway [5/5]
 	- [X] cache the _handleNotify stuff
@@ -67,11 +69,12 @@ _LEARN_ smart parens & org PLEASE
 	- [X] handshake model
 	- [X] member factory -- maybe???
 	- [X] update the main stuff
-  - [ ] command line stuff
+  - [X] command line stuff
+	- lmao didn't need to
 
 #+date: 2021-05-03
 
-* TODO fix the bug(s) [4/4]
+* DONE fix the bug(s) [4/4]
 - [X] was it just 'this.date.toLocaleTimesString'?
 - [X] was it in Stowaway._updatePrivateKey() also?
 - [X] update version.json
