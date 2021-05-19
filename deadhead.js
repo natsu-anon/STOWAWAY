@@ -6,8 +6,7 @@ const { token1, keyPath1, db1, channels1 } = require('./test-data.js');
 
 async function launch (freshFlag) {
 	const VERSION = '1.1.0-deadhead';
-	const db = freshflag ? await database('temp.db', false) : await database(db1);
-	db.persistence.setAutocompactionInterval(10000);
+	const db = freshFlag ? await database('temp.db', false) : await database(db1);
 	const client = await clientLogin(token1);
 	const { key } = freshFlag ? await genKey() : await loadKey(keyPath1);
 	const stowaway = new Stowaway(db, keyPath1, VERSION);
