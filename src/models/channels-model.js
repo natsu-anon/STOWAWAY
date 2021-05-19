@@ -105,17 +105,12 @@ class ChannelsModel extends Model {
 				throw Error('server-channel struct mismatch in channel-models.js, on stowaway.emit("handshakeChannel")');
 			}
 		});
-		return new Promise(resolve => {
-			Promise.allSettled(channels.data.map(channel => client.channels.fetch(channel.id, false)))
-			.then(result => {
-				result.forEach(res => {
-					if (res.status === 'fulfilled' && res.value.type !== 'dm' && res.value.isText()) {
-						this.struct.addChannel(res.value, client.user);
-					}
-				});
-				resolve(this);
-			});
+		const handshakedIds = channels.data.map(doc => doc.channel_id);
+		client.channels.cache.filter(ch => !handshakedIds.includes(ch.id) && ch.type !== 'dm' && ch.isText())
+		.each(channel => {
+			this.struct.addChannel(channel, client.user);
 		});
+		return Promise.resolve(this);
 	}
 }
 
