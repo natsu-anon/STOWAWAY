@@ -53,7 +53,7 @@ class Revoker {
 				type: 'ecc',
 				curve: 'curve25519',
 				passphrase: this.passphrase,
-				userIds: [{
+				userIDs: [{
 					name: this.nickname,
 				}]
 			});
@@ -99,7 +99,7 @@ async function test () {
 		type: 'ecc',
 		curve: 'curve25519',
 		passphrase: '321',
-		userIds: [{
+		userIDs: [{
 			name: 'key0',
 		}]
 	});
