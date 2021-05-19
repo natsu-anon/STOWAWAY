@@ -19,7 +19,6 @@ function displayChannel (channel) {
 		}
 		return `${channelName} ${permissions.join(', ')}{/}`;
 	}
-
 }
 
 class ChannelsMediator extends Mediator {
