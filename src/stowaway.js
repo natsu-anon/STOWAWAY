@@ -104,7 +104,7 @@ class Messenger {
 */
 class Stowaway extends EventEmitter {
 
-	constructor (channels, peers, revocations, keyFile, version, comment='') {
+	constructor (channels, peers, revocations, keyFile, version, comment='', verbose=false) {
 		super();
 		this.channels = channels;
 		this.peers = peers;
@@ -116,6 +116,7 @@ class Stowaway extends EventEmitter {
 		if (comment.length > 0) {
 			this.discordMessage += `\nUser comment: ${comment}`;
 		}
+		this.verbose = verbose;
 	}
 
 	get _armoredPublicRevocations () {
@@ -371,9 +372,10 @@ class Stowaway extends EventEmitter {
 	}
 
 	messagePublic (channel, text) {
+		// this.emit('test', `messaging ${channel.guild.name} #${channel.name}`);
 		return new Promise(resolve => {
 			this._publicKeys(channel)
-			.then(async (publicKeys) => openpgp.encrypt({
+			.then(async publicKeys => openpgp.encrypt({
 				message: await openpgp.createMessage({ text }),
 				publicKeys: publicKeys.concat(this.key.toPublic()),
 				privateKeys: this.key
@@ -407,7 +409,7 @@ class Stowaway extends EventEmitter {
 				});
 			});
 		})
-		.then(async (signedKeys) => openpgp.encrypt({
+		.then(async signedKeys => openpgp.encrypt({
 			message: await openpgp.createMessage({ text }),
 			publicKeys: signedKeys.concat(this.key.toPublic()),
 			privateKeys: this.key
@@ -516,7 +518,7 @@ class Stowaway extends EventEmitter {
 	}
 
 	_allPeers () {
-		this.peersView.data();
+		return this.peersView.data();
 	}
 
 	_attachJSON (json, name) {
@@ -525,11 +527,11 @@ class Stowaway extends EventEmitter {
 	}
 
 	_findChannel (channelId) {
-		this.channels.findOne({ channel_id: channelId });
+		return this.channels.findOne({ channel_id: channelId });
 	}
 
 	_findPeer (userId) {
-		this.peers.findOne({ user_id: userId, publicKey: { $exists: true } });
+		return this.peers.findOne({ user_id: userId, public_key: { $exists: true } });
 	}
 
 	_publicKey (userId, origin) {
@@ -551,25 +553,30 @@ class Stowaway extends EventEmitter {
 		}
 	}
 
-	_publicKeys (channel) {
-		return new Promise(resolve => {
-			 Promise.allSettled(channel.members.map(user => {
-				return new Promise((res, rej) => {
-					const doc = this._findPeer(user.id);
-					if (doc != null) {
-						res(doc.public_key);
-					}
-					else {
-						rej();
-					}
-				});
-			}))
-			.then(values => values.filter(x => x.status === 'fulfilled').map(x => x.value))
-			.then(armoredKeys => Promise.all(armoredKeys.map(armoredKey => {
-				return openpgp.readKey({ armoredKey });
-			})))
-			.then(resolve); // think about it
-		});
+	async _publicKeys (channel) {
+		const memberIds = channel.members.map(member => member.user.id);
+		const armoredKeys = [];
+		let doc;
+		for (let i = 0; i < memberIds.length; i++) {
+			doc = this.peers.findOne(memberIds[i]);
+			if (doc != null) {
+				armoredKeys.push(doc.public_key);
+			}
+		}
+		// console.log(memberIds);
+		// const armoredKeys = this.peers.find({
+		// 	user_id: { $cointainsAny: memberIds }
+		// }).data.map(doc => doc.public_key);
+		// return await Promise.all(this.peersView.applyFind({
+		// 	user_id: { $cointainsAny: channel.members.map(m => m.user.id) }
+		// })
+		// .data()
+		// .map(doc => openpgp.readKey({
+		// 	armoredKey: doc.public_key
+		// })));
+		return await Promise.all(armoredKeys.map(armoredKey =>
+			openpgp.readKey({ armoredKey })
+		));
 	}
 
 	_send (channel, attachment) {
@@ -610,7 +617,10 @@ class Stowaway extends EventEmitter {
 			if (this._validMessage(message)) {
 				this._processJSON(message)
 				.then(json => {
+					// this.emit('test', `_handleActive() ${message.author.username} ${JSON.stringify(json)}\n`);
+					// this.emit('test', `_handleActive() ${json.type} from ${message.author.username}`);
 					if (json.type === CHANNEL_MESSAGE) {
+						// this.emit('test', '_handleActive() channel message');
 						if (json.message != null && (typeof json.public) === 'boolean') {
 							return this._channelMessage(json.message, json.public, message);
 						}
@@ -621,6 +631,9 @@ class Stowaway extends EventEmitter {
 					else if (message.author.id !== this.id) {
 						return this._cacheMessage(json, message, false);
 					}
+					else {
+						return Promise.resolve();
+					}
 				})
 				.catch(err => {
 					if (err != null) {
@@ -630,7 +643,12 @@ class Stowaway extends EventEmitter {
 						this.emit('error', 'Unexpected error in Stowaway._handleActive()');
 					}
 				})
-				.finally(resolve);
+				.finally(() => {
+					resolve();
+				});
+			}
+			else {
+				resolve();
 			}
 		});
 	}
@@ -638,7 +656,13 @@ class Stowaway extends EventEmitter {
 	_handleCache (message) {
 		if (message.author.id !== this.id && this._validMessage(message)) {
 			this._processJSON(message)
-			.then(json => this._cacheMessage(json, message, true))
+			// .then(json => this._cacheMessage(json, message, true))
+			.then(json => {
+				// this.emit('test', `_handleCache() ${message.author.username} ${JSON.stringify(json)}\n`);
+				// this.emit('test', '_handleCache()');
+				// this.emit('test', `_handleCache() ${json.type}`);
+				return this._cacheMessage(json, message, true);
+			})
 			.catch(err => {
 				if (err != null) {
 					this.emit('error', `Error in Stowaway._handleCache()\n${err.stack}`);
@@ -658,7 +682,7 @@ class Stowaway extends EventEmitter {
 		else {
 			const doc = this._findChannel(message.channel.id);
 			if (doc != null) {
-				return this._processMessage(json, message, notify, doc.cached.includes(message.id));
+				return this._processMessage(json, message, notify, doc.cache.includes(message.id));
 			}
 			else {
 				this.emit('error', `error in Stowaway._cacheMessage(). ${message.channel.name} (${message.channel.id}) not in database`);
@@ -669,8 +693,8 @@ class Stowaway extends EventEmitter {
 
 	_cache (message) {
 		this.channels.findAndUpdate({ channel_id: message.channel.id }, docs => {
-			if (!docs.cached.includes(message.id)) {
-				docs.cached.push(message.id);
+			if (!docs.cache.includes(message.id)) {
+				docs.cache.push(message.id);
 			}
 		});
 	}
@@ -683,10 +707,11 @@ class Stowaway extends EventEmitter {
 					{
 						this._handshake(json.public_key, json.respond, json.revocations, message, cached) // may cauase a handhsake
 						.then(({ cache, color, text }) => {
-							if (notify && color != null && text != null) {
+							if ((this.verbose || notify) && color != null && text != null) { // NOTE uncomment this, delete below
 								this.emit('notify', color, text);
 							}
 							if (cache) {
+								// this.emit('test', 'cache handshake');
 								this._cache(message);
 							}
 						})
@@ -702,14 +727,18 @@ class Stowaway extends EventEmitter {
 						if (json.recipient === this.id) {
 							this._signedKey(json.publicKey, message) // causes handshakes
 							.then(({ cache, text }) => {
-								if (notify && text != null) {
+								if ((this.verbose || notify) && text != null) {
 									this.emit('notify', 'blue', text);
 								}
 								if (cache) {
+									this.emit('test', 'caching keysig');
 									this._cache(message);
 								}
 							})
 							.finally(resolve);
+						}
+						else {
+							resolve();
 						}
 					}
 					else {
@@ -719,9 +748,9 @@ class Stowaway extends EventEmitter {
 					break;
 				case REVOCATION:
 					if (json.revocation != null && json.publicKey != null) {
-						this._revocation(json.revocation, json.publicKey, message.author.id, cached)
+						this._revocation(json.revocation, json.publicKey, message, cached)
 						.then(({ cache, color, text }) => {
-							if (notify && color != null && text != null) {
+							if ((this.verbose || notify) && color != null && text != null) {
 								this.emit('notify', color, text);
 							}
 							if (cache) {
@@ -786,7 +815,7 @@ class Stowaway extends EventEmitter {
 	_channelMessage (armoredMessage, publicFlag, message) {
 		this._publicKey(message.author.id, 'Stowaway._channelMessage()')
 		.then(publicKey => {
-			this.emit('test', `processing message on ${message.channel.name} from ${message.member.name}`);
+			// this.emit('test', `processing message on ${message.channel.name} from ${message.member.name}`);
 			this._decrypt(publicKey, armoredMessage, message, publicFlag);
 		})
 		.catch(err => {
@@ -875,113 +904,106 @@ class Stowaway extends EventEmitter {
 
 	// OK -- improve error handling
 	// figure out why linter says this is wrong
-	_handshake (armoredKey, plsRespond, revocations, message, cached) {
-		return new Promise(async (resolve) => {
-			const userId = message.author.id;
-			const doc = this.findPeer(userId);
-			if (doc == null) {
-				try {
-					await openpgp.readKey({ armoredKey }); // do this just to check it's armored key is actually a key
-					this.peers.insert({
-						user_id: userId,
-						public_key: armoredKey,
-						armor_hash: hash(armoredKey)
-					});
-					if (plsRespond) {
-						await this._sendHandshake(message.channel, false);
-					}
+	async _handshake (armoredKey, plsRespond, revocations, message, cached) {
+		const userId = message.author.id;
+		const doc = this._findPeer(userId);
+		if (doc == null) {
+			try {
+				await openpgp.readKey({ armoredKey }); // do this just to check it's armored key is actually a key
+				this.peers.insert({
+					user_id: userId,
+					public_key: armoredKey,
+					armor_hash: hash(armoredKey)
+				});
+				if (plsRespond) {
+					await this._sendHandshake(message.channel, false);
+				}
+				this.emit('handshake', message, true);
+				return {
+					cache: true,
+					color: 'green',
+					text: `New handshake from ${message.member.displayName} on ${message.guild.name} #${message.channel.name}`
+				};
+			}
+			catch (err) {
+				this.emit('handshake', message, false);
+				if (err != null) {
+					this.emit('error', `Error in Stowaway._handshake():\n${err.stack}`);
+				}
+				else {
+					this.emit('error', `Unexpected error in Stowaway._handshake()`);
+				}
+				return{
+					cache: false,
+					color: 'yellow',
+					text: `Improper amrmored key in handshake from ${message.author.tag}`
+				};
+			}
+		}
+		else {
+			try {
+				const publicKey = await openpgp.readKey({ armoredKey });
+				const savedKey = await openpgp.readKey({ armoredKey: doc.public_key });
+				if (doc.armor_hash === hash(armoredKey) && cached) {
 					this.emit('handshake', message, true);
-					resolve({
-						cache: true,
-						color: 'green',
-						text: `New handshake from ${message.member.displayName} on ${message.guild.name} _${message.channel.name}`
-					});
+					// this.emit('test', 'retrieved cached handshake');
+					return {cache: false};
 				}
-				catch (err) {
-					this.emit('handshake', message, false);
-					if (err != null) {
-						this.emit('error', `Error in Stowaway._handshake():\n${err.stack}`);
+				else if (publicKey.hasSameFingerprintAs(savedKey)) {
+					if (cached) {
+						this.emit('key update', message);
+						return {cache: false };
 					}
 					else {
-						this.emit('error', `Unexpected error in Stowaway._handshake()`);
-					}
-					resolve({
-						cache: false,
-						color: 'yellow',
-						text: `Improper amrmored key in handshake from ${message.author.tag}`
-					});
-				}
-			}
-			else {
-				try {
-					const publicKey = await openpgp.readKey({ armoredKey });
-					const savedKey = await openpgp.readKey({ armoredKey: doc.public_key });
-					if (doc.armor_hash === hash(armoredKey) && cached) {
-						this.emit('handshake', message, true);
-						resolve({
-							cache: false
-						});
-					}
-					else if (publicKey.hasSameFingerprintAs(savedKey)) {
-						if (cached) {
-							this.emit('key update', message);
-							resolve({
-								cache: false,
-							});
-						}
-						else {
-							await savedKey.update(publicKey);
-							const armor = savedKey.armor();
-							doc.public_key = armor;
-							doc.armor_hash = hash(armor);
-							this.peers.update(doc);
-							this.emit('key update', message);
-							resolve({
-								cache: false,
-								color: 'green',
-								text: `Key update from ${message.author.tag}`
-							});
-						}
-					}
-					else if (cached) {
-						this.emit('revocation', message);
-						resolve({
+						await savedKey.update(publicKey);
+						const armor = savedKey.armor();
+						doc.public_key = armor;
+						doc.armor_hash = hash(armor);
+						this.peers.update(doc);
+						this.emit('key update', message);
+						return {
 							cache: false,
-						});
-					}
-					else {
-						let revocation;
-						for (let i = 0; i < revocations.length; i++) {
-							revocation = await openpgp.readKey({ armoredKey: revocations[i] });
-							if (revocation.hasSameFingerprintAs(savedKey)) {
-								doc.public_key = armoredKey;
-								this.peers.update(doc);
-								this.emit('revocation', message);
-								resolve({
-									cache: true,
-									color: 'green',
-									text: `Key revocation from ${message.author.tag}`
-								});
-								break;
-							}
-						}
-						resolve({});
+							color: 'green',
+							text: `Key update from ${message.author.tag}`
+						};
 					}
 				}
-				catch {
-					resolve({
-						cache: false,
-						color: 'yellow',
-						text: `Improper armored key in handshake from ${message.author.tag}`
-					});
+				else if (cached) {
+					this.emit('revocation', message);
+					return { cache: false };
+				}
+				else {
+					let revocation;
+					for (let i = 0; i < revocations.length; i++) {
+						revocation = await openpgp.readKey({ armoredKey: revocations[i] });
+						if (revocation.hasSameFingerprintAs(savedKey)) {
+							doc.public_key = armoredKey;
+							this.peers.update(doc);
+							this.emit('revocation', message);
+							return {
+								cache: true,
+								color: 'green',
+								text: `Key revocation from ${message.author.tag}`
+							};
+						}
+					}
+					return {};
 				}
 			}
-		});
+			catch {
+				return {
+					cache: false,
+					color: 'yellow',
+					text: `Improper armored key in handshake from ${message.author.tag}`
+				};
+			}
+		}
 	}
 
 	// not GOOF'D?
 	async _signedKey (armoredKey, message, cached) {
 		if (cached) {
+			this.emit('test', 'using cached signature');
 			this.emit('signed key', message);
 			return {
 				cache: false
@@ -997,7 +1019,7 @@ class Stowaway extends EventEmitter {
 					if (bonafides.find(x => x.valid) == null) {
 						await this._updatePrivateKey(publicKey);
 						this.emit('signed key', message);
-						this.emit('test', `${message.author.tag} signed your key!`);
+						// this.emit('test', `${message.author.tag} signed your key!`);
 						return {
 							cache: true,
 							text: `${message.author.tag} signed your key!`
@@ -1028,7 +1050,7 @@ class Stowaway extends EventEmitter {
 		for (let i = 0; i < docs.length; i++) {
 			await this._sendHandshake((await this.client.channels.fetch(docs[i].channel_id, false)), false);
 		}
-		await writeFile(this.KeyPath, (await openpgp.encryptKey({
+		await writeFile(this.keyFile, (await openpgp.encryptKey({
 			privateKey: this.key,
 			passphrase: this.passphrase
 		})).armor());
@@ -1037,7 +1059,7 @@ class Stowaway extends EventEmitter {
 	_revocation (armoredRevocation, armoredKey, message, cached) {
 		if (cached) {
 			this.emit('revocation', message);
-			return new Promise.resolve({
+			return Promise.resolve({
 				cache: false
 			});
 		}

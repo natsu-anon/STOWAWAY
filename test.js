@@ -55,8 +55,8 @@ async function test () {
 		const client1 = await clientLogin(token1);
 		const { channels: ch0, peers: p0, revocations: rev0 } = await database('temp0.db', false);
 		const { channels: ch1, peers: p1, revocations: rev1 } = await database('temp1.db', false);
-		const stowaway0 = new Stowaway(ch0, p0, rev0, keyPath0, VERSION);
-		const stowaway1 = new Stowaway(ch1, p1, rev1, keyPath1, VERSION);
+		const stowaway0 = new Stowaway(ch0, p0, rev0, keyPath0, VERSION, 'foo', true);
+		const stowaway1 = new Stowaway(ch1, p1, rev1, keyPath1, VERSION, 'bar', true);
 		console.log('TESTING BEGIN!');
 		stowaway0.on('test', text => {
 			console.log(`${client0.user.tag}: ${text}`);
@@ -65,16 +65,16 @@ async function test () {
 			console.log(`${client1.user.tag}: ${text}`);
 		});
 		stowaway0.on('notify', (color, text) => {
-			console.log(`\t${client0.user.tag} ${color}: ${text}`);
+			console.log(`\t\x1b[32m${client0.user.tag} ${color}: ${text}\x1b[0m`);
 		});
 		stowaway1.on('notify', (color, text) => {
-			console.log(`\t${client1.user.tag} ${color}: ${text}`);
+			console.log(`\t\x1b[32m${client1.user.tag} ${color}: ${text}\x1b[0m`);
 		});
 		stowaway0.on('error', text => {
-			console.error(`${client0.user.tag}: ${text}`);
+			console.log(`\t\x1b[31m${client0.user.tag} ${text}\x1b[0m`);
 		});
 		stowaway1.on('error', text => {
-			console.error(`${client1.user.tag}: ${text}`);
+			console.log(`\t\x1b[31m${client1.user.tag} ${text}\x1b[0m`);
 		});
 		stowaway0.launch(client0, key0, 'test');
 		stowaway1.launch(client1, key1, 'test');
@@ -84,26 +84,25 @@ async function test () {
 
 
 		// handshakes
-		process.stdout.write('Handshaking...');
+		console.log('Handshaking...');
 		for (let i = 0; i < channels0.length; i++) {
 			await stowaway0.loadChannel(await client0.channels.fetch(channels0[i]));
 		}
 		for (let i = 0; i < channels1.length; i++) {
 			await stowaway1.loadChannel(await client1.channels.fetch(channels1[i]));
 		}
-		console.log('Done!');
+		await sleep(1);
 
 		// public message
-		process.stdout.write('Sending messages...');
 		let channel0 = await client0.channels.fetch(channels0[0]); // unfortunately, you have to do this
 		let channel1 = await client1.channels.fetch(channels1[0]);
+		console.log(`${channel0.guild.name} #${channel0.name}`);
 		await stowaway0.loadChannel(channel0);
 		await stowaway1.loadChannel(channel1);
 		await stowaway0.messagePublic(channel0, 'AHOY');
 		await stowaway1.messagePublic(channel1, 'AHOYO');
-		await stowaway0.messageSigned(channel0, 'LOREM IPSUM');
-		await stowaway1.messageSigned(channel1, 'CARTAGO DELENDA EST');
-		console.log('Done!');
+		await stowaway0.messageSigned(channel0, 'CARTAGO DELENDA EST');
+		await stowaway1.messageSigned(channel1, 'BANALISER LE DOLLAR');
 
 		// key signing
 		await new Promise(async resolve => {
@@ -120,14 +119,16 @@ async function test () {
 				});
 			});
 		});
-		await sleep(5);
+		await sleep(1);
 
 		// key revocation
 		const { key: k0, revocationCertificate: rc0 } = await genKey();
 		await stowaway0.revokeKey(client0, key0, k0, rCert0);
+		await stowaway0.loadChannel(channel0);
+		// await stowaway1.loadChannel(channel1);
 
 		// CLEANUP
-		await sleep(10);
+		await sleep(1);
 		client0.destroy();
 		client1.destroy();
 		console.log('TESTING COMPLETE!');
