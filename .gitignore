@@ -3,6 +3,7 @@ DO_NOT_SHARE/
 
 # emacs stuff
 \#*\#
+.#*
 *~
 .dir-locals.el
 
