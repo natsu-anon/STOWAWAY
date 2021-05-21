@@ -124,6 +124,9 @@ async function test () {
 		// key revocation
 		const { key: k0, revocationCertificate: rc0 } = await genKey();
 		await stowaway0.revokeKey(client0, key0, k0, rCert0);
+		await sleep(3);
+
+		console.log('\nCACHE TEST');
 		await stowaway0.loadChannel(channel0);
 		// await stowaway1.loadChannel(channel1);
 
