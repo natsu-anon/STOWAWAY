@@ -154,6 +154,9 @@ class Stowaway extends EventEmitter {
 			if (doc != null) {
 				channel.messages.fetch({ after: messageId }, false, false)
 				.then(messages => {
+					return messages.sort((m0, m1) => m0.createdTimestamp - m1.createdTimestamp);
+				})
+				.then(messages => {
 					return Promise.allSetteld(messages.map(message => this._handleActive(message)));
 				})
 				.then(() => {
