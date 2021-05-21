@@ -1,6 +1,12 @@
 * TODO TEST
   - [X] TWO dummy accounts
   - [ ] test.js
+	- [ ] MAKE IT WORK [0/3]
+	  - [ ] implement KEY_UPDATE message
+	  - [ ] clean up handshake
+		- [ ] remove the key update section
+		- [ ] remove the revocation section???
+	  - [ ] make fetchOlder/fetchNewer/loadChannel handle messages in chronological order
   - [ ] deadhead.js
 	
 * DONE aaaaaaaa openpgp changed stuff
