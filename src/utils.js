@@ -33,18 +33,23 @@ const NATO = [
 ];
 const NONCE_CHALLENGE = 'AAA';
 
-function nonce (input) {
-	return new Promise((resolve, reject) => {
-		const worker = new Worker('./src/worker/nonce.js', {
-			argv: [ NONCE_CHALLENGE ],
-			workerData: input
+function nonce (input, test) {
+	if (test != null) {
+		return hash(input + test).slice(0, NONCE_CHALLENGE.length) === NONCE_CHALLENGE;
+	}
+	else {
+		return new Promise((resolve, reject) => {
+			const worker = new Worker('./src/worker/nonce.js', {
+				argv: [ NONCE_CHALLENGE ],
+				workerData: input
+			});
+			worker.once('message', resolve);
+			worker.once('error', reject);
+			worker.once('exit', () => {
+				worker.removeAllListeners();
+			});
 		});
-		worker.once('message', resolve);
-		worker.once('error', reject);
-		worker.once('exit', () => {
-			worker.removeAllListeners();
-		});
-	});
+	}
 }
 
 function hash (input) {
