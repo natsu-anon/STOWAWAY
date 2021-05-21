@@ -1,6 +1,7 @@
 const fs = require('fs');
 const https = require('https');
 const crypto = require('crypto');
+const { Worker } = require('worker_threads');
 
 const NATO = [
 	'ALPHA',
@@ -30,9 +31,24 @@ const NATO = [
 	'YANKEE',
 	'ZULU'
 ];
+const NONCE_CHALLENGE = 'AAA';
+
+function nonce (input) {
+	return new Promise((resolve, reject) => {
+		const worker = new Worker('./src/worker/nonce.js', {
+			argv: [ NONCE_CHALLENGE ],
+			workerData: input
+		});
+		worker.once('message', resolve);
+		worker.once('error', reject);
+		worker.once('exit', () => {
+			worker.removeAllListeners();
+		});
+	});
+}
 
 function hash (input) {
-	return crypto.createHash('blake2s256').update(input).digest('base64');
+	return crypto.createHash('sha512').update(input).digest('base64');
 }
 
 function natoPhrase (length=3) {
@@ -103,6 +119,7 @@ function writeStream (file) {
 }
 
 module.exports = {
+	nonce,
 	hash,
 	access,
 	writeFile,
