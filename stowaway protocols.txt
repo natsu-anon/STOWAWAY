@@ -27,13 +27,7 @@ json:
 {
 	type: 'handshake',
 	respond: true/false,
-	publicKey: armored public key
-	revocations: [
-		armored public revokingKey0, (can get the fingerprint of the original key from it)
-		armored public revokingKey1, (can get the fingerprint of the original key from it)
-		...
-		armored public revokingKeyN, (can get the fingerprint of the original key from it)
-	]
+	public_key: armored public key
 }
 
 then when message recieved
@@ -46,7 +40,7 @@ json:
 {
 	type: 'signed_key',
 	recipient: snowflake (discord id) of intended recipient,
-	publicKey: signed key
+	public_key: signed key
 }
 
 KEY REVOCATION:
@@ -54,7 +48,35 @@ json:
 {
 	type: 'revocation'
 	revocation: armored public revocation
-	publicKey: armored public key
+	public_key: armored public key
 }
+
+KEY_UPDATE: caused by KEY SIGNATURE
+json: {
+	type: 'key_update',
+	public_key: armored public key
+}
+
+HISTORY_INQUIRY: cache this -- DO NOT PRINT
+json: {
+	type: 'history_inquiry',
+	cause: snowflake (discord id) of message that caused history_inquiry
+	nonce: nonce of hash of cause id
+}
+
+PROVENANCE: caused by HISTORY_INQUIRY, cache this, DO NOT PRINT
+json: {
+	type: 'provenance',
+	recipient: snowflake of (discord id) of intended recipient
+	public_key: armored public key
+	revocations : [
+		armoredRevocation1,
+		...
+		armoredRevocationN
+	]
+}
+
+	
+
 
 recipient still checks if fingerprints match, and if they do then update
