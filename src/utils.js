@@ -45,7 +45,10 @@ function nonce (input, test) {
 			});
 			worker.once('message', resolve);
 			worker.once('error', reject);
-			worker.once('exit', () => {
+			worker.once('exit', code => {
+				if (code !== 0) {
+					reject(`non-zero exit code`);
+				}
 				worker.removeAllListeners();
 			});
 		});
