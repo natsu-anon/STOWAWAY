@@ -1,7 +1,7 @@
 const EventEmitter = require('events');
 const openpgp = require('openpgp');
 const { MessageAttachment } = require('discord.js');
-const { writeFile, readUrl, hash } = require('./utils.js');
+const { writeFile, readUrl, hash, nonce } = require('./utils.js');
 
 
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
@@ -15,8 +15,10 @@ const FILE = 'STOWAWAY.json';
 const CHANNEL_MESSAGE = 'channel_message';
 const HANDSHAKE = 'handshake';
 const SIGNED_KEY = 'signed_key';
-const KEY_UPDATE = 'key_update';
 const REVOCATION = 'revocation';
+const KEY_UPDATE = 'key_update';
+const HISTORY_INQUIRY = 'history_inquiry';
+const PROVENANCE = 'provenance';
 
 
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
@@ -480,8 +482,8 @@ class Stowaway extends EventEmitter {
 						client.channels.fetch(channelId, false)
 						.then(channel => this._send(channel, this._attachJSON({
 							type: REVOCATION,
+							public_key: publicKeyArmored,
 							revocation: armoredRevocation,
-							publicKey: publicKeyArmored
 						}, FILE)))
 						.then(res)
 						.catch(rej);
@@ -547,6 +549,17 @@ class Stowaway extends EventEmitter {
 		return this.peers.findOne({ user_id: userId, public_key: { $exists: true } });
 	}
 
+	_inquireHistory (message) {
+		nonce(message.id)
+		.then(res => {
+			this._send(message.channel, this._attachJSON({
+				type: HISTORY_INQUIRY,
+				nonce: res,
+				cause: message.id
+			}, FILE));
+		});
+	}
+
 	_publicKey (userId, origin) {
 		if (userId === this.id || userId == null) {
 			return Promise.resolve(this.key.toPublic());
@@ -601,7 +614,6 @@ class Stowaway extends EventEmitter {
 			type: HANDSHAKE,
 			respond: requestResponse,
 			public_key: this.key.toPublic().armor(),
-			revocations: await this._armoredPublicRevocations
 		}, FILE));
 	}
 
@@ -616,8 +628,7 @@ class Stowaway extends EventEmitter {
 	async _sendKeyUpdate (channel) {
 		return this._send(channel, this._attachJSON({
 			type: KEY_UPDATE,
-			public_key: this.key.toPublic().armor(),
-			revocations: await this._armoredPublicRevocations
+			public_key: this.key.toPublic().armor()
 		}));
 	}
 
@@ -720,22 +731,24 @@ class Stowaway extends EventEmitter {
 		});
 	}
 
+	_processComplete({ cache, color, text, notify, message }) {
+		if ((this.verbose || notify) && color != null && text != null) {
+			this.emit('notify', color, text);
+		}
+		if (cache) {
+			this._cache(message);
+		}
+	}
+
 	_processMessage (json, message, notify, cached=false) {
 		this.emit('error', `${cached ? 'cached' : 'new'} ${json.type}`);
 		return new Promise(resolve => {
 			switch (json.type) {
 				case HANDSHAKE:
-					if (json.public_key != null && (typeof json.respond) === 'boolean' && Array.isArray(json.revocations))
-					{
+					if (json.public_key != null && (typeof json.respond) === 'boolean' && Array.isArray(json.revocations)) {
 						this._handshake(json.public_key, json.respond, json.revocations, message, cached) // may cauase a handhsake
 						.then(({ cache, color, text }) => {
-							if ((this.verbose || notify) && color != null && text != null) { // NOTE uncomment this, delete below
-								this.emit('notify', color, text);
-							}
-							if (cache) {
-								// this.emit('test', 'cache handshake');
-								this._cache(message);
-							}
+							this._processComplete({ cache, color, text, notify, message });
 						})
 						.finally(resolve);
 					}
@@ -747,15 +760,9 @@ class Stowaway extends EventEmitter {
 				case SIGNED_KEY:
 					if (json.recipient != null && json.public_key != null) {
 						if (json.recipient === this.id) {
-							this._signedKey(json.publicKey, message, cached) // causes key updates
+							this._signedKey(json.public_key, message, cached) // causes key updates
 							.then(({ cache, text }) => {
-								if ((this.verbose || notify) && text != null) {
-									this.emit('notify', 'blue', text);
-								}
-								if (cache) {
-									this.emit('test', 'caching keysig');
-									this._cache(message);
-								}
+								this._processComplete({ cache, color: 'blue', text, notify, message });
 							})
 							.finally(resolve);
 						}
@@ -768,24 +775,11 @@ class Stowaway extends EventEmitter {
 						resolve();
 					}
 					break;
-				case KEY_UPDATE:
-					if (json.publicKey != null && Array.isArray(json.revocations)) {
-						// TODO
-					}
-					else {
-						// TODO
-					}
-					break;
 				case REVOCATION:
-					if (json.revocation != null && json.publicKey != null) {
-						this._revocation(json.revocation, json.publicKey, message, cached)
+					if (json.revocation != null && json.public_key != null) {
+						this._revocation(json.revocation, json.public_key, message, cached)
 						.then(({ cache, color, text }) => {
-							if ((this.verbose || notify) && color != null && text != null) {
-								this.emit('notify', color, text);
-							}
-							if (cache) {
-								this._cache(message);
-							}
+							this._processComplete({ cache, color, text, notify, message });
 						})
 						.finally(resolve);
 					}
@@ -793,6 +787,42 @@ class Stowaway extends EventEmitter {
 						// throw Error('missing json keys for revocation');
 						resolve();
 					}
+				case KEY_UPDATE:
+					if (json.public_key != null) {
+						this._keyUpdate(json.public_key, message, cached)
+						.then(({ cache, color, text}) => {
+							this._processComplete({ cache, color, text, notify, message });
+						})
+						.finally(resolve);
+					}
+					else {
+						resolve();
+					}
+					break;
+				case HISTORY_INQUIRY:
+					if (json.cause != null && json.nonce != null) {
+						this._historyInquiry(json.cause, json.nonce, message, cached)
+						.then(cache => {
+							this._processComplete({ cache, message });
+						})
+						.finally(resolve);
+					}
+					else {
+						resolve();
+					}
+					break;
+				case PROVENANCE:
+					if (json.public_key != null && json.recipient != null && json.revocations != null && Array.isArray(json.revocations)) {
+						this._provenance(json.public_key, json.recipient, json.revocations, message, cached)
+						.then(cache => {
+							this._processComplete({ cache, message });
+						})
+						.finally(resolve);
+					}
+					else {
+						resolve();
+					}
+					break;
 				default:
 					resolve();
 					break;
@@ -809,7 +839,7 @@ class Stowaway extends EventEmitter {
 		else {
 			return false;
 		}
- }
+	}
 
 	async _processJSON (message) {
 		const file = getAttachment(message);
@@ -935,101 +965,49 @@ class Stowaway extends EventEmitter {
 	// OK -- improve error handling
 	// figure out why linter says this is wrong
 	async _handshake (armoredKey, plsRespond, revocations, message, cached) {
-		const userId = message.author.id;
-		const doc = this._findPeer(userId);
-		if (doc == null) {
-			try {
-				await openpgp.readKey({ armoredKey }); // do this just to check it's armored key is actually a key
-				this.peers.insert({
-					user_id: userId,
-					public_key: armoredKey,
-					armor_hash: hash(armoredKey)
-				});
-				if (plsRespond) {
-					await this._sendHandshake(message.channel, false);
-				}
-				this.emit('handshake', message, true);
-				return {
-					cache: true,
-					color: 'green',
-					text: `New handshake from ${message.member.displayName} on ${message.guild.name} #${message.channel.name}`
-				};
-			}
-			catch (err) {
-				this.emit('handshake', message, false);
-				if (err != null) {
-					this.emit('error', `Error in Stowaway._handshake():\n${err.stack}`);
-				}
-				else {
-					this.emit('error', `Unexpected error in Stowaway._handshake()`);
-				}
-				return{
-					cache: false,
-					color: 'yellow',
-					text: `Improper amrmored key in handshake from ${message.author.tag}`
-				};
-			}
+		if (cached) {
+			this.emit('handshake', message, true);
+			return { cache: false };
 		}
 		else {
-			try {
-				const publicKey = await openpgp.readKey({ armoredKey });
-				const savedKey = await openpgp.readKey({ armoredKey: doc.public_key });
-				if (doc.armor_hash === hash(armoredKey) && cached) {
+			const userId = message.author.id;
+			const doc = this._findPeer(userId);
+			if (doc == null) {
+				try {
+					await openpgp.readKey({ armoredKey }); // do this just to check it's armored key is actually a key
+					this.peers.insert({
+						user_id: userId,
+						public_key: armoredKey,
+						armor_hash: hash(armoredKey)
+					});
+					if (plsRespond) {
+						await this._sendHandshake(message.channel, false);
+					}
 					this.emit('handshake', message, true);
-					// this.emit('test', 'retrieved cached handshake');
-					return { cache: false };
+					return {
+						cache: true,
+						color: 'green',
+						text: `New handshake from ${message.member.displayName} on ${message.guild.name} #${message.channel.name}`
+					};
 				}
-				else if (publicKey.hasSameFingerprintAs(savedKey)) {
-					if (cached) {
-						this.emit('key update', message);
-						return {
-							cache: false,
-							color: 'green',
-							text: `old key update from ${message.author.tag}`
-						};
+				catch (err) {
+					this.emit('handshake', message, false);
+					if (err != null) {
+						this.emit('error', `Error in Stowaway._handshake():\n${err.stack}`);
 					}
 					else {
-						await savedKey.update(publicKey);
-						const armor = savedKey.armor();
-						doc.public_key = armor;
-						doc.armor_hash = hash(armor);
-						this.peers.update(doc);
-						this.emit('key update', message);
-						return {
-							cache: true,
-							color: 'green',
-							text: `Key update from ${message.author.tag} ${cached}`
-						};
+						this.emit('error', `Unexpected error in Stowaway._handshake()`);
 					}
-				}
-				else if (cached) {
-					this.emit('revocation', message);
-					return { cache: false };
-				}
-				else {
-					let revocation;
-					for (let i = 0; i < revocations.length; i++) {
-						revocation = await openpgp.readKey({ armoredKey: revocations[i] });
-						if (revocation.hasSameFingerprintAs(savedKey)) {
-							doc.public_key = armoredKey;
-							this.peers.update(doc);
-							this.emit('revocation', message);
-							return {
-								cache: true,
-								color: 'green',
-								text: `Key revocation from ${message.author.tag}`
-							};
-						}
-					}
-					return {};
+					return {
+						cache: false,
+						color: 'yellow',
+						text: `Improper amrmored key in handshake from ${message.author.tag}`
+					};
 				}
 			}
-			catch {
-				return {
-					cache: false,
-					color: 'yellow',
-					text: `Improper armored key in handshake from ${message.author.tag}`
-				};
+			else {
+				this.emit('handshake', message, true);
+				return { cache: true };
 			}
 		}
 	}
@@ -1174,6 +1152,129 @@ class Stowaway extends EventEmitter {
 		}
 	}
 
+	async _keyUpdate (armoredKey, message, cached) {
+		if (cached) {
+			this.emit('key update', message);
+			return {
+				cache: false
+			};
+		}
+		else {
+			const doc = this._findPeer(message.author.id);
+			if (doc != null) {
+				if (doc.armor_hash === hash(armoredKey)) {
+					this.emit('key update', message);
+					return { cache: true };
+				}
+				else {
+					const testKey = await openpgp.readKey({ armoredKey });
+					const savedKey = await openpgp.readKey(doc.public_key);
+					if (savedKey.hasSameFingerprintAs(testKey)) {
+						await savedKey.update(testKey);
+						const armor = savedKey.armor();
+						doc.public_key = armor;
+						doc.armor_hash = hash(armor);
+						this.peers.update(doc);
+						this.emit('key update', message);
+						return {
+							cache: true,
+							color: 'green',
+							text: `Key update from ${message.author.tag}`
+						};
+					}
+					else {
+						return {
+							cache: false,
+							color: 'red',
+							text: `Improper key update from ${message.author.tag}`
+						};
+					}
+				}
+			}
+			else {
+				this.emit('error', 'key update from non-peer');
+				this._inquireHistory(message);
+				return { cache: false };
+			}
+		}
+	}
+
+	async _historyInquiry (messageId, number, message, cached) {
+		if (cached) {
+			return false;
+		}
+		else {
+			const m = await message.channel.messages.fetch(messageId);
+			if (m.author.id === this.id && nonce(m.id, number)) {
+				try {
+					await this._send(message.channel, this._attachJSON({
+						type: PROVENANCE,
+						recipient: message.author.id,
+						public_key: this.key.toPublic().armor(),
+						revocations: await this._armoredPublicRevocations
+					}, FILE));
+					return true;
+				}
+				catch {
+					return false;
+				}
+			}
+			else {
+				return true;
+			}
+		}
+	}
+
+	async _provenance (armoredKey, recipientId, revocations, message, cached) {
+		if (cached) {
+			return false;
+		}
+		else if (recipientId === this.id){
+			let testKey;
+			try {
+				testKey = await openpgp.readKey({ armoredKey });
+			}
+			catch {
+				return true;
+			}
+			const doc = this._findPeer(message.author.id);
+			if (doc == null) {
+				this.peers.insert({
+					user_id: message.author.id,
+					public_key: armoredKey,
+					armor_hash: hash(armoredKey)
+				});
+				return true;
+			}
+			else {
+				const savedKey = await openpgp.readKey({ armoredKey: doc.public_key });
+				if (savedKey.hasSameFingerprintAs(testKey)) {
+					await savedKey.update(testKey);
+					const armor = savedKey.armor();
+					doc.public_key = armoredKey;
+					doc.armor_hash = hash(armor);
+					this.peers.update(doc);
+					return true;
+				}
+				else {
+					let revocation;
+					for (let i = 0; i < revocations.length; i++) {
+						revocation = await openpgp.readKey({ armoredKey: revocations[i] });
+						if (revocation.hasSameFingerprintAs(savedKey)) {
+							doc.public_key = armoredKey;
+							doc.armor_hash = hash(armoredKey);
+							this.peers.update(doc);
+							return true;
+						}
+					}
+					return false;
+				}
+			}
+		}
+		else {
+			return true;
+		}
+	}
 }
 
 module.exports = { Stowaway, Permissions, Messenger };

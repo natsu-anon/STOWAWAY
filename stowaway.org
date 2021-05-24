@@ -1,16 +1,17 @@
 * TODO TEST
   - [X] TWO dummy accounts
-  - [ ] test.js
-	- [ ] MAKE IT WORK [0/4]
-	  - [ ] implement new protocols
-		- [ ] KEY_UPDATE
-		- [ ] HISTORY_INQUIRY
-		- [ ] PROVENANCE
-	  - [ ] clean up handshake
-		- [ ] remove the key update section
-		- [ ] remove the revocation section???
+  - [-] test.js
+	- [-] MAKE IT WORK [2/4]
+	  - [X] implement new protocols
+		- [X] KEY_UPDATE
+		- [X] HISTORY_INQUIRY
+		- [X] PROVENANCE
+	  - [X] clean up handshake
+		- [X] remove the key update section
+		- [X] remove the revocation section???
 	  - [ ] remove all the unnnecessary bits that are in the new protocls from the old ones
 	  - [ ] make fetchOlder/fetchNewer/loadChannel handle messages in chronological order
+	- [ ] test new protocols (when able)
   - [ ] deadhead.js
 	
 * DONE aaaaaaaa openpgp changed stuff
