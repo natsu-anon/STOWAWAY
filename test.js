@@ -105,8 +105,8 @@ async function test () {
 		await stowaway0.loadChannel(channel0);
 		await stowaway1.loadChannel(channel1);
 		await stowaway0.messagePublic(channel0, 'AHOY');
-		await stowaway1.messagePublic(channel1, 'AHOYO');
-		await stowaway0.messageSigned(channel0, 'CARTAGO DELENDA EST');
+		await stowaway1.messagePublic(channel1, 'HELO');
+		await stowaway0.messageSigned(channel0, 'CANADA DELENDA EST');
 		await stowaway1.messageSigned(channel1, 'BANALISER LE DOLLAR');
 		await sleep(1);
 		console.log('key signing...');
@@ -128,7 +128,6 @@ async function test () {
 			});
 		});
 		await sleep(1);
-
 		// key revocation
 		const { key: k0, revocationCertificate: rc0 } = await genKey();
 		await stowaway0.revokeKey(client0, key0, k0, rCert0);
