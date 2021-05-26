@@ -13,7 +13,8 @@
 	  - [X] make fetchOlder/fetchNewer/loadChannel handle messages in chronological order
 		- NO!
 	- [X] test new protocols (when able)
-  - [ ] deadhead.js
+  - [ ] deadhead.js - yo, the CLI is major dicked
+	- [ ] make database use the actually serialized one
 	
 * DONE aaaaaaaa openpgp changed stuff
 

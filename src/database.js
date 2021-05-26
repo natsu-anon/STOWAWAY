@@ -1,10 +1,10 @@
-// const Datastore = require('nedb');
 const loki = require('lokijs');
 
+// NOTE undicker this
 function init (dbFilename, autosave=true) {
 	let db;
 	return new Promise(resolve => {
-		db = new loki(dbFilename, {
+		db = new loki('foo.db', {
 			autoload: true,
 			autoloadCallback: () => {
 				let channels = db.getCollection('channels');
@@ -25,7 +25,7 @@ function init (dbFilename, autosave=true) {
 				// but it also feekls stoopid to do the same
 				resolve({ db, channels, peers, revocations });
 			},
-			autosave
+			// autosave
 		});
 	});
 }
