@@ -371,7 +371,6 @@ class Stowaway extends EventEmitter {
 				// return this._handleConsecutive(messages);
 			})
 			.then(() => {
-				this.emit('test', 'load complete');
 				this.channels.findAndUpdate({ last_channel: true, channel_id: { $ne: channel.id } }, docs => {
 					docs.last_channel = false;
 				});
@@ -546,15 +545,22 @@ class Stowaway extends EventEmitter {
 		return this.peers.findOne({ user_id: userId, public_key: { $exists: true } });
 	}
 
-	inquireHistory (message) {
-		nonce(message.id)
-		.then(res => {
-			this._send(message.channel, this._attachJSON({
-				type: HISTORY_INQUIRY,
-				nonce: res,
-				cause: message.id
-			}, FILE));
-		});
+	_inquireHistory (message) {
+		const doc = this._findChannel(message.channel.id);
+		if (doc != null && !doc.enquiries.includes(message.id)) {
+			nonce(message.id)
+			.then(res => {
+				return this._send(message.channel, this._attachJSON({
+					type: HISTORY_INQUIRY,
+					nonce: res,
+					cause: message.id
+				}, FILE));
+			})
+			.then(() => {
+				doc.enquiries.push(message.id);
+				this.channels.update(doc);
+			});
+		}
 	}
 
 	_publicKey (userId, origin) {
@@ -728,7 +734,7 @@ class Stowaway extends EventEmitter {
 
 	_processMessage (json, message, notify, cached=false) {
 		// NOTE delete this after all testing complete
-		this.emit('warning', `${cached ? 'cached' : 'new'} ${json.type} from ${message.author.tag}`);
+		// this.emit('warning', `${cached ? 'cached' : 'new'} ${json.type} from ${message.author.tag}`);
 		return new Promise(resolve => {
 			switch (json.type) {
 				case HANDSHAKE:
@@ -871,7 +877,6 @@ class Stowaway extends EventEmitter {
 
 	/*  TYPE HANDLERS  */
 
-	// OK
 	_channelMessage (armoredMessage, publicFlag, message) {
 		this._publicKey(message.author.id, 'Stowaway._channelMessage()')
 		.then(publicKey => {
@@ -887,7 +892,6 @@ class Stowaway extends EventEmitter {
 		});
 	}
 
-	// OK
 	_decrypt (publicKey, armoredMessage, message, publicFlag) {
 		openpgp.readMessage({ armoredMessage })
 		.then(res => openpgp.decrypt({
@@ -896,19 +900,11 @@ class Stowaway extends EventEmitter {
 			privateKeys: this.oldKeys.concat(this.key),
 		}))
 		.then(decrypted => {
-			return this._verifyMessage(decrypted, publicKey, message.author.id);
+			return this._verifyMessage(decrypted, publicKey);
 		})
 		.then(result => {
 			if (!result.verified) {
-				let doc = this._findPeer(message.author.id);
-				if (doc != null && (doc.ts == null || message.createdTimestamp > doc.ts)) {
-					doc = this._findChannel(message.channel.id);
-					if (!doc.enquiries.contains(message.id)) {
-						doc.enquires.push(message.id);
-						this.channels.update(doc);
-						this.inquireHistory(message);
-					}
-				}
+				this._inquireHistory(message);
 			}
 			this.emit('channel message', message, result, publicFlag);
 			this.emit('test', `${publicFlag? 'public' : 'signed-only'} message from ${message.author.tag}: (signed: ${result.signed}, verified: ${result.verified}) ${result.plainText}`);
@@ -925,7 +921,7 @@ class Stowaway extends EventEmitter {
 					this.emit('decryption failure', message);
 					const doc = this._findChannel(message.channel.id);
 					if (doc != null) {
-						if (!doc.decryption_failures.contains(message.id)) {
+						if (!doc.decryption_failures.includes(message.id)) {
 							this._send(message.channel, this._attachJSON({
 								type: DISCLOSURE,
 								nonce: await nonce(message.id),
@@ -948,17 +944,9 @@ class Stowaway extends EventEmitter {
 		});
 	}
 
-	// OK
-	async _verifyMessage (decrypted, publicKey, authorId) {
+	async _verifyMessage (decrypted, publicKey) {
 		const bonafides = await publicKey.verifyPrimaryUser([ this.key ]);
 		const signed = bonafides.find(x => x.valid) != null;
-		if (authorId === this.id) {
-			return {
-				signed,
-				verified: true,
-				plainText: decrypted.data
-			};
-		}
 		if (decrypted.signatures != null && decrypted.signatures.length > 0) {
 			return {
 				signed,
@@ -975,8 +963,6 @@ class Stowaway extends EventEmitter {
 		}
 	}
 
-	// OK -- improve error handling
-	// figure out why linter says this is wrong
 	async _handshake (armoredKey, plsRespond, message, cached) {
 		if (cached) {
 			this.emit('handshake', message, true);
@@ -985,51 +971,55 @@ class Stowaway extends EventEmitter {
 		else {
 			const userId = message.author.id;
 			const doc = this._findPeer(userId);
-			this.emit('test', `handshake from ${message.author.tag}`);
+			let publicKey;
+			try {
+				publicKey = await openpgp.readKey({ armoredKey });
+			}
+			catch (err) {
+				this.emit('handshake', message, false);
+				if (err != null) {
+					this.emit('error', `Error in Stowaway._handshake():\n${err.stack}`);
+				}
+				else {
+					this.emit('error', `Unexpected error in Stowaway._handshake()`);
+				}
+				return {
+					cache: false,
+					color: 'yellow',
+					text: `Improper amrmored key in handshake from ${message.author.tag}`
+				};
+			}
 			if (doc == null) {
-				try {
-					await openpgp.readKey({ armoredKey }); // do this just to check it's armored key is actually a key
-					this.peers.insert({
-						user_id: userId,
-						public_key: armoredKey,
-					});
-					if (plsRespond) {
-						await this._sendHandshake(message.channel, false);
-					}
-					this.emit('test', `new handshake from ${message.author.tag}`);
-					this.emit('handshake', message, true);
-					return {
-						cache: true,
-						color: 'green',
-						text: `New handshake from ${message.member.displayName} on ${message.guild.name} #${message.channel.name}`
-					};
+				this.peers.insert({
+					user_id: userId,
+					public_key: armoredKey,
+				});
+				if (plsRespond) {
+					await this._sendHandshake(message.channel, false);
 				}
-				catch (err) {
-					this.emit('handshake', message, false);
-					if (err != null) {
-						this.emit('error', `Error in Stowaway._handshake():\n${err.stack}`);
-					}
-					else {
-						this.emit('error', `Unexpected error in Stowaway._handshake()`);
-					}
-					return {
-						cache: false,
-						color: 'yellow',
-						text: `Improper amrmored key in handshake from ${message.author.tag}`
-					};
-				}
+				this.emit('test', `new handshake from ${message.author.tag}`);
+				this.emit('handshake', message, true);
+				return {
+					cache: true,
+					color: 'green',
+					text: `New handshake from ${message.member.displayName} on ${message.guild.name} #${message.channel.name}`
+				};
 			}
 			else {
-				this.emit('handshake', message, true);
-				return { cache: true };
+				const savedKey = await this._publicKey(userId);
+				if (savedKey.hasSameFingerprintAs(publicKey)) {
+					this.emit('handshake', message, true);
+					return { cache: true };
+				}
+				else {
+					this._inquireHistory(message);
+				}
 			}
 		}
 	}
 
-	// not GOOF'D?
 	async _signedKey (armoredKey, message, cached) {
 		if (cached) {
-			this.emit('test', 'using cached signature');
 			this.emit('signed key', message);
 			return {
 				cache: false
@@ -1044,6 +1034,7 @@ class Stowaway extends EventEmitter {
 					bonafides = await this.key.verifyPrimaryUser([ userKey ]);
 					if (bonafides.find(x => x.valid) == null) {
 						// await this._updatePrivateKey(publicKey);
+						await this.key.update(publicKey);
 						const channelIds = this.channels.data.map(doc => doc.channel_id);
 						for (let i = 0; i < channelIds.length; i++) {
 							await this._sendKeyUpdate(await this.client.channels.fetch(channelIds[i], false));
@@ -1059,6 +1050,14 @@ class Stowaway extends EventEmitter {
 							text: `${message.author.tag} signed your key!`
 						};
 					}
+					else {
+						return {
+							cache: true,
+						};
+					}
+				}
+				else {
+					this._inquireHistory(message);
 				}
 			}
 			catch (err) {
@@ -1121,6 +1120,7 @@ class Stowaway extends EventEmitter {
 						});
 					}
 					else {
+						this._inquireHistory(message);
 						resolve({
 							cache: false,
 							color: 'red',
@@ -1200,7 +1200,7 @@ class Stowaway extends EventEmitter {
 			}
 			else {
 				this.emit('error', 'key update from non-peer');
-				this.inquireHistory(message);
+				this._inquireHistory(message);
 				return {
 					cache: false,
 					color: 'red',
