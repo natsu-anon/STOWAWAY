@@ -76,7 +76,17 @@ json: {
 	]
 }
 
-	
-
+DISCLOSURE: caused by messages that should have been decrypted
+json: {
+	type: 'disclouse',
+	cause: snowflake (discord id) of message that caused OVERVIEW,
+	nonce: nonce of hash of cause id,
+	public_key: armored public key,
+	revocations : [
+		armoredRevocation1,
+		...
+		armoredRevocationN
+	]
+}
 
 recipient still checks if fingerprints match, and if they do then update
