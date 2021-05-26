@@ -70,6 +70,12 @@ async function test () {
 		stowaway1.on('notify', (color, text) => {
 			console.log(`\t\x1b[32m${client1.user.tag} ${color}: ${text}\x1b[0m`);
 		});
+		stowaway0.on('warning', color => {
+			console.log(`\t\x1b[33m${client0.user.tag} ${color}\x1b[0m`);
+		});
+		stowaway1.on('warning', color => {
+			console.log(`\t\x1b[33m${client1.user.tag} ${color}\x1b[0m`);
+		});
 		stowaway0.on('error', text => {
 			console.log(`\t\x1b[31m${client0.user.tag} ${text}\x1b[0m`);
 		});
@@ -81,7 +87,6 @@ async function test () {
 
 
 		// TESTING
-
 
 		// handshakes
 		console.log('Handshaking...');
@@ -103,6 +108,8 @@ async function test () {
 		await stowaway1.messagePublic(channel1, 'AHOYO');
 		await stowaway0.messageSigned(channel0, 'CARTAGO DELENDA EST');
 		await stowaway1.messageSigned(channel1, 'BANALISER LE DOLLAR');
+		await sleep(1);
+		console.log('key signing...');
 
 		// key signing
 		await new Promise(async resolve => {
@@ -116,6 +123,7 @@ async function test () {
 				client0.once('message', async () => {
 					await stowaway0.messageSigned(channel0, 'MON FRERE');
 					client1.once('message', resolve);
+					// stowaway0.inquireHistory(message);
 				});
 			});
 		});
@@ -124,11 +132,13 @@ async function test () {
 		// key revocation
 		const { key: k0, revocationCertificate: rc0 } = await genKey();
 		await stowaway0.revokeKey(client0, key0, k0, rCert0);
-		await sleep(3);
+		await sleep(1);
 
 		console.log('\nCACHE TEST');
+		// console.log(`old key: ${key0.getKeyID().toHex()}`);
+		// console.log(`new key: ${k0.getKeyID().toHex()}`);
 		await stowaway0.loadChannel(channel0);
-		// await stowaway1.loadChannel(channel1);
+		await stowaway1.loadChannel(channel1);
 
 		// CLEANUP
 		await sleep(1);
