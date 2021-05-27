@@ -312,11 +312,12 @@ class Stowaway extends EventEmitter {
 	async loadChannel (channel) {
 		const doc = this._findChannel(channel.id);
 		if (doc == null) { // handshake new channel
-			return await this._loadUnknown(channel);
+			await this._loadUnknown(channel);
 		}
 		else { // load messages around the last seen message
-			return await this._loadKnown(channel, doc);
+			await this._loadKnown(channel, doc);
 		}
+		return channel;
 	}
 
 	_loadUnknown (channel) {
@@ -350,9 +351,7 @@ class Stowaway extends EventEmitter {
 			.catch(err => {
 				this.emit('error', `Unexpected error in Stowaway.loadChannel() from Stowaway._loadUnkown()\n${err.stack}`);
 			})
-			.finally(() => {
-				resolve(channel);
-			});
+			.finally(resolve);
 		});
 	}
 
@@ -382,9 +381,7 @@ class Stowaway extends EventEmitter {
 			.catch(err => {
 				this.emit('error', `unexpected error in Stowaway._loadKnown() ${err.stack}`);
 			})
-			.finally(() => {
-				resolve(channel);
-			});
+			.finally(resolve);
 		});
 	}
 
@@ -977,6 +974,7 @@ class Stowaway extends EventEmitter {
 			}
 			catch (err) {
 				this.emit('handshake', message, false);
+				this.emit('member handshake', message.member, message.channel.id);
 				if (err != null) {
 					this.emit('error', `Error in Stowaway._handshake():\n${err.stack}`);
 				}
