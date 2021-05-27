@@ -60,7 +60,7 @@ function hash (input) {
 }
 
 function natoPhrase (length=3) {
-	const temp = hash(`${Date.now()}`).slice(0, length);
+	const temp = crypto.createHash('sha512').update(`${Date.now()}`).digest().slice(0, length);
 	return [...temp].map(x => NATO[x % 26]).join(' ');
 }
 
