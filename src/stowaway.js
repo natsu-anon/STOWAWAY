@@ -160,7 +160,7 @@ class Stowaway extends EventEmitter {
 					return messages.sort((m0, m1) => m0.createdTimestamp - m1.createdTimestamp);
 				})
 				.then(messages => {
-					return Promise.allSetteld(messages.map(message => this._handleActive(message)));
+					return Promise.allSettled(messages.map(message => this._handleActive(message)));
 					// return this._handleConsecutive(messages);
 				})
 				.then(() => {
@@ -180,7 +180,7 @@ class Stowaway extends EventEmitter {
 					return messages.sort((m0, m1) => m0.createdTimestamp - m1.createdTimestamp);
 				})
 				.then(messages => {
-					return Promise.allSetteld(messages.map(message => this._handleActive(message)));
+					return Promise.allSettled(messages.map(message => this._handleActive(message)));
 					// return this._handleConsecutive(messages);
 				})
 				.then(() => {
@@ -523,6 +523,18 @@ class Stowaway extends EventEmitter {
 				resolve();
 			}
 		});
+	}
+
+	// TODO implement
+	async signedKey (peerId) {
+		const doc = this._findPeer(peerId);
+		if (doc != null) {
+			// return to see if you've already signed peer's key
+		}
+		else {
+			// emit an error about not having an entry for associated peerId
+			this.emit('error', '');
+		}
 	}
 
 	_allPeers () {
@@ -974,7 +986,6 @@ class Stowaway extends EventEmitter {
 			}
 			catch (err) {
 				this.emit('handshake', message, false);
-				this.emit('member handshake', message.member, message.channel.id);
 				if (err != null) {
 					this.emit('error', `Error in Stowaway._handshake():\n${err.stack}`);
 				}
@@ -995,7 +1006,7 @@ class Stowaway extends EventEmitter {
 				if (plsRespond) {
 					await this._sendHandshake(message.channel, false);
 				}
-				this.emit('test', `new handshake from ${message.author.tag}`);
+				// this.emit('test', `new handshake from ${message.author.tag}`);
 				this.emit('handshake', message, true);
 				return {
 					cache: true,

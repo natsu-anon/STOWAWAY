@@ -22,7 +22,7 @@ class Members extends Mediator {
 		this.guildID = channel.guild.id;
 		const memberRemove = member => { this.memberRemove(member); };
 		const memberUpdate = (member0, member1) => { this.memberUpdate(member0, member1); };
-		const handshake = (message, accepted) => { this.handshake(message, accepted); };
+		const handshake = (member, channelId) => { this.handshake(member, channelId); };
 		const update = message => { this.update(message); };
 		stowaway.client.on('guildMemberRemove', memberRemove);
 		stowaway.client.on('guildMemberUpdate', memberUpdate);
@@ -66,7 +66,7 @@ class Members extends Mediator {
 	}
 
 	handshake (message, accepted) {
-		if (accepted && message.author.id !== this.id && message.channel.id === this.channelId) {
+		if (accepted && message.user.id !== this.id && message.channel.id === this.channelId) {
 			try {
 				if (this.data === undefined) {
 					throw Error(`FUG\n${Object.keys(this)}`);
@@ -78,7 +78,7 @@ class Members extends Mediator {
 					}
 					this._sort();
 				}
-				this.representation().then(text => { this.emit('update', text); });
+				this.representation().then(text => { this.emit('update', text); throw Error(text); });
 			}
 			catch (err) {
 				if (err != null) {
@@ -86,7 +86,7 @@ class Members extends Mediator {
 				}
 				else {
 					throw Error(`Unexpected Error!
-					authorId: ${message.author.id},
+					authorId: ${message.member.id},
 					selfId: ${this.id},
 					channelId: ${this.channelId}`);
 				}
@@ -171,8 +171,8 @@ class MembersFactory {
 			this.current.unsubscribe();
 		}
 		const data = [];
-		const userIds = this.peersView.data().map(doc => doc.user_id);
-		channel.members.filter(member => userIds.includes(member.user.id))
+		const peerIds = this.peersView.data().map(doc => doc.user_id);
+		channel.members.filter(member => peerIds.includes(member.user.id))
 		.each(member => {
 			if (member.user.id !== this.stoawaway.id) {
 				data.push(member);
