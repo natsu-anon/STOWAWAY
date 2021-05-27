@@ -174,7 +174,7 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 			},
 			() => {
 				cli.selector.removeAllListeners('resize');
-				fsm.removeAllListeners('scrollMembers');
+				fsm.removeAllListeners('scroll members');
 				fsm.removeAllListeners('sign member');
 				if (mFactory.current != null) {
 					mFactory.current.removeAllListeners('update');
