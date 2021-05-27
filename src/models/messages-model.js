@@ -6,7 +6,7 @@ class ChannelMessage {
 		this.date = date;
 		this.name = signed ? `{green-fg}${member.displayName}{/green-fg}` : member.displayName;
 		if (!verified) {
-			this.name = `${this.name}{yellow-fg} (UNVERIFIED){/yellow-fg}`;
+			this.name = `${this.name}{yellow-fg}(UNVERIFIED){/yellow-fg}`;
 		}
 		this.plainText = plainText;
 	}
