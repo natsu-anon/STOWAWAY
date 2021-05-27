@@ -83,9 +83,7 @@ class HandshakedMediator extends Mediator {
 
 	read (channelId) {
 		this.readingId = channelId;
-		this.representation().then(text => {
-			this.emit('update', text);
-		});
+		this.emit('update', this.text);
 	}
 
 	channelId () {
@@ -103,25 +101,19 @@ class HandshakedMediator extends Mediator {
 
 	toChannel (channelId) {
 		if (this._navigator.find(channelId)) {
-			this.representation().then(text => {
-				this.emit('update', text);
-			});
+			this.emit('update', this.text);
 		}
 	}
 
 	scrollChannels (nextFlag) {
 		if (this._navigator.scrollChannels(nextFlag)) {
-			this.representation().then(text => {
-				this.emit('update', text);
-			});
+			this.emit('update', this.text);
 		}
 	}
 
 	scrollServers (nextFlag) {
 		if (this._navigator.scrollServers(nextFlag)) {
-			this.representation().then(text => {
-				this.emit('update', text);
-			});
+			this.emit('update', this.text);
 		}
 	}
 	setFavorite (number, channelId) {
