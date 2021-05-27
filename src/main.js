@@ -37,7 +37,8 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 		//  COMMAND LINE INTERFACE  //
 
 		cli = new StowawayCLI(screen, SCREEN_TITLE, client.user.tag, invite);
-		stowaway.on('error', error => { errStream.write(error); });
+		// stowaway.on('error', error => { errStream.write(error); });
+		stowaway.on('error', err => { cli.warn(err); });
 		// stowaway.on('debug', debug => { cli.notify(`DEBUG: ${debug}`); });
 		// stowaway.on('decryption failure', message => {
 		// 	cli.notify(`failed to decrypt message from ${message.author.tag} on ${message.channel.name}`);
@@ -160,10 +161,6 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 						fsm.on('sign member', () => { mediator.signMember(); });
 						box.setContent('loading...');
 						mediator.representation().then(text => {
-							box.setContent(text);
-							cli.render();
-						});
-						mediator.on('update', text => {
 							box.setContent(text);
 							cli.render();
 						});
