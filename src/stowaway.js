@@ -1054,7 +1054,7 @@ class Stowaway extends EventEmitter {
 							await this.key.update(publicKey);
 						}
 						catch {
-							await this._sendDisclosure(message);
+							await this._sendDisclosure(message); // NOTE test this
 							return { cache: false };
 						}
 						const channelIds = this.channels.data.map(doc => doc.channel_id);
