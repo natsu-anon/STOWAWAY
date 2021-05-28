@@ -137,6 +137,7 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 			},
 			() => {
 				cli.input.style.border.fg = 'white';
+				cli.input.setLabel(` Message ${stowaway.channel.name} `);
 				cli.input.clearValue();
 				cli.screen.focusPop();
 			})
