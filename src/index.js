@@ -118,7 +118,9 @@ else if (process.argv.length > 2 && process.argv[2] === '--overwrite') {
 			dbInit(DATABASE)
 			.then(db => {
 				const stowaway = new Stowaway(db, PRIVATE_KEY, VERSION);
-				stowaway.overwrite(message);
+				return stowaway.overwrite(message);
+			})
+			.then(() => {
 				process.exit(0);
 			})
 			.catch(err => { throw err; });
