@@ -451,6 +451,32 @@ class Stowaway extends EventEmitter {
 		return res;
 	}
 
+	overrwrite (message) {
+		if (message.editedAt != null) {
+			throw Error(`Cannot overwrite using an edited message: ${message.id}`);
+		}
+		else if (message.content == null || !message.content.match(STOWAWAY_RGX)) {
+			throw Error(`Message unrecognized by stowaway`);
+		}
+		else {
+			const doc = this.peers.findOne({ user_id: message.author.id });
+			if (doc == null) {
+				throw Error(`Unrecognized peer ${message.author.tag} ($message.author.id)!\nIf you are running this because stowaway prompted you to file a bug report at: https://github.com/natsu-anon/STOWAWAY/issues/new/choose`);
+			}
+			else {
+				this._processJSON(message)
+				.then(json => {
+					return openpgp.readKey({ armoredKey: json.public_key });
+				})
+				.then(key => {
+					doc.public_key = key.armor();
+					this.peers.update(doc);
+				})
+				.catch(err => { throw err; });
+			}
+		}
+	}
+
 	// OK to run before launch
 	// can revoke key0 without passphrase
 	// assume key1 is decrypted already
@@ -838,7 +864,7 @@ class Stowaway extends EventEmitter {
 					break;
 				case DISCLOSURE:
 					if (json.cause != null && json.nonce != null && json.public_key != null && Array.isArray(json.revocations)) {
-						this._disclosure(json.cause, json.nonce, json.public_key, json.revocations)
+						this._disclosure(json.cause, json.nonce, json.public_key, json.revocations, message, cached)
 						.then(cache => {
 							this._processComplete({ cache, message });
 						})
