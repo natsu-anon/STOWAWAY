@@ -13,10 +13,11 @@
 	  - [X] make fetchOlder/fetchNewer/loadChannel handle messages in chronological order
 		- NO!
 	- [X] test new protocols (when able)
-  - [-] deadhead.js - yo, the CLI is major dicked [1/4]
+  - [-] deadhead.js - yo, the CLI is major dicked [1/5]
 	- [ ] is disclosure working???
 	- [X] ok provenance is fully working
 	- [ ] add '--overwrite' command line flag
+	- [ ] make sure all the ctrl-menu navigation works properly
 	- [ ] make database use the actually serialized one
 	
 * DONE aaaaaaaa openpgp changed stuff

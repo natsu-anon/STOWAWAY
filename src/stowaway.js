@@ -317,6 +317,7 @@ class Stowaway extends EventEmitter {
 		else { // load messages around the last seen message
 			await this._loadKnown(channel, doc);
 		}
+		this.channel = channel;
 		return channel;
 	}
 
