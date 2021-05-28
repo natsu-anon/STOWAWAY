@@ -10,14 +10,14 @@ async function launch (freshFlag) {
 	const { channels, peers, revocations } = freshFlag ? await database('temp.db', false) : await database(db1);
 	const client = await clientLogin(token1);
 	const { key } = freshFlag ? await genKey() : await loadKey(keyPath1);
-	const stowaway = new Stowaway(channels, peers, revocations, keyPath1, VERSION, 'deadhead', true);
+	const stowaway = new Stowaway(channels, peers, revocations, freshFlag ? 'fresh.key' : keyPath1, VERSION, 'deadhead', true);
 	stowaway.on('notify', (color, text) => {
 		console.log(`\t${client.user.tag} ${color}: ${text}`);
 	});
 	stowaway.on('error', text => {
 		console.error(`${client.user.tag}: ${text}`);
 	});
-	stowaway.launch(client, key);
+	stowaway.launch(client, key, 'deadhead');
 	let channel;
 	console.log(`deadhead: ${client.user.tag}`);
 	for (let i = 0; i < channels1.length; i++) {
