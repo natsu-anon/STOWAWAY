@@ -11,6 +11,8 @@ module.exports = function () {
 	help += 'generate a new key with supplied nickname & password, then revoke your current key \x1b[4mNOTE: requires a valid token file\x1b[0m\n';
 	help += '                                                      \t';
 	help += 'If revocation_path is supplied use the revocation certificate found at that path instead of "stowaway.revoke"\n';
+	help += '    --overwrite <channel_id> <message_id>\t';
+	help += 'overwrite saved public key of message author with one provided in the message\x1b[4mNOTE: requires a valid token file\x1b[0m\n';
 	help += '  If you do not pass any optional flags, STOWAWAY will launch regularly.\n';
 	console.log(help);
 };
