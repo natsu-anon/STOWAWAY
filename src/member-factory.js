@@ -66,10 +66,10 @@ class Members extends Mediator {
 	}
 
 	handshake (message, accepted) {
-		if (accepted && message.user.id !== this.id && message.channel.id === this.channelId) {
+		if (accepted && message.author.id !== this.id && message.channel.id === this.channelId) {
 			try {
 				if (this.data === undefined) {
-					throw Error(`FUG\n${Object.keys(this)}`);
+					throw Error(`HOW IS MEMBERS.DATA NOT DEFINED?  FUG!\n${Object.keys(this)}`);
 				}
 				if (this.data.findIndex(({ id }) => message.member.id === id) === -1) {
 					this.data.push(message.member);
@@ -78,7 +78,7 @@ class Members extends Mediator {
 					}
 					this._sort();
 				}
-				this.representation().then(text => { this.emit('update', text); throw Error(text); });
+				this.representation().then(text => { this.emit('update', text); });
 			}
 			catch (err) {
 				if (err != null) {
@@ -117,7 +117,7 @@ class Members extends Mediator {
 	}
 
 	update (message) {
-		if (message.author.id === this.id && message.channel.id === this.channelId) {
+		if (message.channel.id === this.channelId) {
 			this.representation().then(text => { this.emit('update', text); });
 		}
 	}
@@ -136,7 +136,7 @@ class Members extends Mediator {
 				temp = await displayMember(this.data[i], this.stowaway);
 				if (i === this.index) {
 					if (temp.signed) {
-						res.push(`{green-bg}{black-fg}X{/} ${temp.text}`);
+						res.push(`{green-bg}{black-fg}[signed]{/} ${temp.text}`);
 					}
 					else {
 						res.push(`{inverse}>{/inverse} ${temp.text}`);
