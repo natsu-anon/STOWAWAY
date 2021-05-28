@@ -29,7 +29,7 @@ class DecryptionFailure {
 	}
 
 	get text () {
-		return `{red-fg}[${this.date.toLocaleDateString()} ${this.date.toLocaleTimeString()}] <{underline}${this.name}{/underline}> Failed to decrypt message from {underline}${this.tag}{/}\n`;
+		return `{yellow-fg}[${this.date.toLocaleDateString()} ${this.date.toLocaleTimeString()}] <{underline}${this.name}{/underline}> Failed to decrypt message from {underline}${this.tag}{/}\n`;
 	}
 }
 
@@ -46,7 +46,7 @@ class Handshake {
 			return `\t{green-bg}{black-fg}${this.name} (${this.tag}) handshake at ${this.date.toLocaleDateString()} ${this.date.toLocaleTimeString()}{/}`;
 		}
 		else {
-			return `\t{red-bg}{black-fg}${this.name} (${this.tag}) bad handshake at ${this.date.toLocaleDateString()} ${this.date.toLocaleTimeString()}{/}`;
+			return `\t{yellow-bg}{black-fg}${this.name} (${this.tag}) bad handshake at ${this.date.toLocaleDateString()} ${this.date.toLocaleTimeString()}{/}`;
 		}
 	}
 }
@@ -96,6 +96,23 @@ class Revocation {
 	}
 }
 
+class Compromised {
+	constructor (date, message) {
+		this.date = date;
+		this.name = message.member.displayName;
+		this.tag = message.author.tag;
+		this.messageId = message.id;
+		this.channelId = message.channel.id;
+	}
+
+	get text () {
+		let res = `\t{red-bg}{black-fg}POSSIBLY COMPROMISED USER: ${this.name} (${this.tag}) at ${this.date.toLocaleDateString()} ${this.date.toLocaleTimeString()}{/}\n`;
+		res += `\t{red-bg}{black-fg}IF YOU BELIEVE USER IS NOT COMPROMISED TO MANUALLY UPDATE LOCAL DATA FOR ${this.tag} RUN:{/}\n`;
+		res += `\t{red-bg}{black-fg}\tstowaway --overwrite ${this.messageId} ${this.channelId}{/}`;
+		return res;
+	}
+}
+
 
 class MessagesModel extends Model {
 
@@ -107,6 +124,7 @@ class MessagesModel extends Model {
 		stowaway.on('signed key', message => { this._signedKey(message); });
 		stowaway.on('key update', message => { this._keyUpdate(message); });
 		stowaway.on('revocation', (message, blockReason) => { this._revocation(message, blockReason); });
+		stowaway.on('compromised', message => { this._compromised(message); });
 	}
 
 	listen (channelId) {
@@ -188,6 +206,17 @@ class MessagesModel extends Model {
 				id: message.id,
 				timestamp: message.createdTimestamp,
 				content: new Revocation(message.createdAt, message.member, blockReason)
+			});
+			this._sortThenUpdate();
+		}
+	}
+
+	_compromised (message) {
+		if (message.channel.id === this.channelId) {
+			this._messages.push({
+				id: message.id,
+				timestamp: message.createdTimestamp,
+				content: new Compromised(message.createdAt, message)
 			});
 			this._sortThenUpdate();
 		}
