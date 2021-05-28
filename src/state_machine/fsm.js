@@ -84,7 +84,7 @@ class FSM extends EventEmitter {
 		});
 		this._revoke.on('to keybinds', s => {
 			if (this.revokeFree()) {
-				this.keybinds(s);
+				this.keybind(s);
 			}
 		});
 		this._current = this._navigate;
