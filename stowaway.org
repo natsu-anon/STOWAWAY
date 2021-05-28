@@ -14,6 +14,7 @@
 		- NO!
 	- [X] test new protocols (when able)
   - [ ] deadhead.js - yo, the CLI is major dicked
+	- [ ] add '--overwrite' command line flag
 	- [ ] make database use the actually serialized one
 	
 * DONE aaaaaaaa openpgp changed stuff
