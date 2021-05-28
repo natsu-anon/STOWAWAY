@@ -37,6 +37,7 @@ else if (process.argv.length > 2 && (process.argv[2] === '--token' || process.ar
 	}
 	else {
 		console.error('Error: Must pass in a discord token as the second argument!');
+		process.exit(1);
 	}
 }
 else if (process.argv.length > 2 && process.argv[2] === '--revoke') {
@@ -61,7 +62,7 @@ else if (process.argv.length > 2 && process.argv[2] === '--revoke') {
 			console.log(`> key nickname: ${nickname}`);
 			console.log(`> key fingerprint: ${key1.getFingerprint()}`);
 			const client = await login(API_TOKEN);
-			const stowaway = new Stowaway(dbInit(DATABASE), PRIVATE_KEY, VERSION);
+			const stowaway = new Stowaway(await dbInit(DATABASE), PRIVATE_KEY, VERSION);
 			await stowaway.revokeKey(client, key, key1, revocationCertificate);
 			console.log('old key revoked, saving new key!');
 			// encrypt key1 with passphrase then write to PRIVATE_KEY
@@ -79,18 +80,18 @@ else if (process.argv.length > 2 && process.argv[2] === '--revoke') {
 			if (err != null) {
 				console.error(err);
 			}
-			process.exit(4);
+			process.exit(1);
 		});
 	}
 	else {
 		console.log('Insufficient arguments for --revoke!');
 		console.log('Must pass: --revoke <nickname> <passphrase> [revocation_path]');
 		console.log('Pass --help to see usage information');
-		process.exit(4);
+		process.exit(1);
 	}
 }
 else if (process.argv.length > 2 && process.argv[2] === '--leave-server') {
-	if (process.argv.length > 3) { // also check if process.argv[2] is an int
+	if (process.argv.length > 3) {
 		login(API_TOKEN)
 		.then(client => client.guilds.fetch(process.argv[3]))
 		.then(guild => {
@@ -100,11 +101,39 @@ else if (process.argv.length > 2 && process.argv[2] === '--leave-server') {
 		.then(() => { process.exit(0); })
 		.catch(err => {
 			console.error(err);
-			process.exit(5);
+			process.exit(1);
 		});
 	}
 	else {
 		console.error('Error: Must pass in a server id as the second argument');
+		process.exit(1);
+	}
+}
+else if (process.argv.length > 2 && process.argv[2] === '--overwrite') {
+	if (process.argv.length > 4) {
+		login(API_TOKEN)
+		.then(client => client.channels.fetch(process.argv[3]))
+		.then(channel => channel.messages.fetch(process.argv[4]))
+		.then(message => {
+			dbInit(DATABASE)
+			.then(db => {
+				const stowaway = new Stowaway(db, PRIVATE_KEY, VERSION);
+				stowaway.overwrite(message);
+				process.exit(0);
+			})
+			.catch(err => { throw err; });
+		})
+		.catch(err => {
+			console.log('overwrite failed!');
+			if (err != null) {
+				console.error(err);
+			}
+			process.exit(1);
+		});
+	}
+	else {
+		console.error('Error: Must pass a channel id and a user id as the second and third arguments');
+		process.exit(1);
 	}
 }
 else if (process.argv.length <= 2) {
