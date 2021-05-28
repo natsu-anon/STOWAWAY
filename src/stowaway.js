@@ -525,15 +525,14 @@ class Stowaway extends EventEmitter {
 		});
 	}
 
-	// TODO implement
-	async signedKey (peerId) {
-		const doc = this._findPeer(peerId);
-		if (doc != null) {
-			// return to see if you've already signed peer's key
+	async signedKey (userId) {
+		try {
+			const publicKey = await this._publicKey(userId, 'Stowaway.signedKey()');
+			const bonafides = await publicKey.verifyPrimaryUser([ this.key ]);
+			return bonafides.find(x => x.valid) != null;
 		}
-		else {
-			// emit an error about not having an entry for associated peerId
-			this.emit('error', '');
+		catch {
+			return false;
 		}
 	}
 
@@ -615,6 +614,16 @@ class Stowaway extends EventEmitter {
 			type: HANDSHAKE,
 			respond: requestResponse,
 			public_key: this.key.toPublic().armor(),
+		}, FILE));
+	}
+
+	async _sendDisclosure (message) {
+		await this._send(message.channel, this._attachJSON({
+			type: DISCLOSURE,
+			nonce: await nonce(message.id),
+			cause: message.id,
+			public_key: this.key.toPublic().armor(),
+			revocations: await this._armoredPublicRevocations
 		}, FILE));
 	}
 
@@ -815,8 +824,8 @@ class Stowaway extends EventEmitter {
 					}
 					break;
 				case PROVENANCE:
-					if (json.public_key != null && json.recipient != null && Array.isArray(json.revocations)) {
-						this._provenance(json.public_key, json.recipient, json.revocations, message, cached)
+					if (json.recipient != null && json.public_key != null && Array.isArray(json.revocations)) {
+						this._provenance(json.recipient, json.public_key, json.revocations, message, cached)
 						.then(cache => {
 							this._processComplete({ cache, message });
 						})
@@ -931,13 +940,7 @@ class Stowaway extends EventEmitter {
 					const doc = this._findChannel(message.channel.id);
 					if (doc != null) {
 						if (!doc.decryption_failures.includes(message.id)) {
-							this._send(message.channel, this._attachJSON({
-								type: DISCLOSURE,
-								nonce: await nonce(message.id),
-								cause: message.id,
-								public_key: this.key.toPublic().armor(),
-								revocations: await this._armoredPublicRevocations
-							}, FILE));
+							await this._sendDisclosure(message);
 							doc.decryption_failures.push(message.id);
 							this.channels.update(doc);
 						}
@@ -1018,11 +1021,11 @@ class Stowaway extends EventEmitter {
 				const savedKey = await this._publicKey(userId);
 				if (savedKey.hasSameFingerprintAs(publicKey)) {
 					this.emit('handshake', message, true);
-					return { cache: true };
 				}
 				else {
 					this._inquireHistory(message);
 				}
+				return { cache: true };
 			}
 		}
 	}
@@ -1030,28 +1033,39 @@ class Stowaway extends EventEmitter {
 	async _signedKey (armoredKey, message, cached) {
 		if (cached) {
 			this.emit('signed key', message);
-			return {
-				cache: false
-			};
+			return { cache: false };
 		}
 		else {
 			try {
 				const publicKey = await openpgp.readKey({ armoredKey });
-				const userKey = await this._publicKey(message.author.id, 'Stowaway._signedKey()');
+				let userKey;
+				try {
+					userKey = await this._publicKey(message.author.id, 'Stowaway._signedKey()');
+				}
+				catch {
+					this._inquireHistory(message);
+					return { cache: false };
+				}
 				let bonafides = await publicKey.verifyPrimaryUser([ userKey ]);
 				if (bonafides.find(x => x.valid) != null) {
 					bonafides = await this.key.verifyPrimaryUser([ userKey ]);
 					if (bonafides.find(x => x.valid) == null) {
-						// await this._updatePrivateKey(publicKey);
-						await this.key.update(publicKey);
+						try {
+							await this.key.update(publicKey);
+						}
+						catch {
+							await this._sendDisclosure(message);
+							return { cache: false };
+						}
 						const channelIds = this.channels.data.map(doc => doc.channel_id);
 						for (let i = 0; i < channelIds.length; i++) {
 							await this._sendKeyUpdate(await this.client.channels.fetch(channelIds[i], false));
 						}
-						await writeFile(this.keyFile, (await openpgp.encryptKey({
+						const encryptedKey = await openpgp.encryptKey({
 							privateKey: this.key,
-							passphrase: this.passphrase
-						})).armor());
+							passphrase: this.passphrase,
+						});
+						await writeFile(this.keyFile, encryptedKey.armor());
 						this.emit('signed key', message);
 						// this.emit('test', `${message.author.tag} signed your key!`);
 						return {
@@ -1060,13 +1074,12 @@ class Stowaway extends EventEmitter {
 						};
 					}
 					else {
-						return {
-							cache: true,
-						};
+						return { cache: true };
 					}
 				}
 				else {
 					this._inquireHistory(message);
+					return { cache: false };
 				}
 			}
 			catch (err) {
@@ -1307,6 +1320,7 @@ class Stowaway extends EventEmitter {
 						return true;
 					}
 				}
+				this.emit('compromised', message);
 				return false;
 			}
 		}
