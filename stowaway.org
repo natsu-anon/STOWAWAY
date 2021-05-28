@@ -13,10 +13,9 @@
 	  - [X] make fetchOlder/fetchNewer/loadChannel handle messages in chronological order
 		- NO!
 	- [X] test new protocols (when able)
-  - [-] deadhead.js - yo, the CLI is major dicked [1/5]
-	- [ ] is disclosure working???
+  - [-] deadhead.js - yo, the CLI is major dicked [2/4]
 	- [X] ok provenance is fully working
-	- [ ] add '--overwrite' command line flag
+	- [X] add '--overwrite' command line flag
 	- [ ] make sure all the ctrl-menu navigation works properly
 	- [ ] make database use the actually serialized one
 	
