@@ -101,14 +101,14 @@ class Compromised {
 		this.date = date;
 		this.name = message.member.displayName;
 		this.tag = message.author.tag;
-		this.messageId = message.id;
 		this.channelId = message.channel.id;
+		this.messageId = message.id;
 	}
 
 	get text () {
 		let res = `\t{red-bg}{black-fg}POSSIBLY COMPROMISED USER: ${this.name} (${this.tag}) at ${this.date.toLocaleDateString()} ${this.date.toLocaleTimeString()}{/}\n`;
 		res += `\t{red-bg}{black-fg}IF YOU BELIEVE USER IS NOT COMPROMISED TO MANUALLY UPDATE LOCAL DATA FOR ${this.tag} RUN:{/}\n`;
-		res += `\t{red-bg}{black-fg}\tstowaway --overwrite ${this.messageId} ${this.channelId}{/}`;
+		res += `\t{red-bg}{black-fg}\tstowaway --overwrite ${this.channelId} ${this.messageId}{/}`;
 		return res;
 	}
 }
