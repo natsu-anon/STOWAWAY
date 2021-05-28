@@ -549,7 +549,7 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 		cli.revoke.key('C-a', () => { fsm.ctrlA(); });
 		cli.screen.key('C-k', () => { fsm.ctrlK(); });
 		cli.input.key('C-k', () => { fsm.ctrlK(); });
-		cli.revoke.key('C-k', () => { fsm.ctrlA(); });
+		cli.revoke.key('C-k', () => { fsm.ctrlK(); });
 		cli.screen.key('escape', () => { fsm.escape(); });
 		cli.input.key('escape', () => { fsm.escape(); });
 		cli.revoke.key('escape', () => { fsm.escape(); });
