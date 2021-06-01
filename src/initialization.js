@@ -46,6 +46,7 @@ const WARNING = `
 
 function init (BANNER, SCREEN_TITLE, DATABASE, API_TOKEN, PRIVATE_KEY, VERSION, REVOCATION_CERTIFICATE, versionText) {
 	const cli = new InitCLI(BANNER, SCREEN_TITLE, process);
+	process.on('SIGHUP', () => { process.exit(0); });
 	return new Promise((resolve, reject) => {
 		(versionText != null ? cli.pauseLog(versionText) : Promise.resolve())
 		.then(() => {
@@ -54,6 +55,9 @@ function init (BANNER, SCREEN_TITLE, DATABASE, API_TOKEN, PRIVATE_KEY, VERSION, 
 			return new Promise((res, rej) => {
 				dbInit(DATABASE) // ree package that does the indenting
 				.then(({ db, channels, peers, revocations }) => {
+					process.on('SIGHUP', () => {
+						db.close();
+					});
 					cli.cat('{green-fg}DONE!{/}');
 					cli.log('>initializing discord client... ');
 					res({ db, channels, peers, revocations });
@@ -65,6 +69,9 @@ function init (BANNER, SCREEN_TITLE, DATABASE, API_TOKEN, PRIVATE_KEY, VERSION, 
 			return new Promise((res, rej) => {
 				clientInit(API_TOKEN, cli)
 				.then(client => {
+					process.on('SIGHUP', () => {
+						client.destroy();
+					});
 					client.user.setStatus('dnd');
 					cli.cat('{green-fg}DONE!{/}');
 					cli.log(`>logged in as {green-fg}{underline}${client.user.tag}{/}`);
