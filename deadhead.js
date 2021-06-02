@@ -7,7 +7,12 @@ const { token1, keyPath1, db1, channels1 } = require('./test-data.js');
 async function launch (freshFlag) {
 	console.log(`### DEADHEAD ${freshFlag ? 'FRESH' : 'CACHED'}`);
 	const VERSION = '1.1.0-deadhead';
-	const { channels, peers, revocations } = freshFlag ? await database('temp.db', false) : await database(db1);
+	const { db, channels, peers, revocations } = freshFlag ? await database('deadhead.db', false) : await database(db1);
+	const quit = () => {
+		if (!freshFlag) {
+			db.close(() => { process.exit(0); });
+		}
+	};
 	const client = await clientLogin(token1);
 	const { key } = freshFlag ? await genKey() : await loadKey(keyPath1);
 	const stowaway = new Stowaway(channels, peers, revocations, freshFlag ? 'fresh.key' : keyPath1, VERSION, 'deadhead', true);
@@ -24,6 +29,8 @@ async function launch (freshFlag) {
 		channel = await stowaway.loadChannel(await client.channels.fetch(channels1[i]));
 		console.log(`\tdeadheading: ${channel.guild.name} #${channel.name}`);
 	}
+	process.once('SIGHUP', quit);
+	process.once('SIGINT', quit);
 }
 
 launch(process.argv.length > 2 ? process.argv[2] === '--fresh' : false);
