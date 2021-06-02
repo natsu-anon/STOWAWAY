@@ -39,7 +39,18 @@ function nonce (input, test) {
 	}
 	else {
 		return new Promise((resolve, reject) => {
-			const worker = new Worker('./src/worker/nonce.js', {
+			const worker = new Worker(
+				`const crypto = require('crypto');
+				const { workerData, parentPort } = require('worker_threads');
+				const CHALLENGE = process.argv[2];
+				const len = CHALLENGE.length;
+				let nonce, temp;
+				do {
+					nonce = Math.random().toString().slice(2);
+					temp = crypto.createHash('sha512').update(workerData + nonce).digest('base64');
+				} while (temp.slice(0, len) !== CHALLENGE);
+				parentPort.postMessage(nonce);`, {
+				eval: true,
 				argv: [ NONCE_CHALLENGE ],
 				workerData: input
 			});
