@@ -202,7 +202,7 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 			})
 			.revoke(prevState => {
 				cli.stateText = `REVOKE | from: ${prevState.name} `;
-				const label = `REVOKE YOUR KEY; [Arrow keys] to navigate form; [Escape] to return to ${prevState.name}`;
+				const label = `REVOKE YOUR KEY; [Arrow Keys] to navigate form; [Escape] to return to ${prevState.name}`;
 				cli.stateColor = RevokeColor;
 				const { form, output } = revocationForm(cli.screen, label);
 				form.on('submit', data => {
