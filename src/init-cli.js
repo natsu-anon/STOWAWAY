@@ -1,40 +1,40 @@
 const blessed = require('blessed');
 
 const spinner = [
-	"[@               ]",
-	"[ @              ]",
-	"[  @             ]",
-	"[   @            ]",
-	"[    @           ]",
-	"[     @          ]",
-	"[      @         ]",
-	"[       @        ]",
-	"[        @       ]",
-	"[         @      ]",
-	"[          @     ]",
-	"[           @    ]",
-	"[            @   ]",
-	"[             @  ]",
-	"[              @ ]",
-	"[               @]",
-	"[              @ ]",
-	"[             @  ]",
-	"[            @   ]",
-	"[           @    ]",
-	"[          @     ]",
-	"[         @      ]",
-	"[        @       ]",
-	"[       @        ]",
-	"[      @         ]",
-	"[     @          ]",
-	"[    @           ]",
-	"[   @            ]",
-	"[  @             ]",
-	"[ @              ]",
+	'[@               ]',
+	'[ @              ]',
+	'[  @             ]',
+	'[   @            ]',
+	'[    @           ]',
+	'[     @          ]',
+	'[      @         ]',
+	'[       @        ]',
+	'[        @       ]',
+	'[         @      ]',
+	'[          @     ]',
+	'[           @    ]',
+	'[            @   ]',
+	'[             @  ]',
+	'[              @ ]',
+	'[               @]',
+	'[              @ ]',
+	'[             @  ]',
+	'[            @   ]',
+	'[           @    ]',
+	'[          @     ]',
+	'[         @      ]',
+	'[        @       ]',
+	'[       @        ]',
+	'[      @         ]',
+	'[     @          ]',
+	'[    @           ]',
+	'[   @            ]',
+	'[  @             ]',
+	'[ @              ]',
 ];
 
 class BlessedInit {
-	constructor (banner, title, process) {
+	constructor (banner, title) {
 		const screen = blessed.screen({
 			smartcsr: true,
 			autopadding: true,
@@ -77,9 +77,6 @@ class BlessedInit {
 				type: 'line',
 			},
 		});
-		screen.key(['C-c'], () => {
-			return process.exit(0);
-		});
 		screen.render();
 		this.screen = screen;
 	}
@@ -108,19 +105,19 @@ class BlessedInit {
 			border: { type: 'line' },
 			censor: censor,
 		});
-		textbox.onceKey(['C-c'], () => {
-			return process.exit(0);
-		});
 		textbox.focus();
 		textbox.setFront();
 		this.screen.render();
-		return new Promise(resolve => {
-			textbox.once('submit', value => {
-				textbox.destroy();
-				this.screen.render();
-				resolve(value);
-			});
-		});
+		return {
+			textbox,
+			promise: new Promise(resolve => {
+				textbox.once('submit', value => {
+					textbox.destroy();
+					this.screen.render();
+					resolve(value);
+				});
+			})
+		};
 	}
 
 	select (setup) {
@@ -133,16 +130,6 @@ class BlessedInit {
 			left: 'center',
 			content: 'loading...',
 			padding: 1,
-			/* NOT WORKING ???
-			scrollable: true,
-			alwaysScroll: true,
-			draggable: true,
-			scrollbar: {
-				ch: '#',
-				fg: 'black',
-				bg: 'cyan',
-			},
-			*/
 			border: {
 				type: 'line'
 			}
@@ -243,9 +230,6 @@ class BlessedInit {
 		});
 		box.focus();
 		this.screen.render();
-		box.onceKey('C-c', () => {
-			return process.exit(0);
-		});
 		return new Promise(resolve => {
 			box.key('enter', () => {
 				box.destroy();
@@ -258,7 +242,7 @@ class BlessedInit {
 	toggleQuestion (prompt0, prompt1, toggleKey) {
 		let flag = true;
 		const toggleBox = prompt => {
-			const length = prompt.text.length + 6;
+			const length = this.background.strWidth(prompt.text) + 6;
 			const box = blessed.textbox({
 				parent: this.screen,
 				left: 'center',
@@ -274,13 +258,10 @@ class BlessedInit {
 			});
 			box.focus();
 			this.screen.render();
-			box.onceKey([toggleKey], () => {
+			box.onceKey(toggleKey, () => {
 				box.destroy();
 				flag ? toggleBox(prompt1) : toggleBox(prompt0);
 				flag = !flag;
-			});
-			box.onceKey(['C-c'], () => {
-				return process.exit(0);
 			});
 			box.once('submit', value => {
 				box.destroy();
