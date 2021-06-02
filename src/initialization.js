@@ -4,6 +4,7 @@ const dbInit = require('./database.js');
 const { initialization: clientInit } = require('./client.js');
 const keyInit = require('./key.js');
 const { Stowaway } = require('./stowaway.js');
+const EventEmitter = require('events');
 
 const WARNING = `
 	{black-fg}{yellow-bg}## {underline}WARNING{/underline} ##########################################{/}
@@ -45,8 +46,14 @@ const WARNING = `
 */
 
 function init (BANNER, SCREEN_TITLE, DATABASE, API_TOKEN, PRIVATE_KEY, VERSION, REVOCATION_CERTIFICATE, versionText) {
-	const cli = new InitCLI(BANNER, SCREEN_TITLE, process);
-	process.on('SIGHUP', () => { process.exit(0); });
+	const initEmitter = new EventEmitter();
+	initEmitter.on('quit init', () => {
+		process.exit(0);
+	});
+	const quitInit = () => { initEmitter.emit('quit init'); };
+	const cli = new InitCLI(BANNER, SCREEN_TITLE);
+	cli.screen.onceKey('C-c', quitInit);
+	process.on('SIGHUP', () => { initEmitter.emit('quit init'); });
 	return new Promise((resolve, reject) => {
 		(versionText != null ? cli.pauseLog(versionText) : Promise.resolve())
 		.then(() => {
@@ -55,7 +62,7 @@ function init (BANNER, SCREEN_TITLE, DATABASE, API_TOKEN, PRIVATE_KEY, VERSION, 
 			return new Promise((res, rej) => {
 				dbInit(DATABASE) // ree package that does the indenting
 				.then(({ db, channels, peers, revocations }) => {
-					process.on('SIGHUP', () => {
+					initEmitter.prependOnceListener('quit init', () => {
 						db.close();
 					});
 					cli.cat('{green-fg}DONE!{/}');
@@ -69,7 +76,7 @@ function init (BANNER, SCREEN_TITLE, DATABASE, API_TOKEN, PRIVATE_KEY, VERSION, 
 			return new Promise((res, rej) => {
 				clientInit(API_TOKEN, cli)
 				.then(client => {
-					process.on('SIGHUP', () => {
+					initEmitter.prependOnceListener('quit init', () => {
 						client.destroy();
 					});
 					client.user.setStatus('dnd');
@@ -90,6 +97,7 @@ function init (BANNER, SCREEN_TITLE, DATABASE, API_TOKEN, PRIVATE_KEY, VERSION, 
 					cli.log('{black-fg}{green-bg}>>STOWING AWAY!{/}');
 					setTimeout(() => {
 						cli.decouple();
+						cli.screen.unkey('C-c', quitInit);
 						res({ stowaway, client, key, passphrase, db, channels, peers, screen: cli.screen });
 					}, 500);
 				})
