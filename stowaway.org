@@ -13,7 +13,7 @@
 	  - [X] make fetchOlder/fetchNewer/loadChannel handle messages in chronological order
 		- NO!
 	- [X] test new protocols (when able)
-  - [-] deadhead.js - yo, the CLI is major dicked [5/8]
+  - [-] deadhead.js - yo, the CLI is major dicked [7/8]
 	- [X] ok provenance is fully working
 	- [X] add '--overwrite' command line flag
 	- [X] make sure all the ctrl-menu navigation works properly
@@ -22,9 +22,10 @@
 		- NOT ANYMORE -- THANK YOU HACKY SOLUTION
 	- [X] get rid of the debugLog.writes in main
 	- [X] remove the debug names
-	- [ ] rework revoke sequence -- just use a form BRUH
-	  - [ ] bruh cleanup all that stuff
-	- [ ] use same revocation form during the key initialization
+	- [X] rework revoke sequence -- just use a form BRUH
+	  - [X] bruh cleanup all that stuff
+	- [X] use same revocation form during the key initialization
+	  - L A T E R
 	- [ ] make database use the actually serialized one
 	
 * DONE aaaaaaaa openpgp changed stuff
