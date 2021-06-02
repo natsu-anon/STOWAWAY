@@ -288,6 +288,9 @@ class Stowaway extends EventEmitter {
 			}
 		});
 		this.lastChannel = this.channels.findOne({ last_channel: true });
+		if (this.lastChannel != null) {
+			this.lastChannel = this.lastChannel.channel_id;
+		}
 		return new Promise((resolve, reject) => {
 			Promise.all(this.channels.data.map(doc => new Promise(res => {
 				client.channels.fetch(doc.channel_id, false)
@@ -338,7 +341,6 @@ class Stowaway extends EventEmitter {
 						ts: message.createdTimestamp
 					},
 					decryption_failures: [], // array of message ids you already failed to decrypt
-					enquiries: [],
 					cache: [] // array of message ids you already processed -- just fast-track em to the emission step -- CACHE ALL NON-MESSAGES
 				});
 				this.emit('handshake channel', channel);
@@ -582,7 +584,7 @@ class Stowaway extends EventEmitter {
 
 	_inquireHistory (message) {
 		const doc = this._findChannel(message.channel.id);
-		if (doc != null && !doc.enquiries.includes(message.id)) {
+		if (doc != null && !doc.cache.includes(message.id)) {
 			nonce(message.id)
 			.then(res => {
 				return this._send(message.channel, this._attachJSON({
@@ -592,7 +594,7 @@ class Stowaway extends EventEmitter {
 				}, FILE));
 			})
 			.then(() => {
-				doc.enquiries.push(message.id);
+				doc.cache.push(message.id);
 				this.channels.update(doc);
 			});
 		}
