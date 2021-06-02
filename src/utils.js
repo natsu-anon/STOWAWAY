@@ -64,6 +64,11 @@ function natoPhrase (length=3) {
 	return [...temp].map(x => NATO[x % 26]).join(' ');
 }
 
+function pin (length=5) {
+	const temp = crypto.createHash('sha512').update(`${Date.now()}`).digest().slice(0, length);
+	return [...temp].map(x => x % 10).join('');
+}
+
 function access (path) {
 	return new Promise((resolve, reject) => {
 		fs.access(path, fs.constants.R_OK, err => {
@@ -135,4 +140,5 @@ module.exports = {
 	readFile,
 	readUrl,
 	natoPhrase,
+	pin,
 };
