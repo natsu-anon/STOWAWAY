@@ -1,10 +1,9 @@
 const loki = require('lokijs');
 
-// NOTE undicker this
 function init (dbFilename, autosave=true) {
 	let db;
 	return new Promise(resolve => {
-		db = new loki('foo.db', {
+		db = new loki(dbFilename, {
 			autoload: true,
 			autoloadCallback: () => {
 				let channels = db.getCollection('channels');
@@ -16,7 +15,7 @@ function init (dbFilename, autosave=true) {
 					peers = db.addCollection('peers');
 				}
 				peers.addDynamicView('all_peers')
-				.applyFind({ user_id: { $exists: true },  public_key: { $exists: true }});
+				.applyFind({ user_id: { $exists: true }, public_key: { $exists: true } });
 				let revocations = db.getCollection('revocations');
 				if (revocations == null) {
 					revocations = db.addCollection('revocations');
@@ -25,7 +24,7 @@ function init (dbFilename, autosave=true) {
 				// but it also feekls stoopid to do the same
 				resolve({ db, channels, peers, revocations });
 			},
-			// autosave
+			autosave
 		});
 	});
 }
