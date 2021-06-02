@@ -10,11 +10,12 @@ BEST_PRACTICES += 'delete any local copies left on your computer.\n';
 // BEST_PRACTICES += '5. If you ever lose or forget your passphrase you MUST revoke your current private key in order to use STOWAWAY (see README.txt).\n';
 BEST_PRACTICES += '5. IMMEADIATELY REVOKE YOUR PRIVATE KEY if you think anyone has your private key with or without the passphrase (see README.txt).';
 
+
 function existingKey (lockedKey, keyPath, revocationPath, stowaway, client, cli) {
 	const challenge = natoPhrase();
 	return new Promise((resolve, reject) => {
 		cli.toggleQuestion({
-			text: 'Enter passphrase then press [Enter] to continue; Press [Escape] to begin key revocation',
+			text: 'Enter key passphrase then press [Enter] to continue; Press [Escape] to begin key revocation',
 			censor: true,
 			callback: phrase => {
 				openpgp.decryptKey({
@@ -30,10 +31,9 @@ function existingKey (lockedKey, keyPath, revocationPath, stowaway, client, cli)
 			}
 		},
 		{
-			text: `Enter '${challenge}' then press [Enter] to revoke your key THIS IS IRREVERSIBLE; Press [Escape] to decrypt key.`,
+			text: `Enter {underline}${challenge}{/underline} then press [Enter] to revoke your key THIS IS IRREVERSIBLE; Press [Escape] to decrypt key.`,
 			callback: input => {
 				if (input.toUpperCase() === challenge) {
-					// read rcert from path
 					readFile(revocationPath)
 					.then(data => {
 						cli.cat('{black-fg}{yellow-bg}REVOCATION PROCESS INITIATED!{/}');
@@ -74,18 +74,18 @@ function existingKey (lockedKey, keyPath, revocationPath, stowaway, client, cli)
 }
 
 async function generateKey (keyPath, revocationPath, cli, writeFlag) {
-	const nickname = await cli.question('Enter a nickname for your key then press [Enter] to continue');
+	const nickname = await cli.question.promise('Enter a nickname for your key then press [Enter] to continue');
 	if (nickname === '') {
 		await cli.notify('Must enter a valid nickname!  Trying again!');
 		return await generateKey(keyPath, revocationPath, cli, writeFlag);
 	}
-	const phrase = await cli.question('Enter a passphrase to encrypt your key with then press [Enter] to continue', true);
+	const phrase = await cli.question.promise('Enter a passphrase to encrypt your key with then press [Enter] to continue', true);
 	if (phrase === '') {
 		await cli.notify('Must enter a valid passphrase!  Trying again!');
 		return await generateKey(keyPath, revocationPath, cli, writeFlag);
 	}
 	else {
-		const temp = await cli.question('Re-enter the passphrase then press [Enter] to continue', true);
+		const temp = await cli.question.promise('Re-enter the passphrase then press [Enter] to continue', true);
 		if (phrase === temp) {
 			const { key, revocationCertificate } = await openpgp.generateKey({
 				type: 'ecc',
