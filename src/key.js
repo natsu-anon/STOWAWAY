@@ -74,18 +74,18 @@ function existingKey (lockedKey, keyPath, revocationPath, stowaway, client, cli)
 }
 
 async function generateKey (keyPath, revocationPath, cli, writeFlag) {
-	const nickname = await cli.question.promise('Enter a nickname for your key then press [Enter] to continue');
+	const nickname = await cli.question('Enter a nickname for your key then press [Enter] to continue').promise;
 	if (nickname === '') {
 		await cli.notify('Must enter a valid nickname!  Trying again!');
 		return await generateKey(keyPath, revocationPath, cli, writeFlag);
 	}
-	const phrase = await cli.question.promise('Enter a passphrase to encrypt your key with then press [Enter] to continue', true);
+	const phrase = await cli.question('Enter a passphrase to encrypt your key with then press [Enter] to continue', true).promise;
 	if (phrase === '') {
 		await cli.notify('Must enter a valid passphrase!  Trying again!');
 		return await generateKey(keyPath, revocationPath, cli, writeFlag);
 	}
 	else {
-		const temp = await cli.question.promise('Re-enter the passphrase then press [Enter] to continue', true);
+		const temp = await cli.question('Re-enter the passphrase then press [Enter] to continue', true).promise;
 		if (phrase === temp) {
 			const { key, revocationCertificate } = await openpgp.generateKey({
 				type: 'ecc',

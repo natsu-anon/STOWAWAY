@@ -36,7 +36,7 @@ function init (tokenPath, cli) {
 		.catch(() => {
 			cli.cat('{yellow-fg}No token file found{/}');
 			cli.log('\t- Requesting token... ');
-			cli.question.promise('Enter a discord bot token then press [ENTER] to continue', true)
+			cli.question('Enter a discord bot token then press [ENTER] to continue', true).promise
 			.then(token => clientLogin(token))
 			.then(client => {
 				return writeFile(tokenPath, client.token)
