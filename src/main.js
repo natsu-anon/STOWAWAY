@@ -35,6 +35,15 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 			]
 		});
 
+		const quit = () => {
+			// debugLog.end();
+			errStream.end();
+			cli.destroy();
+			client.destroy();
+			db.close();
+			return process.exit(0);
+		};
+
 		//  COMMAND LINE INTERFACE  //
 
 		// const debugLog = writeStream('./debug.txt');
@@ -83,7 +92,7 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 		const fsm = new FSMBuilder()
 			.navigate(() => {
 				// debugLog.write('navigate enter\n');
-				cli.stateText = `NAVIGATE | more information will be shown here next release`;
+				cli.stateText = `NAVIGATE`;
 				cli.stateColor = NavigateColor;
 				cli.navigation.style.border.fg = 'green';
 				cli.render();
@@ -94,7 +103,7 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 			})
 			.handshake(prevState => {
 				// debugLog.write('handshake enter\n');
-				cli.stateText = `HANDSHAKE | from: ${prevState.name} | more information will be shown here next release`;
+				cli.stateText = `HANDSHAKE | from: ${prevState.name}`;
 				cli.stateColor = HandshakeColor;
 				cli.select(box => {
 					box.setLabel(' Select an available channel to handshake ');
@@ -120,7 +129,7 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 			})
 			.read(() => {
 				// debugLog.write('read enter\n');
-				cli.stateText = `READ | more information will be shown here next release`; // eventually spit out a buncha information (including session)
+				cli.stateText = `READ`; // eventually spit out a buncha information (including session)
 				cli.stateColor = ReadColor;
 				cli.messages.style.border.fg = 'green';
 				cli.render();
@@ -138,7 +147,7 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 				else {
 					cli.input.setLabel(` Only members whose keys you have signed will receive this message `);
 				}
-				cli.stateText = `WRITE | more information will be shown here next release`; // eventually sepcify session as well
+				cli.stateText = `WRITE`; // eventually sepcify session as well
 				cli.stateColor = WriteColor;
 				messenger.publicFlag = publicFlag;
 				cli.input.style.border.fg = 'green';
@@ -157,7 +166,7 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 				cli.select(box => {
 					box.setLabel(' Loading channel information. ');
 					box.setContent('loading...');
-					cli.stateText = `MEMBERS | from: ${prevState.name} | more information will be shown here next release`;
+					cli.stateText = `MEMBERS | from: ${prevState.name}`;
 					if (mFactory.current != null) {
 						const mediator = mFactory.current;
 						box.setLabel(` Members of {underline}${mediator.channel.guild.name}{/underline} #${mediator.channel.name} `);
@@ -183,7 +192,6 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 				cli.render();
 			},
 			() => {
-				// debugLog.write('member exit\n');
 				cli.selector.removeAllListeners('resize');
 				fsm.removeAllListeners('scroll members');
 				fsm.removeAllListeners('sign member');
@@ -193,26 +201,20 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 				cli.selector.hide();
 			})
 			.revoke(prevState => {
-				// debugLog.write('revoke enter\n');
-				// const challenge = natoPhrase();
-				// revoker.challenge = '';
 				cli.stateText = `REVOKE | from: ${prevState.name} `;
 				const label = `REVOKE YOUR KEY; [Arrow keys] to navigate form; [Escape] to return to ${prevState.name}`;
 				cli.stateColor = RevokeColor;
-				// cli.revoke.show();
-				// cli.revoke.focusNext();
-				// cli.nickname.focus();
 				const { form, output } = revocationForm(cli.screen, label);
 				form.on('submit', data => {
 					const log = [];
 					if (data.nickname.length === 0) {
-						log.push('>Must enter a valid nickname!');
+						log.push('> Must enter a valid nickname!');
 					}
 					if (data.passphrase0.length === 0) {
-						log.push('>Must enter a valid passphrase!');
+						log.push('> Must enter a valid passphrase!');
 					}
 					else if (data.passphrase1 !== data.passphrase0) {
-						log.push('>Passphrases do not match!');
+						log.push('> Passphrases do not match!');
 					}
 					if (log.length > 0) {
 						log.push('Try again!');
@@ -261,186 +263,29 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 				cli.revoke = form;
 				cli.revokeOutput = output;
 				cli.render();
-				// const label = `Enter '${challenge}' then press [Enter] to begin revoking your key${temp}`;
-				// cli.revokeLabel = label;
-				// cli.revoke.focus();
-				// cli.revoke.censor = false;
-				// revocation sequence:
-				// nickname
-				// password #1
-				// password #2
-				// read revocation cert from disk
-				// display nickname & fingerprint
-				// new Promise((resolve, reject) => {
-				// 	cli.revoke.once('submit', () => {
-				// 		if (revoker.checkChallenge(cli.revoke.value)) {
-				// 			resolve();
-				// 		}
-				// 		else {
-				// 			reject();
-				// 		}
-				// 	});
-				// })
-				// .then(() => {
-				// 	cli.revoke.focus();
-				// 	cli.revoke.clearValue();
-				// 	cli.revokeLabel = `Enter a valid nickname for your new key then press [Enter] to proceed${temp}`;
-				// 	cli.stateText = `REVOKE | from: ${prevState.name} | STEP 2: NICKNAME | WARNING: revoking a key is irreversible!`;
-				// 	cli.render();
-				// 	return new Promise((resolve, reject) => {
-				// 		cli.revoke.once('submit', () => {
-				// 			if (cli.revoke.value.length > 0) {
-				// 				resolve(cli.revoke.value);
-				// 			}
-				// 			else {
-				// 				reject();
-				// 			}
-				// 		});
-				// 	});
-				// })
-				// .then(nickname => {
-				// 	// cli.revoke.focus();
-				// 	cli.revoke.clearValue();
-				// 	revoker.setNickname(nickname);
-				// 	cli.revoke.censor = true;
-				// 	cli.revokeLabel = `Enter a passphrase for your new key then press [Enter] to continue${temp}`;
-				// 	cli.stateText = `REVOKE | from: ${prevState.name} | NICKNAME: ${nickname} | STEP 3: PASSPHRASE | WARNING: revoking a key is irreversible!`;
-				// 	cli.render();
-				// 	return new Promise((resolve, reject) => {
-				// 		cli.revoke.once('submit', () => {
-				// 			if (cli.revoke.value.length > 0) {
-				// 				resolve(cli.revoke.value);
-				// 			}
-				// 			else {
-				// 				reject();
-				// 			}
-				// 		});
-				// 	});
-				// })
-				// .then(passphrase => {
-				// 	// cli.revoke.focus();
-				// 	cli.revoke.clearValue();
-				// 	cli.revokeLabel = `Re-enter the passphrase then press [Enter] to continue${temp}`;
-				// 	cli.stateText = `REVOKE | from: ${prevState.name} | NICKNAME: ${revoker.nickname} | STEP 4: PASSPHRASE CONFIRMATION | WARNING: revoking a key is irreversible!`;
-				// 	cli.render();
-				// 	return new Promise((resolve, reject) => {
-				// 		cli.revoke.once('submit', () => {
-				// 			if (cli.revoke.value === passphrase) {
-				// 				resolve(passphrase);
-				// 			}
-				// 			else {
-				// 				reject();
-				// 			}
-				// 		});
-				// 	});
-				// })
-				// .then(passphrase => {
-				// 	fsm.revokeLock();
-				// 	// debugLog.write('revoke locked\n');
-				// 	revoker.setPassphrase(passphrase);
-				// 	cli.screen.focusPop();
-				// 	cli.screen.grabKeys = false;
-				// 	cli.revoke.hide();
-				// 	const stopSpinning = cli.spin('reading revocation certificate from disk...');
-				// 	cli.stateText = `REVOKE | from: ${prevState.name} | NICKNAME: ${revoker.nickname} | STEP 5: reading revocation certificate | IT'S TOO LATE`;
-				// 	cli.revoke.clearValue();
-				// 	return readFile(REVOCATION_CERTIFICATE).finally(stopSpinning);
-				// })
-				// .then(revocationCertificate => {
-				// 	cli.stateText = `REVOKE | from: ${prevState.name} | REVOKING KEY | IT'S TOO LATE`;
-				// 	const stopSpinning = cli.spin('revoking key...');
-				// 	return revoker.setRevocationCertificate(revocationCertificate).revoke()
-				// 	.finally(() => { stopSpinning(); });
-
-				// })
-				// .then(({ nickname, fingerprint }) => {
-				// 	cli.stateText = `REVOKE | from: ${prevState.name} | REVOCATION PROCESS COMPLETE`;
-				// 	let temp = 'Always check that your key\'s nickname & fingerprint match what you remember!\n';
-				// 	temp += `> key nickname: {underline}${nickname}{/underline}\n`;
-				// 	temp += `> key fingerprint: {underline}${fingerprint}{/underline}\n`;
-				// 	temp += 'Move your new revocation ceritifcate to an offline storage device.';
-				// 	const box = cli.keyData(temp);
-				// 	return new Promise(resolve => {
-				// 		box.once('destroy', () => {
-				// 			resolve();
-				// 		});
-				// 	});
-				// })
-				// .then(() => {
-				// 	fsm.revokeUnlock();
-				// 	fsm.escape();
-				// })
-				// .catch(err => {
-				// 	if (err != null) {
-				// 		cli.warn(`Error while revoking:\n${err}`);
-				// 	}
-				// 	cli.revoke.clearValue();
-				// 	cli.revoke.removeAllListeners('submit');
-				// 	fsm.revoke(prevState);
-				// })
-				// .finally(() => {
-				// 	fsm.revokeUnlock();
-				// 	// debugLog.write('revoke unlocked\n');
-				// });
 			}, () => {
-				// debugLog.write('revoke exit\n\tpre-pop:');
-				// if (cli.screen.focused != null) {
-				// 	// debugLog.write(` -- focused object debug_name: ${cli.screen.focused.debug_name}\n`);
-				// }
-				// else {
-				// 	// debugLog.write(' -- no focused object\n');
-				// }
-				// cli.revoke.clearValue();
-				// cli.revoke.focusPrevious();
 				while (cli.screen.focused != null) {
 					cli.screen.focusPop();
 				}
 				cli.screen.grabKeys = false;
-				// debugLog.write('\tpost-pop:');
-				// if (cli.screen.focused != null) {
-				// 	// debugLog.write(` -- focused object debug_name: ${cli.screen.focused.debug_name}\n`);
-				// }
-				// else {
-				// 	// debugLog.write(' -- no focused object\n');
-				// }
-				if (cli.screen.grabKeys) {
-					cli.screen.grabKeys = false;
+				if (cli.revoke != null) {
+					cli.revoke.destroy();
 				}
-				// else {
-				// 	// debugLog.write('\tok\n');
-				// }
-				cli.revoke.destroy();
 			})
 			.about(prevState => {
-				// debugLog.write('about enter -- ');
-				// if (cli.screen.grabKeys) {
-				// 	debugLog.write(`grabs keys\n`);
-				// }
-				// else {
-				// 	debugLog.write('NO GRAB\n');
-				// }
 				cli.stateText = `ABOUT | from: ${prevState.name} | STOWAWAY version: ${VERSION}`;
 				cli.setPopup('About STOWAWAY; [Escape] to return', ABOUT);
 				cli.stateColor = prevState.color;
 				cli.render();
 			}, () => {
-				// debugLog.write('about exit\n');
 				cli.popup.hide();
 			})
 			.keybinds(prevState => {
-				// debugLog.write('keybind enter -- ');
-				// if (cli.screen.grabKeys) {
-				// 	debugLog.write(`grabs keys\n`);
-				// }
-				// else {
-				// 	debugLog.write('NO GRAB\n');
-				// }
 				cli.stateText = `KEYBINDS | from: ${prevState.name}`;
 				cli.stateColor = prevState.color;
 				cli.setPopup(`Keybinds for ${prevState.name} state controls; [Escape] to return`, prevState.keybinds);
 				cli.render();
 			}, () => {
-				// debugLog.write('keybind exit\n');
 				cli.popup.hide();
 			})
 			.build();
@@ -537,22 +382,11 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 
 		// emitted on Windows the console window is closed & on other platforms under similar conditions
 		// see https://nodejs.org/dist/latest-v14.x/docs/api/process.html#process_signal_events
-		process.on('SIGHUP', () => {
-			// debugLog.end();
-			// client.destroy();
-			// db.close();
-			// return process.exit(0);
-		});
+		process.once('SIGHUP', quit);
 
 		//  FSM EVENT LISTENING  //
 
-		fsm.on('quit', () => {
-			// debugLog.end();
-			cli.destroy();
-			client.destroy();
-			db.close();
-			return process.exit(0);
-		});
+		fsm.once('quit', quit);
 		fsm.on('read channel', enterFlag => {
 			if (enterFlag) {
 				const channelId = hMediator.channelId();
@@ -659,20 +493,10 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 		//  KEYBINDING  //
 
 		cli.screen.onceKey('C-c', () => { fsm.ctrlC(); });
-		cli.input.onceKey('C-c', () => { fsm.ctrlC(); });
-		// cli.revoke.onceKey('C-c', () => { fsm.ctrlC(); });
 		cli.screen.key('C-r', () => { fsm.ctrlR(); });
-		cli.input.key('C-r', () => { fsm.ctrlR(); });
 		cli.screen.key('C-a', () => { fsm.ctrlA(); });
-		cli.input.key('C-a', () => { fsm.ctrlA(); });
-		// cli.revoke.key('C-a', () => { fsm.ctrlA(); });
 		cli.screen.key('C-k', () => { fsm.ctrlK(); });
-		cli.input.key('C-k', () => { fsm.ctrlK(); });
-		// cli.revoke.key('C-k', () => { fsm.ctrlK(); });
 		cli.screen.key('escape', () => { fsm.escape(); });
-		cli.input.key('escape', () => { fsm.escape(); });
-		// cli.revoke.key('escape', () => { fsm.escape(); });
-		// cli.popup.key('escape', () => { fsm.escape(); }); // I should NOT need this
 		// these work in all states but input
 		cli.screen.key(['h', 'S-h'], () => { fsm.h(); });
 		cli.screen.key(['m', 'S-m'], () => { fsm.m(); });
