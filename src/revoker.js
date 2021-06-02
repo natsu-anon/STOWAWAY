@@ -70,11 +70,12 @@ class Revoker {
 					passphrase: this.passphrase
 				})).armor());
 				this.key = key;
+				const passphrase = this.passphrase;
 				this.passphrase = null;
 				const nickname = this.nickname;
 				this.nickname = null;
 				this.revocationCertificate = null;
-				return { nickname: nickname, fingerprint: key.getFingerprint() };
+				return { nickname: nickname, fingerprint: key.getFingerprint(), key: this.key, passphrase };
 			}
 			catch (error) {
 				throw error;
