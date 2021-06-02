@@ -93,7 +93,8 @@ async function generateKey (keyPath, revocationPath, cli, writeFlag) {
 				passphrase: phrase,
 				userIDs: [{ name: nickname }]
 			});
-			cli.log(`\t- Key nickanme: {underline}${nickname}{/}, key fingerprint: {underline}${key.getFingerprint()}{/}`);
+			cli.log(`\t- key nickanme: {underline}${nickname}{/}`);
+			cli.log(`\t- key fingerprint: {underline}${key.getFingerprint()}{/}`);
 			if (writeFlag) {
 				await writeFile(keyPath, key.armor());
 				await writeFile(revocationPath, revocationCertificate);
@@ -126,7 +127,8 @@ function init (keyPath, revocationPath, stowaway, client, cli) {
 			})
 			.then(key => {
 				cli.cat('{green-fg}Found a key file!{/}');
-				cli.log(`\t- key nickname: {underline}${key.getUserIDs()}{/}, key fingerprint: {underline}${key.getFingerprint()}{/} `);
+				cli.log(`\t- key nickname: {underline}${key.getUserIDs()}{/}`);
+				cli.log(`\t- key fingerprint: {underline}${key.getFingerprint()}{/} `);
 				return existingKey(key, keyPath, revocationPath, stowaway, client, cli);
 			})
 			.then(({ key, passphrase }) => { resolve({ key, passphrase }); })
