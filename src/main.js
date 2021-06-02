@@ -40,8 +40,9 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 			errStream.end();
 			cli.destroy();
 			client.destroy();
-			db.close();
-			return process.exit(0);
+			db.close(() => {
+				process.exit(0);
+			});
 		};
 
 		//  COMMAND LINE INTERFACE  //
