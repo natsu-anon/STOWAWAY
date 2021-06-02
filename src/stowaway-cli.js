@@ -37,7 +37,7 @@ class StowawayCLI {
 
 	constructor (screen, title, userTag, invite) {
 		const LANDING =
-`If there are no channels in the navigation box to your right you must add your bot to a server & make sure it has the proper permissions in order use said channels.  - invitation link: {underline}${invite}{/underline}
+`If there are no channels in the navigation box to your left you must add your bot to a server & make sure it has the proper permissions in order use said channels.  - invitation link: {underline}${invite}{/underline}
 	- see: {underline}https://github.com/natsu-anon/STOWAWAY#add-your-bot-to-a-server{/underline} for how to add your bot to a server.
 	- pass '--channels' to STOWAWAY to list all channels availbale to your bot & any necessary permissions it lacks that it needs.
 
@@ -65,8 +65,9 @@ Thanks for downloading & I hope you find this software useful
 		});
 		*/
 		screen.title = title;
+		// screen.debug_name = 'screen';
 		this.screen = screen;
-		blessed.box({
+		const debug0 = blessed.box({
 			parent: this.screen,
 			content: '[Ctrl-C] to close; [Ctrl-R] to revoke key; [Ctrl-A] for about; [Ctrl-K] for keybinds',
 			left: 0,
@@ -78,6 +79,7 @@ Thanks for downloading & I hope you find this software useful
 				left: 1,
 			},
 		});
+		// debug0.debug_name = 'debug0';
 		this.notification = blessed.box({
 			parent: this.screen,
 			tags:true,
@@ -92,6 +94,7 @@ Thanks for downloading & I hope you find this software useful
 				left: 1,
 			},
 		});
+		// this.notification.debug_name = 'notification';
 		this.navigation = blessed.box({
 			parent: this.screen,
 			tags: true,
@@ -114,6 +117,7 @@ Thanks for downloading & I hope you find this software useful
 			},
 			content: 'Loading...',
 		});
+		// this.navigation.debug_name = 'navigation';
 		this.messages = blessed.box({
 			parent: this.screen,
 			tags: true,
@@ -136,6 +140,7 @@ Thanks for downloading & I hope you find this software useful
 			},
 			content: LANDING,
 		});
+		// this.messages.debug_name = 'messages';
 		this.input = blessed.textbox({
 			parent: this.screen,
 			hidden: true,
@@ -150,6 +155,7 @@ Thanks for downloading & I hope you find this software useful
 			},
 			padding : 1,
 		});
+		// this.input.debug_name = 'input';
 		this.stateLine = blessed.box({
 			parent: this.screen,
 			bold: true,
@@ -164,6 +170,7 @@ Thanks for downloading & I hope you find this software useful
 				left: 1,
 			},
 		});
+		// this.stateLine.debug_name = 'stateLine';
 		this.selector = blessed.box({ // used to select a channel to handshake & members
 			parent: this.screen,
 			tags: true,
@@ -186,8 +193,8 @@ Thanks for downloading & I hope you find this software useful
 				type: 'line',
 				fg: 'green'
 			}
-
 		});
+		// this.selector.debug_name = 'selector';
 		this.popup = blessed.box({ // used for help & about
 			parent: this.screen,
 			hidden: true,
@@ -212,25 +219,26 @@ Thanks for downloading & I hope you find this software useful
 				fg: 'green'
 			}
 		});
-		this.revoke = blessed.textbox({
-			parent: this.screen,
-			tags: true,
-			inputOnFocus: true,
-			hidden: true,
-			width: 80, // width changes based on label
-			height: 5,
-			label: '{red-bg}{black-fg} INITIALIZING... {/}',
-			left: 'center',
-			top: 'center',
-			bg: 'red',
-			fg: 'black',
-			padding: 1,
-			border: {
-				type: 'line',
-				bg: 'red',
-				fg: 'black'
-			}
-		});
+		// this.popup.debug_name = 'popup';
+		// this.revoke = blessed.textbox({
+		// 	parent: this.screen,
+		// 	tags: true,
+		// 	inputOnFocus: true,
+		// 	hidden: true,
+		// 	width: 80, // width changes based on label
+		// 	height: 5,
+		// 	label: '{red-bg}{black-fg} INITIALIZING... {/}',
+		// 	left: 'center',
+		// 	top: 'center',
+		// 	bg: 'red',
+		// 	fg: 'black',
+		// 	padding: 1,
+		// 	border: {
+		// 		type: 'line',
+		// 		bg: 'red',
+		// 		fg: 'black'
+		// 	}
+		// });
 	}
 
 	set revokeLabel (label) {
