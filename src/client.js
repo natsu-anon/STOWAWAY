@@ -36,7 +36,7 @@ function init (tokenPath, cli) {
 		.catch(() => {
 			cli.cat('{yellow-fg}No token file found{/}');
 			cli.log('\t- Requesting token... ');
-			cli.question('Enter a discord bot token then press [ENTER] to continue', true)
+			cli.question.promise('Enter a discord bot token then press [ENTER] to continue', true)
 			.then(token => clientLogin(token))
 			.then(client => {
 				return writeFile(tokenPath, client.token)
@@ -60,7 +60,7 @@ function saveToken (token, tokenPath) {
 			.catch(err => {
 				console.error(`Error while writing the token to ${tokenPath}`);
 				reject(err);
-			})
+			});
 		});
 		client.login(token).catch(() => {
 			reject(Error('Failed to login in with supplied token!  Make sure you are connected to the internet.'));
