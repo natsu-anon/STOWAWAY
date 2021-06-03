@@ -1,4 +1,5 @@
 * TODO TEST
+  - [ ] double cli yourself BRUH
   - [X] TWO dummy accounts
   - [X] test.js
 	- [X] MAKE IT WORK [4/4]
@@ -26,7 +27,10 @@
 	  - [X] bruh cleanup all that stuff
 	- [X] use same revocation form during the key initialization
 	  - L A T E R
-	- [ ] make database use the actually serialized one
+	- [-] make database use the actually serialized one
+	  - [X] yes hello, where is last channel????
+	  - [ ] non-fresh deadheads
+
 	
 * DONE aaaaaaaa openpgp changed stuff
 
