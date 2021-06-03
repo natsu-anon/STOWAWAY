@@ -5,6 +5,23 @@ function badtoken (tokenPath) {
 	return Error(`Failed to login with token.  Check file "${tokenPath}" to make sure your token is correct & that you are connected to the internet`);
 }
 
+function clientLogin (token, cli) {
+	cli.log('\t- attempting to log in with provided token... ');
+	const stop = cli.spin('logging in with token');
+	return new Promise((resolve, reject) => {
+		const client = new Client();
+		client.once('ready', () => {
+			stop();
+			resolve(client);
+		});
+		client.login(token)
+		.catch(() => {
+			stop();
+			reject(Error('Failed to login with supplied token.  Check to make sure your token is correct & that you are connected to the internet'));
+		});
+	});
+}
+
 function init (tokenPath, cli) {
 	const clientLogin = function (token) {
 		const stop = cli.spin('logging in with token');
@@ -88,6 +105,7 @@ function login (tokenPath) {
 
 module.exports = {
 	login,
+	clientLogin,
 	initialization: init,
 	token: saveToken
 };

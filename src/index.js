@@ -138,8 +138,11 @@ else if (process.argv.length > 2 && process.argv[2] === '--overwrite') {
 		process.exit(1);
 	}
 }
+else if (process.argv.length === 3) {
+	require('./main.js')(VERSION, BANNER, DATABASE, process.argv[2], PRIVATE_KEY, REVOCATION_CERTIFICATE, true);
+}
 else if (process.argv.length <= 2) {
-	require('./main.js')(VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CERTIFICATE);
+	require('./main.js')(VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CERTIFICATE, false);
 }
 else {
 	console.error(`Unrecognized command: ${process.argv.slice(2).join(' ')}`);

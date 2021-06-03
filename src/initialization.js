@@ -1,7 +1,7 @@
 const process = require('process');
 const InitCLI = require('./init-cli.js');
 const dbInit = require('./database.js');
-const { initialization: clientInit } = require('./client.js');
+const { initialization: clientInit, clientLogin } = require('./client.js');
 const keyInit = require('./key.js');
 const { Stowaway } = require('./stowaway.js');
 const EventEmitter = require('events');
@@ -45,7 +45,7 @@ const WARNING = `
  * 5. STOWAWAY
 */
 
-function init (BANNER, SCREEN_TITLE, DATABASE, API_TOKEN, PRIVATE_KEY, VERSION, REVOCATION_CERTIFICATE, versionText) {
+function init (BANNER, SCREEN_TITLE, DATABASE, API_TOKEN, PRIVATE_KEY, VERSION, REVOCATION_CERTIFICATE, versionText, tokenFlag) {
 	const initEmitter = new EventEmitter();
 	initEmitter.on('quit init', () => {
 		process.exit(0);
@@ -74,8 +74,14 @@ function init (BANNER, SCREEN_TITLE, DATABASE, API_TOKEN, PRIVATE_KEY, VERSION, 
 		})
 		.then(({ db, channels, peers, revocations }) => {
 			return new Promise((res, rej) => {
-				clientInit(API_TOKEN, cli)
-				.then(client => {
+				let clientPromise;
+				if (tokenFlag) {
+					clientPromise = clientLogin(API_TOKEN, cli);
+				}
+				else {
+					clientPromise = clientInit(API_TOKEN, cli);
+				}
+				clientPromise.then(client => {
 					initEmitter.prependOnceListener('quit init', () => {
 						client.destroy();
 					});

@@ -17,12 +17,12 @@ const VERSION_URL = 'https://raw.githubusercontent.com/natsu-anon/STOWAWAY/main/
 const SCREEN_TITLE = 'ＳＴＯＷＡＷＡＹ';
 const ERR_LOG = './error.log';
 
-function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CERTIFICATE) {
+function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CERTIFICATE, tokenFlag) {
 	let cli, client, db;
 	const errStream = writeStream(ERR_LOG);
 	// const check = await versionCheck(VERSION_URL, VERSION);
 	versionCheck(VERSION_URL, VERSION)
-	.then(check => initialize(BANNER, SCREEN_TITLE, DATABASE, API_TOKEN, PRIVATE_KEY, VERSION, REVOCATION_CERTIFICATE, check))
+	.then(check => initialize(BANNER, SCREEN_TITLE, DATABASE, API_TOKEN, PRIVATE_KEY, VERSION, REVOCATION_CERTIFICATE, check, tokenFlag))
 	.then(async ({ stowaway, client, key, passphrase, db, channels, peers, screen }) => {
 		let allowTab = false; // block tabbing into read state until navigated away from the landing page & to a proper channel
 		const ABOUT = require('./about.js')(BANNER);
