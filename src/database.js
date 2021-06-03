@@ -1,11 +1,16 @@
 const loki = require('lokijs');
 
 function init (dbFilename, autosave=true) {
-	let db;
-	return new Promise(resolve => {
-		db = new loki(dbFilename, {
-			autoload: true,
-			autoloadCallback: () => {
+	return new Promise((resolve, reject) => {
+		const db = new loki(dbFilename, {
+			autosave,
+			serializationMethod: 'pretty',
+		});
+		db.loadDatabase({}, err => {
+			if (err != null) {
+				reject(err);
+			}
+			else {
 				let channels = db.getCollection('channels');
 				if (channels == null) {
 					channels = db.addCollection('channels');
@@ -23,8 +28,7 @@ function init (dbFilename, autosave=true) {
 				// feels a little stoopid to NOT return all the collections here
 				// but it also feekls stoopid to do the same
 				resolve({ db, channels, peers, revocations });
-			},
-			autosave
+			}
 		});
 	});
 }
