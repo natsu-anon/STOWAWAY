@@ -200,6 +200,7 @@ class BlessedInit {
 			}, 40);
 		};
 		cycle(0);
+		cli.render();
 		return () => {
 			clearTimeout(timeout);
 			this.popup.hide();
