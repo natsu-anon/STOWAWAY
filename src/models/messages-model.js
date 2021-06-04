@@ -1,10 +1,10 @@
 const Model = require('./model.js');
 
 class ChannelMessage {
-	constructor (publicFlag, date, member, verified, signed, plainText) {
+	constructor (publicFlag, date, author, verified, signed, plainText) {
 		this.publicFlag = publicFlag;
 		this.date = date;
-		this.name = signed ? `{green-fg}${member.displayName}{/green-fg}` : member.displayName;
+		this.name = signed ? `{green-fg}${author.username}{/green-fg}` : author.username;
 		if (!verified) {
 			this.name = `${this.name}{yellow-fg}(UNVERIFIED){/yellow-fg}`;
 		}
@@ -22,10 +22,10 @@ class ChannelMessage {
 }
 
 class DecryptionFailure {
-	constructor (date, member) {
+	constructor (date, author) {
 		this.date = date;
-		this.name = member.displayName;
-		this.tag = member.user.tag;
+		this.name = author.username;
+		this.tag = author.tag;
 	}
 
 	get text () {
@@ -34,10 +34,10 @@ class DecryptionFailure {
 }
 
 class Handshake {
-	constructor (date, member, accepted) {
+	constructor (date, author, accepted) {
 		this.date = date;
-		this.name = member.displayName;
-		this.tag = member.user.tag;
+		this.name = author.username;
+		this.tag = author.tag;
 		this.accepted = accepted;
 	}
 
@@ -52,10 +52,10 @@ class Handshake {
 }
 
 class SignedKey {
-	constructor (date, member) {
+	constructor (date, author) {
 		this.date = date;
-		this.name = member.displayName;
-		this.tag = member.user.tag;
+		this.name = author.username;
+		this.tag = author.tag;
 	}
 
 	get text () {
@@ -64,10 +64,10 @@ class SignedKey {
 }
 
 class KeyUpdate {
-	constructor (date, member) {
+	constructor (date, author) {
 		this.date = date;
-		this.name = member.displayName;
-		this.tag = member.user.tag;
+		this.name = author.username;
+		this.tag = author.tag;
 	}
 
 	get text () {
@@ -76,10 +76,10 @@ class KeyUpdate {
 }
 
 class Revocation {
-	constructor (date, member, blockReason) {
+	constructor (date, author, blockReason) {
 		this.date = date;
-		this.name = member.displayName;
-		this.tag = member.user.tag;
+		this.name = author.username;
+		this.tag = author.tag;
 		this.blockReason = blockReason;
 	}
 
@@ -99,7 +99,7 @@ class Revocation {
 class Compromised {
 	constructor (date, message) {
 		this.date = date;
-		this.name = message.member.displayName;
+		this.name = message.author.username;
 		this.tag = message.author.tag;
 		this.channelId = message.channel.id;
 		this.messageId = message.id;
@@ -150,7 +150,7 @@ class MessagesModel extends Model {
 			this._messages.push({
 				id: message.id,
 				timestamp: message.createdTimestamp,
-				content: new ChannelMessage(publicFlag, message.createdAt, message.member, data.verified, data.signed, data.plainText)
+				content: new ChannelMessage(publicFlag, message.createdAt, message.author, data.verified, data.signed, data.plainText)
 			});
 			this._sortThenUpdate();
 		}
@@ -161,7 +161,7 @@ class MessagesModel extends Model {
 			this._messages.push({
 				id: message.id,
 				timestamp: message.createdTimestamp,
-				content: new DecryptionFailure(message.createdAt, message.member)
+				content: new DecryptionFailure(message.createdAt, message.author)
 			});
 			this._sortThenUpdate();
 		}
@@ -172,7 +172,7 @@ class MessagesModel extends Model {
 			this._messages.push({
 				id: message.id,
 				timestamp: message.createdTimestamp,
-				content: new Handshake(message.createdAt, message.member, accepted)
+				content: new Handshake(message.createdAt, message.author, accepted)
 			});
 			this._sortThenUpdate();
 		}
@@ -183,7 +183,7 @@ class MessagesModel extends Model {
 			this._messages.push({
 				id: message.id,
 				timestamp: message.createdTimestamp,
-				content: new SignedKey(message.createdAt, message.member)
+				content: new SignedKey(message.createdAt, message.author)
 			});
 			this._sortThenUpdate();
 		}
@@ -194,7 +194,7 @@ class MessagesModel extends Model {
 			this._messages.push({
 				id: message.id,
 				timestamp: message.createdTimestamp,
-				content: new KeyUpdate(message.createdAt, message.member)
+				content: new KeyUpdate(message.createdAt, message.author)
 			});
 			this._sortThenUpdate();
 		}
@@ -205,7 +205,7 @@ class MessagesModel extends Model {
 			this._messages.push({
 				id: message.id,
 				timestamp: message.createdTimestamp,
-				content: new Revocation(message.createdAt, message.member, blockReason)
+				content: new Revocation(message.createdAt, message.author, blockReason)
 			});
 			this._sortThenUpdate();
 		}
