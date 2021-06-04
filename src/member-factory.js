@@ -1,11 +1,25 @@
 const Mediator = require('./mediators/mediator.js');
 
-async function displayMember (member, stowaway) {
-	const flag = await stowaway.signedKey(member.id);
-	const temp = `${member.displayName} (${member.user.tag})`;
+async function displayMember (user, stowaway) {
+	// const flag = await stowaway.signedKey(user.id);
+	let text = `${user.username} (${user.tag})`;
+	switch(user.presence.status) {
+		case 'online':
+			text = `{green-fg}${text}{/green-fg}`;
+			break;
+		case 'idle':
+			text = `{yellow-fg}${text}{/yellow-fg}`;
+			break;
+		case 'offline':
+			text = `{black-fg}{bold}${text}{/bold}{/black-fg}`;
+			break;
+		case 'dnd':
+			text = `{red-fg}${text}{/red-fg}`;
+			break;
+	}
 	return {
-		signed: flag,
-		text: flag ? `{green-fg}${temp}{/green-fg}` : temp
+		signed: await stowaway.signedKey(user.id),
+		text
 	};
 }
 
@@ -22,19 +36,26 @@ class Members extends Mediator {
 		this.guildID = channel.guild.id;
 		const memberRemove = member => { this.memberRemove(member); };
 		const memberUpdate = (member0, member1) => { this.memberUpdate(member0, member1); };
-		const handshake = (member, channelId) => { this.handshake(member, channelId); };
+		const handshake = (message, accepted) => { this.handshake(message, accepted); };
 		const update = message => { this.update(message); };
+		const peerUpdate = () => {
+			this.representation().then(text => {
+				this.emit('update', text);
+			});
+		};
 		stowaway.client.on('guildMemberRemove', memberRemove);
 		stowaway.client.on('guildMemberUpdate', memberUpdate);
 		stowaway.on('handshake', handshake);
 		stowaway.on('key update', update);
 		stowaway.on('revocation', update);
+		stowaway.on('peer update', peerUpdate);
 		this.unsubscribe = () => {
 			stowaway.client.removeListener('guildMemberRemove', memberRemove);
 			stowaway.client.removeListener('guildMemberUpdate', memberUpdate);
 			stowaway.removeListener('handshake', handshake);
 			stowaway.removeListener('key update', update);
 			stowaway.removeListener('revocation', update);
+			stowaway.removeListener('peer update', peerUpdate);
 		};
 	}
 
@@ -71,8 +92,8 @@ class Members extends Mediator {
 				if (this.data === undefined) {
 					throw Error(`HOW IS MEMBERS.DATA NOT DEFINED?  FUG!\n${Object.keys(this)}`);
 				}
-				if (this.data.findIndex(({ id }) => message.member.id === id) === -1) {
-					this.data.push(message.member);
+				if (this.data.findIndex(({ id }) => message.author.id === id) === -1) {
+					this.data.push(message.author);
 					if (this.index == null) {
 						this.index = 0;
 					}
@@ -166,19 +187,18 @@ class MembersFactory {
 		this.current = null;
 	}
 
-	mediator (channel) {
+	mediator (channel, debugLog) {
 		if (this.current != null) {
 			this.current.unsubscribe();
 		}
-		const data = [];
-		const peerIds = this.peersView.data().map(doc => doc.user_id);
-		channel.members.filter(member => peerIds.includes(member.user.id))
-		.each(member => {
-			if (member.user.id !== this.stoawaway.id) {
-				data.push(member);
-			}
-		});
-		this.current = new Members(data, this.stowaway, channel);
+		const peerIds = this.peersView.applyFind({ channels: { $contains: channel.id } }).data().map(doc => doc.user_id); // ok
+		Promise.all(peerIds.map(id => channel.guild.members.fetch(id)))
+		.then(members => {
+			const m = new Members(members.map(member => member.user), this.stowaway, channel);
+			this.current = m;
+			return m.representation();
+		})
+		.then(text => { this.current.emit('update', text); });
 	}
 
 }
