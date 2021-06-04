@@ -22,9 +22,10 @@ COPY releases\UPGRADING.txt releases\STOWAWAY_v%1_linux\UPGRADING.txt
 COPY releases\UPGRADING.txt releases\STOWAWAY_v%1_macos\UPGRADING.txt
 COPY releases\UPGRADING.txt releases\STOWAWAY_v%1_win\UPGRADING.txt
 DEL releases\STOWAWAY_v%1_linux.7z releases\STOWAWAY_v%1_macos.7z releases\STOWAWAY_v%1_win.7z
-7z.exe a releases\STOWAWAY_v%1_linux.7z releases\STOWAWAY_v%1_linux
-7z.exe a releases\STOWAWAY_v%1_macos.7z releases\STOWAWAY_v%1_macos
-7z.exe a releases\STOWAWAY_v%1_win.7z releases\STOWAWAY_v%1_win
+CD releases
+7z.exe a STOWAWAY_v%1_linux.7z STOWAWAY_v%1_linux
+7z.exe a STOWAWAY_v%1_macos.7z STOWAWAY_v%1_macos
+7z.exe a STOWAWAY_v%1_win.7z STOWAWAY_v%1_win
 GOTO End1
 
 :No1
