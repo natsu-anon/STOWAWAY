@@ -69,11 +69,13 @@ class ReadState extends State {
 	}
 
 	enter () {
-		this.emit('to write', true);
+		this.emit('public message', true);
+		this.emit('to write');
 	}
 
 	ctrlEnter () {
-		this.emit('to write', false);
+		this.emit('public message', false);
+		this.emit('to write');
 	}
 
 	backspace () {

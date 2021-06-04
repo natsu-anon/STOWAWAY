@@ -35,10 +35,11 @@ class FSM extends EventEmitter {
 		];
 		// these work for all states (except for the last 3 but w/e)
 		states.forEach(state => {
+			state.on('public message', flag => { this._write.publicMessage = flag; });
 			state.on('to navigate', () => { this.navigate(); });
 			state.on('to handshake', s => { this.handshake(s); });
 			state.on('to read', enterFlag => { this.emit('read channel', enterFlag); });
-			state.on('to write', publicFlag => { this.write(publicFlag); });
+			state.on('to write', () => { this.write(); });
 			state.on('to member', s => { this.emit('channel members', s); });
 			state.on('to revoke', s => { this.revoke(s); });
 			state.on('to about', s => { this.about(s); });
@@ -114,10 +115,10 @@ class FSM extends EventEmitter {
 		this._current.Enter();
 	}
 
-	write (publicFlag) {
+	write () {
 		this._current.Exit();
 		this._current = this._write;
-		this._current.Enter(publicFlag);
+		this._current.Enter();
 	}
 
 	member (state) {
