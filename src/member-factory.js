@@ -187,7 +187,7 @@ class MembersFactory {
 		this.current = null;
 	}
 
-	mediator (channel, debugLog) {
+	mediator (channel) {
 		if (this.current != null) {
 			this.current.unsubscribe();
 		}
