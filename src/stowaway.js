@@ -587,20 +587,25 @@ class Stowaway extends EventEmitter {
 	}
 
 	_inquireHistory (message) {
-		const doc = this._findChannel(message.channel.id);
-		if (doc != null && !doc.cache.includes(message.id)) {
-			nonce(message.id)
-			.then(res => {
-				return this._send(message.channel, this._attachJSON({
-					type: HISTORY_INQUIRY,
-					nonce: res,
-					cause: message.id
-				}, FILE));
-			})
-			.then(() => {
-				doc.cache.push(message.id);
-				this.channels.update(doc);
-			});
+		if (message.author.id !== this.id) {
+			const peer = this._findPeer(message.author.id);
+			if (peer != null && (peer.ts == null || peer.ts < message.createdTimestamp)) {
+				const doc = this._findChannel(message.channel.id);
+				if (doc != null && !doc.cache.includes(message.id)) {
+					nonce(message.id)
+					.then(res => {
+						return this._send(message.channel, this._attachJSON({
+							type: HISTORY_INQUIRY,
+							nonce: res,
+							cause: message.id
+						}, FILE));
+					})
+					.then(() => {
+						doc.cache.push(message.id);
+						this.channels.update(doc);
+					});
+				}
+			}
 		}
 	}
 
@@ -958,7 +963,7 @@ class Stowaway extends EventEmitter {
 				this._inquireHistory(message);
 			}
 			this.emit('channel message', message, result, publicFlag);
-			this.emit('debug', `${publicFlag? 'public' : 'signed-only'} message from ${message.author.tag}: (signed: ${result.signed}, verified: ${result.verified}) ${result.plainText}`);
+			// this.emit('debug', `${publicFlag? 'public' : 'signed-only'} message from ${message.author.tag}: (signed: ${result.signed}, verified: ${result.verified}) ${result.plainText}`);
 			this._updateLatests(message.channel.id, message.id, message.createdTimestamp);
 		})
 		.catch(async err => {
@@ -989,7 +994,6 @@ class Stowaway extends EventEmitter {
 		});
 	}
 
-	// TODO add emit debugs
 	async _verifyMessage (decrypted, publicKey) {
 		const bonafides = await publicKey.verifyPrimaryUser([ this.key ]);
 		const signed = bonafides.find(x => x.valid) != null;
@@ -1349,6 +1353,7 @@ class Stowaway extends EventEmitter {
 				if (!doc.channels.includes(message.channel.id)) {
 					doc.channels.push(message.channel.id);
 				}
+				doc.ts = message.createdTimestamp;
 				this.peers.update(doc);
 				return true;
 			}
@@ -1362,6 +1367,7 @@ class Stowaway extends EventEmitter {
 						if (!doc.channels.includes(message.channel.id)) {
 							doc.channels.push(message.channel.id);
 						}
+						doc.ts = message.createdTimestamp;
 						this.peers.update(doc);
 						return true;
 					}
