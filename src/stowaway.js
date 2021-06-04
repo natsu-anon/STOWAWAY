@@ -86,10 +86,9 @@ class Messenger {
 			else {
 				this.stowaway.messageSigned(this.channel, plainText);
 			}
-			return true;
 		}
 		else {
-			return false;
+			throw Error('unitialized values for Messenger.message()');
 		}
 	}
 }
@@ -285,6 +284,11 @@ class Stowaway extends EventEmitter {
 						this.channels.findAndRemove({ channel_id: channel.id });
 					}
 				});
+			}
+		});
+		client.on('userUpdate', (user0, user1) => {
+			if (this._findPeer(user0.id) != null) {
+				this.emit('peer update', user0, user1);
 			}
 		});
 		this.lastChannel = this.channels.findOne({ last_channel: true });
@@ -954,7 +958,7 @@ class Stowaway extends EventEmitter {
 				this._inquireHistory(message);
 			}
 			this.emit('channel message', message, result, publicFlag);
-			this.emit('test', `${publicFlag? 'public' : 'signed-only'} message from ${message.author.tag}: (signed: ${result.signed}, verified: ${result.verified}) ${result.plainText}`);
+			this.emit('debug', `${publicFlag? 'public' : 'signed-only'} message from ${message.author.tag}: (signed: ${result.signed}, verified: ${result.verified}) ${result.plainText}`);
 			this._updateLatests(message.channel.id, message.id, message.createdTimestamp);
 		})
 		.catch(async err => {
@@ -985,6 +989,7 @@ class Stowaway extends EventEmitter {
 		});
 	}
 
+	// TODO add emit debugs
 	async _verifyMessage (decrypted, publicKey) {
 		const bonafides = await publicKey.verifyPrimaryUser([ this.key ]);
 		const signed = bonafides.find(x => x.valid) != null;
@@ -1034,6 +1039,7 @@ class Stowaway extends EventEmitter {
 				this.peers.insert({
 					user_id: userId,
 					public_key: armoredKey,
+					channels: [ message.channel.id ]
 				});
 				if (plsRespond) {
 					await this._sendHandshake(message.channel, false);
@@ -1049,6 +1055,10 @@ class Stowaway extends EventEmitter {
 			else {
 				const savedKey = await this._publicKey(userId);
 				if (savedKey.hasSameFingerprintAs(publicKey)) {
+					if (!doc.channels.includes(message.channel.id)) {
+						doc.channels.push(message.channel.id);
+						this.peers.update(doc);
+					}
 					this.emit('handshake', message, true);
 				}
 				else {
@@ -1327,6 +1337,7 @@ class Stowaway extends EventEmitter {
 			this.peers.insert({
 				user_id: message.author.id,
 				public_key: armoredKey,
+				channels: [ message.channel.id ]
 			});
 			return true;
 		}
@@ -1335,6 +1346,9 @@ class Stowaway extends EventEmitter {
 			if (savedKey.hasSameFingerprintAs(testKey)) {
 				await savedKey.update(testKey);
 				doc.public_key = armoredKey;
+				if (!doc.channels.includes(message.channel.id)) {
+					doc.channels.push(message.channel.id);
+				}
 				this.peers.update(doc);
 				return true;
 			}
@@ -1345,6 +1359,9 @@ class Stowaway extends EventEmitter {
 					if (revocation.hasSameFingerprintAs(savedKey)) {
 						doc.public_key = armoredKey;
 						doc.ts = message.createdTimestamp;
+						if (!doc.channels.includes(message.channel.id)) {
+							doc.channels.push(message.channel.id);
+						}
 						this.peers.update(doc);
 						return true;
 					}
