@@ -1,5 +1,16 @@
-* TODO TEST
-  - [ ] double cli yourself BRUH
+* TODO make sure the build doesn't give you an (unverified)
+  - toss in some emit debugs in verify
+
+* TODO whystve??!?!
+
+* DONE TEST
+  - [X] double cli yourself BRUH
+	- [X] make it so you can run with a provided token
+	- [X] TEST
+	  - I am _NOT_ getting unverified thingie -- I'm even generating new keys
+	- [X] TEST WITH SERIALIZED DATABASES
+	  - [X] DISABLE ALL THE BRUHS
+	- [X] make serializationMethod normal again
   - [X] TWO dummy accounts
   - [X] test.js
 	- [X] MAKE IT WORK [4/4]
@@ -14,7 +25,7 @@
 	  - [X] make fetchOlder/fetchNewer/loadChannel handle messages in chronological order
 		- NO!
 	- [X] test new protocols (when able)
-  - [-] deadhead.js - yo, the CLI is major dicked [7/8]
+  - [X] deadhead.js - yo, the CLI is major dicked [9/9]
 	- [X] ok provenance is fully working
 	- [X] add '--overwrite' command line flag
 	- [X] make sure all the ctrl-menu navigation works properly
@@ -27,9 +38,9 @@
 	  - [X] bruh cleanup all that stuff
 	- [X] use same revocation form during the key initialization
 	  - L A T E R
-	- [-] make database use the actually serialized one
+	- [X] make database use the actually serialized one
 	  - [X] yes hello, where is last channel????
-	  - [ ] non-fresh deadheads
+	- [X] testooo
 
 	
 * DONE aaaaaaaa openpgp changed stuff
