@@ -1,6 +1,12 @@
 const blessed = require('blessed');
 
-function revocationForm (screen, label) {
+function setupEvents(elem, keyEvents) {
+	for (const key in keyEvents) {
+		elem.onceKey(key, keyEvents[key]);
+	}
+}
+
+function revocationForm (screen, label, keyEvents) {
 	const form = blessed.form({
 		parent: screen,
 		tags: true,
@@ -16,13 +22,14 @@ function revocationForm (screen, label) {
 			fg: 'red'
 		}
 	});
+	// setupEvents(form, keyEvents);
 	blessed.text({
 		parent: form,
 		top: 0,
 		content: 'Enter new key nickname:',
 		fg: 'red',
 	});
-	blessed.textbox({
+	const nickname = blessed.textbox({
 		parent: form,
 		top: 1,
 		height: 1,
@@ -42,7 +49,7 @@ function revocationForm (screen, label) {
 		content: 'Enter new key passphrase:',
 		fg: 'red',
 	});
-	blessed.textbox({
+	const passphrase0 = blessed.textbox({
 		parent: form,
 		censor: true,
 		top: 3,
@@ -63,7 +70,7 @@ function revocationForm (screen, label) {
 		content: 'Re-enter new key passphrase:',
 		fg: 'red',
 	});
-	blessed.textbox({
+	const passphrase1 = blessed.textbox({
 		parent: form,
 		censor: true,
 		top: 5,
@@ -78,7 +85,7 @@ function revocationForm (screen, label) {
 			}
 		}
 	});
-	blessed.button({
+	const button = blessed.button({
 		parent: form,
 		name: 'submit',
 		content: ' [ REVOKE ] ',
@@ -91,7 +98,8 @@ function revocationForm (screen, label) {
 				inverse: true
 			}
 		}
-	}).on('press', () => {
+	});
+	button.on('press', () => {
 		form.submit();
 		screen.render();
 	});
@@ -102,6 +110,13 @@ function revocationForm (screen, label) {
 		fg: 'red',
 	});
 	form.focusNext();
+	screen.grabKeys = false;
+	screen.render();
+	setupEvents(form, keyEvents);
+	setupEvents(nickname, keyEvents);
+	setupEvents(passphrase0, keyEvents);
+	setupEvents(passphrase1, keyEvents);
+	setupEvents(button, keyEvents);
 	return { form, output };
 }
 
