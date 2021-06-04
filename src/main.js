@@ -34,10 +34,10 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 				'CHANGE_NICKNAME'
 			]
 		});
-		const debugLog = writeStream('./debug.txt');
+		// const debugLog = writeStream('./debug.txt');
 
 		const quit = () => {
-			debugLog.end();
+			// debugLog.end();
 			errStream.end();
 			cli.destroy();
 			client.destroy();
@@ -50,7 +50,7 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 
 		cli = new StowawayCLI(screen, SCREEN_TITLE, client.user.username, client.user.tag, invite);
 		stowaway.on('error', error => { errStream.write(error); errStream.write('\n'); });
-		stowaway.on('debug', str => { debugLog.write(str); debugLog.write('\n'); });
+		// stowaway.on('debug', str => { debugLog.write(str); debugLog.write('\n'); });
 		// stowaway.on('error', err => { cli.warn(err); });
 		// stowaway.on('debug', debug => { cli.notify(`DEBUG: ${debug}`); });
 		// stowaway.on('decryption failure', message => {
@@ -346,7 +346,7 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 			cli.enableInput();
 			messenger.channel = channel;
 			hMediator.read(channel.id);
-			mFactory.mediator(channel, debugLog);
+			mFactory.mediator(channel);
 			cli.input.setLabel(` Message #${channel.name} `);
 			if (channel.topic != null) {
 				cli.messages.setLabel(` ${channel.guild.name} #${channel.name} | ${channel.topic} `);
