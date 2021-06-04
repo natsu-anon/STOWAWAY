@@ -144,4 +144,13 @@ function init (keyPath, revocationPath, stowaway, client, cli) {
 	});
 }
 
+async function bruh () {
+	const { key } = await openpgp.generateKey({
+		type: 'ecc',
+		curve: 'curve25519',
+		userIDs: [{ name: 'BRUH' }]
+	});
+	return { key, passphrase: 'abc' };
+}
+
 module.exports = init;
