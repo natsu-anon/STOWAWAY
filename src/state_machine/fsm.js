@@ -29,7 +29,7 @@ class FSM extends EventEmitter {
 			this._read,
 			this._write,
 			this._member,
-			// this._revoke, handle its transitions 
+			this._revoke,
 			this._about,
 			this._keybinds
 		];
@@ -73,24 +73,8 @@ class FSM extends EventEmitter {
 		this._write.on('clear', () => { this.emit('clear input'); });
 		this._member.on('scroll', next => { this.emit('scroll members', next); });
 		this._member.on('sign member', () => { this.emit('sign member'); });
-		this._revoke.on('to previous', s => {
-			if (this.revokeFree()) {
-				this._transition(s);
-			}
-		});
-		this._revoke.on('to about', s => {
-			if (this.revokeFree()) {
-				this.about(s);
-			}
-		});
-		this._revoke.on('to keybinds', s => {
-			if (this.revokeFree()) {
-				this.keybind(s);
-			}
-		});
 		this._current = this._navigate;
 		this._current.Enter();
-		this.revokeUnlock();
 	}
 
 	get current () {
@@ -135,18 +119,6 @@ class FSM extends EventEmitter {
 
 	keybind (state) {
 		this._transition(this._keybinds, state);
-	}
-
-	revokeLock () {
-		this.allowRevokeTransitions = false;
-	}
-
-	revokeUnlock () {
-		this.allowRevokeTransitions = true;
-	}
-
-	revokeFree () {
-		return this.allowRevokeTransitions;
 	}
 
 	ctrlC () { this.emit('quit'); }
