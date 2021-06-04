@@ -1,7 +1,10 @@
-* TODO make sure the build doesn't give you an (unverified)
-  - toss in some emit debugs in verify
+* TODO force others to test in skunkworks
 
-* TODO whystve??!?!
+* TODO cleanup (delete all those commented out lines & unused files) then release
+
+* DONE make sure the build doesn't give you an (unverified)
+  - [X] don't inquire yourself
+  - [X] cache last known revocation -- don't inquire about things older than that
 
 * DONE TEST
   - [X] double cli yourself BRUH
