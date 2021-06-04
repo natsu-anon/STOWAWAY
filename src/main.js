@@ -1,6 +1,6 @@
 const process = require('process');
 
-const { natoPhrase, readFile, writeStream } = require('./utils.js');
+const { readFile, writeStream } = require('./utils.js');
 const versionCheck = require('./version-check.js');
 const initialize = require('./initialization.js');
 const StowawayCLI = require('./stowaway-cli.js');
@@ -34,9 +34,10 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 				'CHANGE_NICKNAME'
 			]
 		});
+		const debugLog = writeStream('./debug.txt');
 
 		const quit = () => {
-			// debugLog.end();
+			debugLog.end();
 			errStream.end();
 			cli.destroy();
 			client.destroy();
@@ -47,9 +48,9 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 
 		//  COMMAND LINE INTERFACE  //
 
-		// const debugLog = writeStream('./debug.txt');
-		cli = new StowawayCLI(screen, SCREEN_TITLE, client.user.tag, invite);
-		stowaway.on('error', error => { errStream.write(error); });
+		cli = new StowawayCLI(screen, SCREEN_TITLE, client.user.username, client.user.tag, invite);
+		stowaway.on('error', error => { errStream.write(error); errStream.write('\n'); });
+		stowaway.on('debug', str => { debugLog.write(str); debugLog.write('\n'); });
 		// stowaway.on('error', err => { cli.warn(err); });
 		// stowaway.on('debug', debug => { cli.notify(`DEBUG: ${debug}`); });
 		// stowaway.on('decryption failure', message => {
@@ -139,10 +140,13 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 				// debugLog.write('read exit\n');
 				cli.messages.style.border.fg = 'white';
 			})
-			.write(publicFlag => {
+			.write(() => {
 				// debugLog.write('write enter\n');
+				while (cli.screen.focused != null) {
+					cli.screen.focusPop();
+				}
 				cli.input.focus();
-				if (publicFlag) {
+				if (fsm._write.publicMessage) {
 					cli.input.setLabel(` All stowaways will receive this message `);
 				}
 				else {
@@ -150,7 +154,7 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 				}
 				cli.stateText = `WRITE`; // eventually sepcify session as well
 				cli.stateColor = WriteColor;
-				messenger.publicFlag = publicFlag;
+				messenger.publicFlag = fsm._write.publicMessage;
 				cli.input.style.border.fg = 'green';
 				cli.render();
 			},
@@ -158,9 +162,12 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 				// debugLog.write('write exit\n');
 				cli.input.style.border.fg = 'white';
 				cli.input.setLabel(` Message ${stowaway.channel.name} `);
+				cli.input.cancel();
 				cli.input.clearValue();
-				cli.screen.focusPop();
-				cli.screen.grabKeys = false;
+				while (cli.screen.focused != null) {
+					cli.screen.focusPop();
+				}
+				// cli.screen.grabKeys = false;
 			})
 			.member(prevState => {
 				// debugLog.write('member enter\n');
@@ -202,6 +209,9 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 				cli.selector.hide();
 			})
 			.revoke(prevState => {
+				while (cli.screen.focused != null) {
+					cli.screen.focusPop();
+				}
 				cli.stateText = `REVOKE | from: ${prevState.name} `;
 				const label = `REVOKE YOUR KEY; [Arrow Keys] to navigate form; [Escape] to return to ${prevState.name}`;
 				cli.stateColor = RevokeColor;
@@ -345,7 +355,7 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 			cli.enableInput();
 			messenger.channel = channel;
 			hMediator.read(channel.id);
-			mFactory.mediator(channel);
+			mFactory.mediator(channel, debugLog);
 			cli.input.setLabel(` Message #${channel.name} `);
 			if (channel.topic != null) {
 				cli.messages.setLabel(` ${channel.guild.name} #${channel.name} | ${channel.topic} `);
@@ -486,9 +496,10 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 		//  CLI DRIVEN STATE TRANSITIONS  //
 
 		cli.input.on('submit', () => {
-			if (messenger.message(cli.input.value)) {
-				fsm.read();
+			if (cli.input.value.length > 0) {
+				messenger.message(cli.input.value);
 			}
+			fsm.read();
 		});
 
 		//  KEYBINDING  //
