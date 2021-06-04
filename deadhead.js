@@ -16,6 +16,9 @@ async function launch (freshFlag) {
 	const client = await clientLogin(token1);
 	const { key } = freshFlag ? await genKey() : await loadKey(keyPath1);
 	const stowaway = new Stowaway(channels, peers, revocations, freshFlag ? 'fresh.key' : keyPath1, VERSION, 'deadhead', true);
+	stowaway.on('debug', text => {
+		console.log(text);
+	});
 	stowaway.on('notify', (color, text) => {
 		console.log(`\t${client.user.tag} ${color}: ${text}`);
 	});
