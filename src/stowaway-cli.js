@@ -37,7 +37,8 @@ class StowawayCLI {
 
 	constructor (screen, title, name, tag, invite) {
 		const LANDING =
-`If there are no channels in the navigation box to your left you must add your bot to a server & make sure it has the proper permissions in order use said channels.  - invitation link: {underline}${invite}{/underline}
+`If there are no channels in the navigation box to your left you must add your bot to a server & make sure it has the proper permissions in order use said channels.
+    - invitation link: {underline}${invite}{/underline}
 	- see: {underline}https://github.com/natsu-anon/STOWAWAY#add-your-bot-to-a-server{/underline} for how to add your bot to a server.
 	- pass '--channels' to STOWAWAY to list all channels availbale to your bot & any necessary permissions it lacks that it needs.
 
@@ -65,6 +66,7 @@ Thanks for downloading & I hope you find this software useful
 		});
 		*/
 		screen.title = title;
+		screen.ignoreLocked = [];
 		this.screen = screen;
 		blessed.box({
 			parent: this.screen,
@@ -213,11 +215,6 @@ Thanks for downloading & I hope you find this software useful
 		});
 	}
 
-	set revokeLabel (label) {
-		this.revoke.setLabel(`{red-bg}{black-fg} ${label} {/}`);
-		this.revoke.width = label.length + 8;
-	}
-
 	set stateText (text) {
 		this.stateLine.setText(text);
 	}
@@ -268,6 +265,7 @@ Thanks for downloading & I hope you find this software useful
 				cycle(i % spinner.length);
 			}, 40);
 		};
+		this.render();
 		cycle(0);
 		return () => {
 			clearTimeout(timeout);
@@ -287,7 +285,7 @@ Thanks for downloading & I hope you find this software useful
 		setTimeout(() => {
 			this.notification.style = { fg: 'white', bg: 'black' };
 			this.screen.render();
-		}, 100);
+		}, 220);
 	}
 
 	warn (text) {
