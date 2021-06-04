@@ -41,7 +41,7 @@ class BlessedInit {
 			tabSize: 2,
 			dockborders:true,
 			fullunicode: true,
-			ignoreLocked : [ 'C-c', 'C-r', 'C-k', 'C-a', 'escape' ],
+			ignoreLocked: ['C-c']
 		});
 		screen.title = title;
 		this.content = [ banner ];
