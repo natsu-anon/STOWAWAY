@@ -39,6 +39,8 @@ function existingKey (lockedKey, keyPath, revocationPath, stowaway, client, cli)
 						cli.cat('{black-fg}{yellow-bg}REVOCATION PROCESS INITIATED!{/}');
 						generateKey(keyPath, revocationPath, cli, false)
 						.then(({ key, revocationCertificate, passphrase }) => {
+							cli.screen.ignoreLocked = [];
+							cli.screen.lockKeys = true;
 							stowaway.revokeKey(client, lockedKey, key, data)
 							.then(k => {
 								openpgp.encryptKey({
@@ -61,6 +63,10 @@ function existingKey (lockedKey, keyPath, revocationPath, stowaway, client, cli)
 					})
 					.catch(() => {
 						reject(Error('Error while attempting to read armored revocation certificate'));
+					})
+					.finally(() => {
+						cli.screen.ignoreLocked = ['C-c'];
+						cli.lockKeys = false;
 					});
 				}
 				else {
