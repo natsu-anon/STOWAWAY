@@ -142,9 +142,6 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 			})
 			.write(() => {
 				// debugLog.write('write enter\n');
-				while (cli.screen.focused != null) {
-					cli.screen.focusPop();
-				}
 				cli.input.focus();
 				if (fsm._write.publicMessage) {
 					cli.input.setLabel(` All stowaways will receive this message `);
@@ -164,9 +161,7 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 				cli.input.setLabel(` Message ${stowaway.channel.name} `);
 				cli.input.cancel();
 				cli.input.clearValue();
-				while (cli.screen.focused != null) {
-					cli.screen.focusPop();
-				}
+				cli.screen.focusPop();
 				// cli.screen.grabKeys = false;
 			})
 			.member(prevState => {
@@ -209,13 +204,14 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 				cli.selector.hide();
 			})
 			.revoke(prevState => {
-				while (cli.screen.focused != null) {
-					cli.screen.focusPop();
-				}
 				cli.stateText = `REVOKE | from: ${prevState.name} `;
 				const label = `REVOKE YOUR KEY; [Arrow Keys] to navigate form; [Escape] to return to ${prevState.name}`;
 				cli.stateColor = RevokeColor;
-				const { form, output } = revocationForm(cli.screen, label);
+				const { form, output } = revocationForm(cli.screen, label, {
+					'C-c': () => { fsm.ctrlC(); },
+					'C-a': () => { fsm.ctrlA(); },
+					'C-k': () => { fsm.ctrlK(); }
+				});
 				form.on('submit', data => {
 					const log = [];
 					if (data.nickname.length === 0) {
@@ -233,7 +229,6 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 					}
 					else {
 						cli.screen.lockKeys = true;
-						fsm.revokeLock();
 						form.setLabel(' {red-fg}REVOCATION IN PROCESS{/red-fg} ');
 						log.push('> Revocation process initiated');
 						log.push('> KEYS LOCKED');
@@ -243,7 +238,7 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 						revoker.setNickname(data.nickname).setPassphrase(data.passphrase0);
 						readFile(REVOCATION_CERTIFICATE)
 						.then(revocationCertificate => {
-							log.push('> DO NOT CLOSE STOWAWAY');
+							log.push('> PLEASE DO NOT CLOSE STOWAWAY');
 							log.push('> Revoking key...');
 							output.setContent(log.join('\n'));
 							cli.render();
@@ -266,7 +261,6 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 						.finally(() => {
 							form.setLabel(` {red-fg}${label}{/red-fg} `);
 							cli.screen.lockKeys = false;
-							fsm.revokeUnlock();
 							cli.render();
 						});
 					}
@@ -275,10 +269,7 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 				cli.revokeOutput = output;
 				cli.render();
 			}, () => {
-				while (cli.screen.focused != null) {
-					cli.screen.focusPop();
-				}
-				cli.screen.grabKeys = false;
+				cli.screen.focusPop();
 				if (cli.revoke != null) {
 					cli.revoke.destroy();
 				}
@@ -509,6 +500,11 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 		cli.screen.key('C-a', () => { fsm.ctrlA(); });
 		cli.screen.key('C-k', () => { fsm.ctrlK(); });
 		cli.screen.key('escape', () => { fsm.escape(); });
+		cli.input.onceKey('C-c', () => { fsm.ctrlC(); });
+		cli.input.key('C-r', () => { fsm.ctrlR(); });
+		cli.input.key('C-a', () => { fsm.ctrlA(); });
+		cli.input.key('C-k', () => { fsm.ctrlK(); });
+		cli.input.key('escape', () => { fsm.escape(); });
 		// these work in all states but input
 		cli.screen.key(['h', 'S-h'], () => { fsm.h(); });
 		cli.screen.key(['m', 'S-m'], () => { fsm.m(); });
