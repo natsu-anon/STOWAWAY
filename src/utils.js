@@ -96,6 +96,38 @@ function access (path) {
 	});
 }
 
+function mkdir (path, safe=true) {
+	return new Promise((resolve, reject) => {
+		if (safe) {
+			fs.access(path, fs.constants.F_OK, err => {
+				if (err != null) {
+					fs.mkdir(path, e => {
+						if (e != null) {
+							reject(e);
+						}
+						else {
+							resolve();
+						}
+					});
+				}
+				else {
+					resolve();
+				}
+			});
+		}
+		else {
+			fs.mkdir(path, err => {
+				if (err != null) {
+					reject(err);
+				}
+				else {
+					resolve();
+				}
+			});
+		}
+	});
+}
+
 function writeFile (file, data, encoding='utf8') {
 	return new Promise((resolve, reject) => {
 		fs.writeFile(file, data, encoding, err => {
@@ -149,6 +181,7 @@ module.exports = {
 	nonce,
 	hash,
 	access,
+	mkdir,
 	writeFile,
 	writeStream,
 	readFile,
