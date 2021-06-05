@@ -139,10 +139,10 @@ else if (process.argv.length > 2 && process.argv[2] === '--overwrite') {
 	}
 }
 else if (process.argv.length === 3) {
-	require('./main.js')(VERSION, BANNER, DATABASE, process.argv[2], PRIVATE_KEY, REVOCATION_CERTIFICATE, true);
+	require('./main.js')(VERSION, BANNER, DATABASE, process.argv[2], PRIVATE_KEY, REVOCATION_CERTIFICATE, SAVE_DIR, true);
 }
 else if (process.argv.length <= 2) {
-	require('./main.js')(VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CERTIFICATE, false);
+	require('./main.js')(VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CERTIFICATE, SAVE_DIR, false);
 }
 else {
 	console.error(`Unrecognized command: ${process.argv.slice(2).join(' ')}`);

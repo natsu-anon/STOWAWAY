@@ -1,6 +1,7 @@
 const process = require('process');
 const InitCLI = require('./init-cli.js');
 const dbInit = require('./database.js');
+const { mkdir } = require('./utils.js');
 const { initialization: clientInit, clientLogin } = require('./client.js');
 const keyInit = require('./key.js');
 const { Stowaway } = require('./stowaway.js');
@@ -45,7 +46,7 @@ const WARNING = `
  * 5. STOWAWAY
 */
 
-function init (BANNER, SCREEN_TITLE, DATABASE, API_TOKEN, PRIVATE_KEY, VERSION, REVOCATION_CERTIFICATE, versionText, tokenFlag) {
+function init (BANNER, SCREEN_TITLE, DATABASE, API_TOKEN, PRIVATE_KEY, VERSION, REVOCATION_CERTIFICATE, SAVE_DIR, versionText, tokenFlag) {
 	const initEmitter = new EventEmitter();
 	initEmitter.on('quit init', () => {
 		process.exit(0);
@@ -56,6 +57,7 @@ function init (BANNER, SCREEN_TITLE, DATABASE, API_TOKEN, PRIVATE_KEY, VERSION, 
 	process.on('SIGHUP', () => { initEmitter.emit('quit init'); });
 	return new Promise((resolve, reject) => {
 		(versionText != null ? cli.pauseLog(versionText) : Promise.resolve())
+		.then(() => mkdir(SAVE_DIR))
 		.then(() => {
 			cli.log(WARNING);
 			cli.log('>initializing database... ');
