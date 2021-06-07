@@ -34,13 +34,13 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 				'CHANGE_NICKNAME'
 			]
 		});
-		// const debugLog = writeStream('./debug.txt');
+		const debugLog = writeStream('./debug.txt');
 
 		//  COMMAND LINE INTERFACE  //
 
 		cli = new StowawayCLI(screen, SCREEN_TITLE, client.user.username, client.user.tag, invite);
 		const quit = () => {
-			// debugLog.end();
+			debugLog.end();
 			const stop = cli.spin('closing...');
 			errStream.end();
 			cli.destroy();
@@ -51,7 +51,7 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 			});
 		};
 		stowaway.on('error', error => { errStream.write(error); errStream.write('\n'); });
-		// stowaway.on('debug', str => { debugLog.write(str); debugLog.write('\n'); });
+		stowaway.on('debug', str => { debugLog.write(str); debugLog.write('\n'); });
 		// stowaway.on('error', err => { cli.warn(err); });
 		// stowaway.on('debug', debug => { cli.notify(`DEBUG: ${debug}`); });
 		// stowaway.on('decryption failure', message => {
