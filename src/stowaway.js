@@ -92,18 +92,6 @@ class Messenger {
 		}
 	}
 }
-
-/* EVENTS
-	channel delete
-	channel update
-	message
-	timestamp
-	failed decrypt
-	failed encrypt
-	handshake
-	bad handshake
-	database error
-*/
 class Stowaway extends EventEmitter {
 
 	constructor (channels, peers, revocations, keyFile, version, comment='', verbose=false) {
@@ -544,10 +532,10 @@ class Stowaway extends EventEmitter {
 				}, FILE)))
 				.catch(err => {
 					if (err.message === ERR_ARMORED) {
-						// TODO
+						this.emit('error', `Stowaway.signKey(): misformed armored key in database for user id ${userId}`);
 					}
 					else {
-						// TODO
+						this.emit('error', `unexpected error in Stowaway.signKey() for user id ${userId}`);
 					}
 				})
 				.finally(resolve);
@@ -1127,7 +1115,7 @@ class Stowaway extends EventEmitter {
 			}
 			catch (err) {
 				if (err != null && err.message === ERR_ARMORED) {
-					// stuff -- one of the armored keys is not actually an armored key
+					this.emit('error', `misformed armored key in database for ${message.author.tag} in Stowaway._signedKey()`);
 				}
 				else if (err != null) {
 					this.emit('error', `unexpected error in Stowaway._signedKey() ${message.id}\n${err.stack}`);
