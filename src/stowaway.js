@@ -286,11 +286,11 @@ class Stowaway extends EventEmitter {
 				});
 			}
 		});
-		client.on('userUpdate', (user0, user1) => {
-			if (this._findPeer(user0.id) != null) {
-				this.emit('peer update', user0, user1);
-			}
-		});
+		// client.on('userUpdate', (user0, user1) => {
+		// 	if (this._findPeer(user0.id) != null) {
+		// 		this.emit('peer update', user0, user1);
+		// 	}
+		// });
 		this.lastChannel = this.channels.findOne({ last_channel: true });
 		if (this.lastChannel != null) {
 			this.lastChannel = this.lastChannel.channel_id;
