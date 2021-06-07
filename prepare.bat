@@ -6,9 +6,9 @@ MD releases\STOWAWAY_v%1_win
 rem MD releases\STOWAWAY_v%1_linux\DO_NOT_SHARE
 rem MD releases\STOWAWAY_v%1_macos\DO_NOT_SHARE
 rem MD releases\STOWAWAY_v%1_win\DO_NOT_SHARE
-COPY releases\STOWAWAY-linux releases\STOWAWAY_v%1_linux\STOWAWAY
-COPY releases\STOWAWAY-macos releases\STOWAWAY_v%1_macos\STOWAWAY
-COPY releases\STOWAWAY-win.exe releases\STOWAWAY_v%1_win\STOWAWAY.exe
+MOVE releases\STOWAWAY-linux releases\STOWAWAY_v%1_linux\STOWAWAY
+MOVE releases\STOWAWAY-macos releases\STOWAWAY_v%1_macos\STOWAWAY
+MOVE releases\STOWAWAY-win.exe releases\STOWAWAY_v%1_win\STOWAWAY.exe
 COPY releases\about.txt releases\STOWAWAY_v%1_linux\about.txt
 COPY releases\about.txt releases\STOWAWAY_v%1_macos\about.txt
 COPY releases\about.txt releases\STOWAWAY_v%1_win\about.txt
