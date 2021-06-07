@@ -24,7 +24,7 @@ function init (dbFilename, autosave=true) {
 	return new Promise((resolve, reject) => {
 		const db = new loki(dbFilename, {
 			autosave,
-			serializationMethod: 'pretty',
+			// serializationMethod: 'pretty',
 		});
 		db.loadDatabase({}, err => {
 			if (err != null) {
