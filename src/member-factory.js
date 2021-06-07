@@ -1,26 +1,12 @@
 const Mediator = require('./mediators/mediator.js');
 
 async function displayMember (user, stowaway) {
-	// const flag = await stowaway.signedKey(user.id);
+	const signed = await stowaway.signedKey(user.id);
 	let text = `${user.username} (${user.tag})`;
-	switch(user.presence.status) {
-		case 'online':
-			text = `{green-fg}${text}{/green-fg}`;
-			break;
-		case 'idle':
-			text = `{yellow-fg}${text}{/yellow-fg}`;
-			break;
-		case 'offline':
-			text = `{black-fg}{bold}${text}{/bold}{/black-fg}`;
-			break;
-		case 'dnd':
-			text = `{red-fg}${text}{/red-fg}`;
-			break;
+	if (signed) {
+		text = `{green-fg}${text}{/green-fg}`;
 	}
-	return {
-		signed: await stowaway.signedKey(user.id),
-		text
-	};
+	return { signed, text };
 }
 
 class Members extends Mediator {
@@ -38,17 +24,17 @@ class Members extends Mediator {
 		const memberUpdate = (member0, member1) => { this.memberUpdate(member0, member1); };
 		const handshake = (message, accepted) => { this.handshake(message, accepted); };
 		const update = message => { this.update(message); };
-		const peerUpdate = () => {
-			this.representation().then(text => {
-				this.emit('update', text);
-			});
-		};
+		// const peerUpdate = () => {
+		// 	this.representation().then(text => {
+		// 		this.emit('update', text);
+		// 	});
+		// };
 		stowaway.client.on('guildMemberRemove', memberRemove);
 		stowaway.client.on('guildMemberUpdate', memberUpdate);
 		stowaway.on('handshake', handshake);
 		stowaway.on('key update', update);
 		stowaway.on('revocation', update);
-		stowaway.on('peer update', peerUpdate);
+		// stowaway.on('peer update', peerUpdate);
 		this.unsubscribe = () => {
 			stowaway.client.removeListener('guildMemberRemove', memberRemove);
 			stowaway.client.removeListener('guildMemberUpdate', memberUpdate);
