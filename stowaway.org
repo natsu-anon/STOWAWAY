@@ -1,4 +1,4 @@
-* TODO force others to test in skunkworks
+* DONE force others to test in skunkworks
 
 * TODO cleanup (delete all those commented out lines & unused files) then release
 
