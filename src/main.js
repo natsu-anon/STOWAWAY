@@ -518,10 +518,10 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 				fsm.tab();
 			}
 		});
-		cli.screen.key(['w', 'S-w'], () => { fsm.w(); });
-		cli.screen.key(['s', 'S-s'], () => { fsm.s(); });
-		cli.screen.key(['a', 'S-a'], () => { fsm.a(); });
-		cli.screen.key(['d', 'S-d'], () => { fsm.d(); });
+		cli.screen.key(['w', 'S-w', 'up'], () => { fsm.w(); });
+		cli.screen.key(['s', 'S-s', 'down'], () => { fsm.s(); });
+		cli.screen.key(['a', 'S-a', 'left'], () => { fsm.a(); });
+		cli.screen.key(['d', 'S-d', 'right'], () => { fsm.d(); });
 		cli.screen.key(['backspace', 'delete'], () => { fsm.backspace(); });
 		cli.screen.key('0', () => { fsm.num0(); });
 		cli.screen.key('1', () => { fsm.num1(); });
