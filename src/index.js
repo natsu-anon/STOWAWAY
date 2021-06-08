@@ -40,6 +40,20 @@ else if (process.argv.length > 2 && (process.argv[2] === '--token' || process.ar
 		process.exit(1);
 	}
 }
+else if (process.argv.length > 2 && (process.argv[2] === '--servers' || process.argv[2] === '-s')) {
+	login(API_TOKEN)
+	.then(client => {
+		client.guilds.cache.each(guild => {
+			console.log(`id: ${guild.id}, name: ${guild.name}`);
+		});
+		process.exit(0);
+	})
+	.catch(err => {
+		console.error(err);
+		process.exit(1);
+	});
+	// list all servers your bot has access to
+}
 else if (process.argv.length > 2 && process.argv[2] === '--revoke') {
 	if (process.argv.length > 4) {
 		const revocationPath = process.argv.length > 5 ? process.argv[5] : REVOCATION_CERTIFICATE;
