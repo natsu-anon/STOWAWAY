@@ -24,24 +24,17 @@ class Members extends Mediator {
 		const memberUpdate = (member0, member1) => { this.memberUpdate(member0, member1); };
 		const handshake = (message, accepted) => { this.handshake(message, accepted); };
 		const update = message => { this.update(message); };
-		// const peerUpdate = () => {
-		// 	this.representation().then(text => {
-		// 		this.emit('update', text);
-		// 	});
-		// };
 		stowaway.client.on('guildMemberRemove', memberRemove);
 		stowaway.client.on('guildMemberUpdate', memberUpdate);
 		stowaway.on('handshake', handshake);
 		stowaway.on('key update', update);
 		stowaway.on('revocation', update);
-		// stowaway.on('peer update', peerUpdate);
 		this.unsubscribe = () => {
 			stowaway.client.removeListener('guildMemberRemove', memberRemove);
 			stowaway.client.removeListener('guildMemberUpdate', memberUpdate);
 			stowaway.removeListener('handshake', handshake);
 			stowaway.removeListener('key update', update);
 			stowaway.removeListener('revocation', update);
-			stowaway.removeListener('peer update', peerUpdate);
 		};
 	}
 
@@ -169,7 +162,7 @@ class MembersFactory {
 
 	constructor (stowaway, peers) {
 		this.stowaway = stowaway;
-		this.peersView = peers.getDynamicView('all_peers');
+		this.peers = peers;
 		this.current = null;
 	}
 
@@ -177,7 +170,7 @@ class MembersFactory {
 		if (this.current != null) {
 			this.current.unsubscribe();
 		}
-		const peerIds = this.peersView.applyFind({ channels: { $contains: channel.id } }).data().map(doc => doc.user_id); // ok
+		const peerIds = this.peers.find({ channels: { $contains: channel.id }}).map(doc => doc.user_id);
 		Promise.all(peerIds.map(id => channel.guild.members.fetch(id)))
 		.then(members => {
 			const m = new Members(members.map(member => member.user), this.stowaway, channel);
