@@ -558,7 +558,7 @@ class Stowaway extends EventEmitter {
 	}
 
 	_allPeers () {
-		return this.peersView.data();
+		return this.peers.find({ user_id: { $exists: true }, public_key: { $exists: true }});
 	}
 
 	_attachJSON (json, name) {
