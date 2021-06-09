@@ -70,6 +70,10 @@ class MemberState extends State {
 	h () {
 		this.emit('to handshake', this.previousState);
 	}
+
+	m () {
+		escape();
+	}
 }
 
 module.exports = MemberState;
