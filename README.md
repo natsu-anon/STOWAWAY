@@ -46,13 +46,7 @@ If you're on Windows you can use [ColorTool](https://github.com/microsoft/termin
 Just [download the latest appropriate ＳＴＯＷＡＷＡＹ](https://github.com/natsu-anon/STOWAWAY/releases/) and extract the zip file. **NOTE** I've only tested the windows binary.
 
 #### Running from source
-you can run ＳＴＯＷＡＷＡＹ from source with [Node.js](https://nodejs.org/en/)(version 14.15.4) and the following packages:
-- [OpenPGP.js](https://github.com/openpgpjs/openpgpjs) version 4.10.8
-- [discord.js](https://github.com/discordjs/discord.js) version 12.5.1
-- [blessed](https://github.com/chjj/blessed) version 0.1.81
-- [NeDB](https://github.com/louischatriot/nedb/) version 1.8.0
-
-Once all the packages are installed you can launch ＳＴＯＷＡＷＡＹ with `npm run start`[(see usage for command line launch)](#usage)
+you can run ＳＴＯＷＡＷＡＹ from source with [Node.js](https://nodejs.org/en/)(version 14.15.4).  After cloning the repo run `npm install` to install the dependencies. Once all the packages are installed you can launch ＳＴＯＷＡＷＡＹ with `npm run start`[(see usage for command line launch)](#usage)
 
 ### Create a Bot
 If you know how to do this go ahead and skip to parts 8 and 9.
