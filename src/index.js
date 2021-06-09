@@ -10,7 +10,7 @@ const API_TOKEN = SAVE_DIR + 'stowaway.token';
 const PRIVATE_KEY = SAVE_DIR + 'stowaway.key';
 const REVOCATION_CERTIFICATE = 'stowaway.revoke';
 
-const VERSION = '1.1.0';
+const VERSION = '1.1.1';
 const BANNER = `      _  __ __        __        __
  //  /_\` / / / | | | /_/ | | | /_/ /_/  //
 //  ._/ / /_/  |/|/ / /  |/|/ / /  /   //  v ${VERSION}
