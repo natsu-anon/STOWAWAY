@@ -6,6 +6,8 @@
 
 * TODO release
 
+* TODO comment source
+
 * DONE make sure the build doesn't give you an (unverified)
   - [X] don't inquire yourself
   - [X] cache last known revocation -- don't inquire about things older than that
