@@ -9,25 +9,25 @@ This software is licensed under the WTFPL
 >
 > -Edward Snowden
 
-An End-to-End PGP encryption layer for Discord focused on making privacy easy & accesible via bots [(instructions included)](#create-a-bot).
+ＳＴＯＷＡＷＡＹ is an End-to-End PGP encryption layer for Discord focused on making privacy easy & accesible via bots [(instructions included)](#create-a-bot).
 This means that the keys used to encrypt & decrypt messages are different.  The keys to encrypt are *public*, the keys to decrypt are *private* and should __NEVER__ be shared.
 
-![spurdo](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/main/screenshots/spurdo.PNG)
+![stowaway-view](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/main/screenshots/stowaway_view.PNG)
 
 _what you see_
 
-![discord](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/main/screenshots/discord_view.PNG)
+![discord-view](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/main/screenshots/discord_view.PNG)
 
 _what the everyone else sees_
 
-If you're on Windows you can use [ColorTool](https://github.com/microsoft/terminal/tree/main/src/tools/ColorTool) to change your terminal's color scheme.
+If you're on Windows you can use [ColorTool](https://github.com/microsoft/terminal/tree/main/src/tools/ColorTool) to change your terminal's & ＳＴＯＷＡＷＡＹ's color scheme.
 
 **Sections**
 - [Setup](#setup)
 	- [Installation](#installation)
 	- [Create a bot](#create-a-bot)
 	- [Add your bot to a server](#add-your-bot-to-a-server)
-- [Usage](#usage)
+- [Command Line Flags](#Command-Line-Flags)
 - [PGP Encryption](#pgp-encryption)
 - [Future Development](#future-development)
 - [Donations](#donations)
@@ -82,7 +82,7 @@ Once you login you or if you already are you should see something like this.
 
 10. Make sure you save your changes!
 
-When you launch ＳＴＯＷＡＷＡＹ, you must provide your bot's token to use the application.  You can copy your bot's token from its page by pressing the 'Copy' button in the Token section.  Most terminal applications allow you to paste text with by right-clicking.
+When you launch ＳＴＯＷＡＷＡＹ, you must provide your bot's token to use the application.  You can copy your bot's token from its page by pressing the 'Copy' button in the Token section.  You should be able to paste the copied token by right-clicking.
 
 ** NEVER SHARE YOUR BOT TOKEN WITH ANYONE **
 
@@ -115,15 +115,11 @@ https://discord.com/api/oauth2/authorize?client_id=CLIENT_ID&permissions=6722662
 ### Adding someone else's bot to your server
 Same as above, but have the bot owner briefly enable 'PUBLIC BOT' (see [Step 9 in Create a Bot](#create-a-bot) in order to add it.  Afterwards the bot owner can disable 'PUBLIC BOT' once more.
 
-## Usage
+## Command Line Flags
 >When you say, "I have nothing to hide," you’re saying, "I don’t care about this right." You’re saying, "I don’t have this right, because I’ve got to the point where I have to justify it." **The way rights work is, the government has to justify its intrusion into your rights.**
 >
 > -Edward Snowden
 
-### Launching executable
-Just run it!
-
-### Launching from command line
 If you don't pass any optional flags ＳＴＯＷＡＷＡＹ will launch regularly.
 
 ![add to server](https://media.githubusercontent.com/media/natsu-anon/STOWAWAY/single-channel/screenshots/permissions.PNG)
@@ -134,8 +130,10 @@ If you don't pass any optional flags ＳＴＯＷＡＷＡＹ will launch regula
 3. Pass `-v` or `--version` for the version number.
 4. Pass `-t` or `--token` with a discord bot api token to supply a token to use (if it works).
 5. Pass `-c` or `--channels` to list available & inavailable channels with reasons why ___requires a valid token file___.
-6. Pass `--leave-server` and a server id to leave the server with the given id ___requires a valid token file___.
-7. Pass `--revoke` and a server id to leave the server with the given id ___requires a valid token file___.
+6. Pass `-s` or `--servers` to list all servers your bot is in with their respective id ___requires a valid token file___.
+7. Pass `--leave-server` and a server id to leave the server with the given id ___requires a valid token file___.
+8. Pass `--revoke` and a server id to leave the server with the given id ___requires a valid token file___.
+9. Pass `--overwrite` and a channel and message id to overwrite the saved public key of the message author with one provided in the message ___requires a valid token file___.
 
 ## PGP Encryption
 >There is no killer answer yet. Jacob Appelbaum (@ioerror) has a clever response, asking people who say this to then hand him their phone unlocked and pull down their pants. My version of that is to say, 'well, if you're so boring then we shouldn't be talking to you, and neither should anyone else', but philosophically, the real answer is this: [M]ass surveillance is a mass structural change. **When society goes bad, it's going to take you with it, even if you are the blandest person on earth.**
