@@ -1,12 +1,13 @@
-* TODO tidy up the repo [0/2]
-- [ ] delete all extraneous files
-- [-] update README.md [3/4]
-  - [-] new pictures! [2/3]
-	- [ ] intro pics
+* TODO document source
+
+* DONE tidy up the repo [2/2]
+- [X] delete all extraneous files
+- [X] update README.md [4/4]
+  - [X] new pictures! [4/4]
+	- [X] intro pics
 	- [X] create a bot pics
-	- [X] usage pics
+	- [X] token pics
+	- [X] adding to server
   - [X] console commands
   - [X] future development
   - [X] running from source requirements
-
-* TODO document source
