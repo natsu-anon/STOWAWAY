@@ -1016,8 +1016,8 @@ class Stowaway extends EventEmitter {
 					text: `New handshake from ${message.member.displayName} on ${message.guild.name} #${message.channel.name}`
 				};
 			}
-			else if (doc.ts != null || message.createdTimestamp > doc.ts){
-				const savedKey = await this._publicKey(userId);
+			else if (doc.ts == null || message.createdTimestamp > doc.ts){
+				const savedKey = await openpgp.readKey({ armoredKey: doc.public_key })
 				if (savedKey.hasSameFingerprintAs(publicKey)) {
 					if (!doc.channels.includes(message.channel.id)) {
 						doc.channels.push(message.channel.id);
@@ -1114,7 +1114,7 @@ class Stowaway extends EventEmitter {
 		}
 		else {
 			const doc = this._findPeer(message.author.id);
-			if (doc != null && doc.ts < message.createdTimestamp) {
+			if (doc == null || message.createdTimestamp > doc.ts) {
 				return new Promise(resolve => {
 					Promise.all([
 						openpgp.readKey({ armoredKey: doc.public_key }),
@@ -1211,7 +1211,7 @@ class Stowaway extends EventEmitter {
 		}
 		else {
 			const doc = this._findPeer(message.author.id);
-			if (doc != null && doc.ts < message.createdTimestamp) {
+			if (doc == null || doc.ts > message.createdTimestamp) {
 				const testKey = await openpgp.readKey({ armoredKey });
 				const savedKey = await openpgp.readKey({ armoredKey: doc.public_key });
 				if (savedKey.hasSameFingerprintAs(testKey)) {
@@ -1319,7 +1319,7 @@ class Stowaway extends EventEmitter {
 			});
 			return true;
 		}
-		else if (doc.ts < message.createdTimestamp) {
+		else if (doc.ts != null && doc.ts > message.createdTimestamp) {
 			return false;
 		}
 		else {
