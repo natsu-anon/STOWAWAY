@@ -64,6 +64,10 @@ class HandshakeState extends State {
 		this.emit('to member', this.previousState);
 	}
 
+	h () {
+		escape();
+	}
+
 	w () {
 		this.emit('channels', false);
 	}
