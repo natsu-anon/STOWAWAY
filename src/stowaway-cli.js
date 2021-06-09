@@ -38,7 +38,7 @@ class StowawayCLI {
 	constructor (screen, title, name, tag, invite) {
 		const LANDING =
 `If there are no channels in the navigation box to your left you must add your bot to a server & make sure it has the proper permissions in order use said channels.
-    - invitation link: {underline}${invite}{/underline}
+	- invitation link: {underline}${invite}{/underline}
 	- see: {underline}https://github.com/natsu-anon/STOWAWAY#add-your-bot-to-a-server{/underline} for how to add your bot to a server.
 	- pass '--channels' to STOWAWAY to list all channels availbale to your bot & any necessary permissions it lacks that it needs.
 
