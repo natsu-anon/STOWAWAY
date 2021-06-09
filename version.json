@@ -1,10 +1,9 @@
 {
-	"version": "1.1.1",
-	"ignore": "turbodumbaka",
+	"version": "1.1.2",
+	"ignore": "AAAAAA",
 	"url": "https://github.com/natsu-anon/STOWAWAY/releases",
-	"text": "THIS IS THE POWER OF COMPLAINING AT ME ABOUT BUGS",
+	"text": "THIS IS THE POWER OF ME TESTING RELEASES",
 	"changelog": [
-		"messages that SHOULD be handled are",
-		"manual overwrite updates peer information correctly"
+		"history inquiry causes make sense",
 	]
 }
