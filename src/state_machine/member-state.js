@@ -62,7 +62,7 @@ class MemberState extends State {
 		this.emit('scroll', -1);
 	}
 
- 	a () {
+ 	s () {
 		this.emit('scroll', 1);
 	}
 
