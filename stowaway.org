@@ -1,12 +1,12 @@
 * DONE force others to test in skunkworks
 
-* TODO cleanup
+* DONE cleanup
   - [X] delete unused files
-  - [ ] delete commented out lines
+  - [X] delete commented out lines
 
 * TODO release
 
-* TODO comment source
+* TODO document source
 
 * DONE make sure the build doesn't give you an (unverified)
   - [X] don't inquire yourself
