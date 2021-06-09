@@ -5,6 +5,7 @@
 	"text": "THIS IS THE POWER OF ME TESTING RELEASES",
 	"changelog": [
 		"history inquiry causes make sense",
-		"use 'a' instead of 's' to scroll through members"
+		"use 'a' instead of 's' to scroll through members",
+		"version checking actually works again"
 	]
 }
