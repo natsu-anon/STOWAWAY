@@ -7,9 +7,10 @@ function lessThan (semanticVersion0, semanticVersion1) {
 	const v0 = semanticVersion0.match(SV_RGX);
 	const v1 = semanticVersion1.match(SV_RGX);
 	if (v0 !== null && v1 !== null) {
+		// NOTE brush up on DeMorgan's laws cause this _feels_ like it could be simplified
 		return v0[1] < v1[1] ||
-			(v0[1] >= v1[1] && v0[2] < v1[2]) ||
-			(v0[1] >= v1[1] && v0[2] >= v0[2] && v0[3] < v1[3]);
+			(v0[1] === v1[1] && v0[2] < v1[2]) ||
+			(v0[1] === v1[1] && v0[2] === v0[2] && v0[3] < v1[3]);
 	}
 	else {
 		throw Error('Non-semantic version encountered');
