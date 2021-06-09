@@ -4,6 +4,7 @@
 	"url": "https://github.com/natsu-anon/STOWAWAY/releases",
 	"text": "THIS IS THE POWER OF COMPLAINING AT ME ABOUT BUGS",
 	"changelog": [
-		"messages that SHOULD be handled are"
+		"messages that SHOULD be handled are",
+		"manual overwrite updates peer information correctly"
 	]
 }
