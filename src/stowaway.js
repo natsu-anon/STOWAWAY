@@ -1117,72 +1117,74 @@ class Stowaway extends EventEmitter {
 		}
 		else {
 			const doc = this._findPeer(message.author.id);
-			if (doc.ts == null || message.createdTimestamp > doc.ts) {
-				return new Promise(resolve => {
-					Promise.all([
-						openpgp.readKey({ armoredKey: doc.public_key }),
-						openpgp.readKey({ armoredKey }),
-						openpgp.readKey({ armoredKey: armoredRevocation }),
-					])
-					.then(keys => {
-						if (keys[0].hasSameFingerprintAs(keys[1])) {
-							return { valid: false, reason: 'not needed' };
-						}
-						else {
-							return this._validateRevocation(keys[0], keys[2]);
-						}
-					})
-					.then(({ valid, reason }) => {
-						if (valid) {
-							this.peers.findAndUpdate({ user_id: message.author.id }, docs => {
-								docs.public_key = armoredKey;
-								docs.ts = message.createdTimestamp;
-							});
-							this.emit('revocation', message);
-							resolve({
-								cache: true,
-								color: 'green',
-								text: `Key revocation from ${message.author.tag}`
-							});
-						}
-						else if (reason === 'not needed') {
-							this.emit('revocation', message);
-							resolve({
-								cache: true
-							});
-						}
-						else {
-							this._inquireHistory(message);
-							resolve({
-								cache: false,
-								color: 'red',
-								text: `{underline}FRAUDULENT KEY REVOCATION FROM ${message.author.tag}`
-							});
-						}
-					})
-					.catch(err => {
-						if (err != null) {
-							this.emit('error', `error in Stowaway._revocation()\n${err.stack}`);
-							resolve({
-								cache: false,
-								color: 'yellow',
-								text: `Error in Stowaway._revocation(): ${err}`
-							});
-						}
-						else {
-							this.emit('error', `unknown error in Stowaway._revocation()`);
-							resolve({ valid: false, reason: 'Unknown error' });
-							resolve({
-								cache: false,
-								color: 'yellow',
-								text: `Unknown error in Stowaway._revocation()`
-							});
-						}
+			if (doc != null) {
+				if (doc.ts == null || message.createdTimestamp > doc.ts) {
+					return new Promise(resolve => {
+						Promise.all([
+							openpgp.readKey({ armoredKey: doc.public_key }),
+							openpgp.readKey({ armoredKey }),
+							openpgp.readKey({ armoredKey: armoredRevocation }),
+						])
+						.then(keys => {
+							if (keys[0].hasSameFingerprintAs(keys[1])) {
+								return { valid: false, reason: 'not needed' };
+							}
+							else {
+								return this._validateRevocation(keys[0], keys[2]);
+							}
+						})
+						.then(({ valid, reason }) => {
+							if (valid) {
+								this.peers.findAndUpdate({ user_id: message.author.id }, docs => {
+									docs.public_key = armoredKey;
+									docs.ts = message.createdTimestamp;
+								});
+								this.emit('revocation', message);
+								resolve({
+									cache: true,
+									color: 'green',
+									text: `Key revocation from ${message.author.tag}`
+								});
+							}
+							else if (reason === 'not needed') {
+								this.emit('revocation', message);
+								resolve({
+									cache: true
+								});
+							}
+							else {
+								this._inquireHistory(message);
+								resolve({
+									cache: false,
+									color: 'red',
+									text: `{underline}FRAUDULENT KEY REVOCATION FROM ${message.author.tag}`
+								});
+							}
+						})
+						.catch(err => {
+							if (err != null) {
+								this.emit('error', `error in Stowaway._revocation()\n${err.stack}`);
+								resolve({
+									cache: false,
+									color: 'yellow',
+									text: `Error in Stowaway._revocation(): ${err}`
+								});
+							}
+							else {
+								this.emit('error', `unknown error in Stowaway._revocation()`);
+								resolve({ valid: false, reason: 'Unknown error' });
+								resolve({
+									cache: false,
+									color: 'yellow',
+									text: `Unknown error in Stowaway._revocation()`
+								});
+							}
+						});
 					});
-				});
-			}
-			else if (doc != null) {
-				return { cache: false };
+				}
+				else {
+					return { cache: false };
+				}
 			}
 			else {
 				this._inquireHistory(message);
@@ -1214,34 +1216,36 @@ class Stowaway extends EventEmitter {
 		}
 		else {
 			const doc = this._findPeer(message.author.id);
-			if (doc.ts == null || doc.ts > message.createdTimestamp) {
-				const testKey = await openpgp.readKey({ armoredKey });
-				const savedKey = await openpgp.readKey({ armoredKey: doc.public_key });
-				if (savedKey.hasSameFingerprintAs(testKey)) {
-					await savedKey.update(testKey);
-					const armor = savedKey.armor();
-					doc.public_key = armor;
-					if (!doc.channels.incldues(message.channel.id)) {
-						doc.channels.push(message.channel.id);
+			if (doc != null) {
+				if (doc.ts == null || doc.ts > message.createdTimestamp) {
+					const testKey = await openpgp.readKey({ armoredKey });
+					const savedKey = await openpgp.readKey({ armoredKey: doc.public_key });
+					if (savedKey.hasSameFingerprintAs(testKey)) {
+						await savedKey.update(testKey);
+						const armor = savedKey.armor();
+						doc.public_key = armor;
+						if (!doc.channels.incldues(message.channel.id)) {
+							doc.channels.push(message.channel.id);
+						}
+						this.peers.update(doc);
+						this.emit('key update', message);
+						return {
+							cache: true,
+							color: 'green',
+							text: `Key update from ${message.author.tag}`
+						};
 					}
-					this.peers.update(doc);
-					this.emit('key update', message);
-					return {
-						cache: true,
-						color: 'green',
-						text: `Key update from ${message.author.tag}`
-					};
+					else {
+						return {
+							cache: false,
+							color: 'red',
+							text: `Improper key update from ${message.author.tag}`
+						};
+					}
 				}
 				else {
-					return {
-						cache: false,
-						color: 'red',
-						text: `Improper key update from ${message.author.tag}`
-					};
+					return { cache: false };
 				}
-			}
-			else if (doc != null) {
-				return { cache: false };
 			}
 			else {
 				this.emit('error', 'key update from non-peer');
