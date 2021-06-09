@@ -33,8 +33,8 @@ const NATO = [
 ];
 // DO NOT TOUCH DO NOT TOUCH DO NOT TOUCH DO NOT TOUCH DO NOT TOUCH DO NOT TOUCH
 const NONCE_CHALLENGE = 'XDD';
-// const NONCE_CHALLENGE = ['LMAO', 'BRUH', 'MEME'];
 // TOUCH OK TOUCH OK TOUCH OK TOUCH OK TOUCH OK TOUCH OK TOUCH OK TOUCH OK TOUCH
+
 const NONCE_FUNC = `const crypto = require('crypto');
 const { workerData, parentPort } = require('worker_threads');
 const CHALLENGE = process.argv[2];

@@ -7,7 +7,6 @@ BEST_PRACTICES += '2. NEVER SHARE NEITHER YOUR PRIVATE KEY, YOUR PASSPHRASE, NOR
 BEST_PRACTICES += '3. Write down your passphrase on a piece of paper DO NOT SAVE IT ON ANY NETWORKED DEVICE.\n';
 BEST_PRACTICES += "4. Move the newly generated 'stowaway.revoke' to an offline storage device (e.g. USB flash drive) & ";
 BEST_PRACTICES += 'delete any local copies left on your computer.\n';
-// BEST_PRACTICES += '5. If you ever lose or forget your passphrase you MUST revoke your current private key in order to use STOWAWAY (see README.txt).\n';
 BEST_PRACTICES += '5. IMMEADIATELY REVOKE YOUR PRIVATE KEY if you think anyone has your private key with or without the passphrase (see README.txt).';
 
 
@@ -148,15 +147,6 @@ function init (keyPath, revocationPath, stowaway, client, cli) {
 			.catch(reject);
 		});
 	});
-}
-
-async function bruh () {
-	const { key } = await openpgp.generateKey({
-		type: 'ecc',
-		curve: 'curve25519',
-		userIDs: [{ name: 'BRUH' }]
-	});
-	return { key, passphrase: 'abc' };
 }
 
 module.exports = init;

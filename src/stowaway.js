@@ -168,7 +168,6 @@ class Stowaway extends EventEmitter {
 				})
 				.then(messages => {
 					return Promise.allSettled(messages.map(message => this._handleActive(message)));
-					// return this._handleConsecutive(messages);
 				})
 				.then(() => {
 					resolve();
@@ -274,11 +273,6 @@ class Stowaway extends EventEmitter {
 				});
 			}
 		});
-		// client.on('userUpdate', (user0, user1) => {
-		// 	if (this._findPeer(user0.id) != null) {
-		// 		this.emit('peer update', user0, user1);
-		// 	}
-		// });
 		this.lastChannel = this.channels.findOne({ last_channel: true });
 		if (this.lastChannel != null) {
 			this.lastChannel = this.lastChannel.channel_id;
@@ -302,8 +296,6 @@ class Stowaway extends EventEmitter {
 		});
 	}
 
-	// handshakes channel if not in database
-	// returns a promise so you can enable autoscroll after loading
 	async loadChannel (channel) {
 		const doc = this._findChannel(channel.id);
 		if (doc == null) { // handshake new channel
@@ -320,7 +312,6 @@ class Stowaway extends EventEmitter {
 		return new Promise(resolve => {
 			this._sendHandshake(channel, true)
 			.then(message => {
-				// this.emit('test', `handshake0 ${message.createdTimestamp}`);
 				this.channels.insert({
 					channel_id: channel.id,
 					last_channel: true,
@@ -362,7 +353,6 @@ class Stowaway extends EventEmitter {
 			})
 			.then(messages => {
 				return Promise.all(messages.map(message => this._handleActive(message)));
-				// return this._handleConsecutive(messages);
 			})
 			.then(() => {
 				this.channels.findAndUpdate({ last_channel: true, channel_id: { $ne: channel.id } }, docs => {
@@ -381,7 +371,6 @@ class Stowaway extends EventEmitter {
 	}
 
 	messagePublic (channel, text) {
-		// this.emit('test', `messaging ${channel.guild.name} #${channel.name}`);
 		return new Promise(resolve => {
 			this._publicKeys(channel)
 			.then(async publicKeys => openpgp.encrypt({
@@ -678,17 +667,13 @@ class Stowaway extends EventEmitter {
 
 	//  MESSAGE HANDLING  //
 
-	// AFTER 1.0.0: SESSION SUPPORT
-	// NOTE since only guild channel messages get processed you can use message.member to access the guildMember of the sender
+	// AFTER 1.1.0: SESSION SUPPORT
 	_handleActive (message) {
 		return new Promise(resolve => {
 			if (this._validMessage(message)) {
 				this._processJSON(message)
 				.then(json => {
-					// this.emit('test', `_handleActive() ${message.author.username} ${JSON.stringify(json)}\n`);
-					// this.emit('test', `_handleActive() ${json.type} from ${message.author.username}`);
 					if (json.type === CHANNEL_MESSAGE) {
-						// this.emit('test', '_handleActive() channel message');
 						if (json.message != null && (typeof json.public) === 'boolean') {
 							return this._channelMessage(json.message, json.public, message);
 						}
@@ -724,11 +709,7 @@ class Stowaway extends EventEmitter {
 	_handleCache (message) {
 		if (message.author.id !== this.id && this._validMessage(message)) {
 			this._processJSON(message)
-			// .then(json => this._cacheMessage(json, message, true))
 			.then(json => {
-				// this.emit('test', `_handleCache() ${message.author.username} ${JSON.stringify(json)}\n`);
-				// this.emit('test', '_handleCache()');
-				// this.emit('test', `_handleCache() ${json.type}`);
 				return this._cacheMessage(json, message, true);
 			})
 			.catch(err => {
@@ -743,7 +724,6 @@ class Stowaway extends EventEmitter {
 	}
 
 	_cacheMessage (json, message, notify) {
-		// if not notifying then chechk the cache
 		if (notify) {
 			return this._processMessage(json, message, notify);
 		}
@@ -777,8 +757,6 @@ class Stowaway extends EventEmitter {
 	}
 
 	_processMessage (json, message, notify, cached=false) {
-		// NOTE delete this after all testing complete
-		// this.emit('warning', `${cached ? 'cached' : 'new'} ${json.type} from ${message.author.tag}`);
 		return new Promise(resolve => {
 			switch (json.type) {
 				case HANDSHAKE:
@@ -790,7 +768,6 @@ class Stowaway extends EventEmitter {
 						.finally(resolve);
 					}
 					else {
-						// throw Error(`missing json keys for handshake. Keys found: ${Object.keys(json)}`);
 						resolve();
 					}
 					break;
@@ -808,7 +785,6 @@ class Stowaway extends EventEmitter {
 						}
 					}
 					else {
-						// throw Error('missing json keys for signed key');
 						resolve();
 					}
 					break;
@@ -821,11 +797,10 @@ class Stowaway extends EventEmitter {
 						.finally(resolve);
 					}
 					else {
-						// throw Error('missing json keys for revocation');
 						resolve();
 					}
 					break;
-				case KEY_UPDATE: // NOTE this isn't working QUICKLY
+				case KEY_UPDATE:
 					if (json.public_key != null) {
 						this._keyUpdate(json.public_key, message, cached)
 						.then(({ cache, color, text }) => {
@@ -951,17 +926,15 @@ class Stowaway extends EventEmitter {
 				this._inquireHistory(message);
 			}
 			this.emit('channel message', message, result, publicFlag);
-			// this.emit('debug', `${publicFlag? 'public' : 'signed-only'} message from ${message.author.tag}: (signed: ${result.signed}, verified: ${result.verified}) ${result.plainText}`);
 			this._updateLatests(message.channel.id, message.id, message.createdTimestamp);
 		})
 		.catch(async err => {
 			if (err.message === ERR_ARMORED) {
-				// emit something about misformed armored text
 				this.emit('error', `misformed armored message from ${message.author.tag} on ${message.channel.guild.name} _${message.channel.name}`);
 			}
 			else if (err.message === ERR_DECRYPT) {
 				if (publicFlag) {
-					// if you're here it's possible you (1) the author doesn't have your public key or (2) author has one of your revoked public keys
+					// NOTE if execution gets to here it's possible that (1) the author doesn't have the user's public key or (2) author has one of the user's revoked public keys
 					this.emit('decryption failure', message);
 					const doc = this._findChannel(message.channel.id);
 					if (doc != null) {
@@ -1036,7 +1009,6 @@ class Stowaway extends EventEmitter {
 				if (plsRespond) {
 					await this._sendHandshake(message.channel, false);
 				}
-				// this.emit('test', `new handshake from ${message.author.tag}`);
 				this.emit('handshake', message, true);
 				return {
 					cache: true,
@@ -1088,7 +1060,7 @@ class Stowaway extends EventEmitter {
 							await this.key.update(publicKey);
 						}
 						catch {
-							await this._sendDisclosure(message); // NOTE test this
+							await this._sendDisclosure(message);
 							return { cache: false };
 						}
 						const channelIds = this.channels.data.map(doc => doc.channel_id);
@@ -1101,7 +1073,6 @@ class Stowaway extends EventEmitter {
 						});
 						await writeFile(this.keyFile, encryptedKey.armor());
 						this.emit('signed key', message);
-						// this.emit('test', `${message.author.tag} signed your key!`);
 						return {
 							cache: true,
 							text: `${message.author.tag} signed your key!`

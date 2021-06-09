@@ -3,13 +3,6 @@ const process = require('process');
 
 const SV_RGX = /(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)/;
 
-function countdown (ms) {
-	process.stdout.write(`Continuing in ${ms/1000} seconds...\r`);
-	if (ms - 100 > 0) {
-		setTimeout(countdown, 10, ms - 100);
-	}
-}
-
 function lessThan (semanticVersion0, semanticVersion1) {
 	const v0 = semanticVersion0.match(SV_RGX);
 	const v1 = semanticVersion1.match(SV_RGX);

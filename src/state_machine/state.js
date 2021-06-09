@@ -58,8 +58,6 @@ class State extends EventEmitter {
 
 	d () {}
 
-	// e () {}
-
 	h () {}
 
 	m () {}

@@ -56,15 +56,6 @@ To learn more about the WTFPL that STOWAWAY is licensed under see: {underline}ht
 
 Thanks for downloading & I hope you find this software useful
 <3`;
-		/*
-		this.screen = blessed.screen({
-			smartcsr: true,
-			autopadding: true,
-			tabSize: 2,
-			dockborders: true,
-			fullunicode: true, // allows for meme double-wide characters
-		});
-		*/
 		screen.title = title;
 		screen.ignoreLocked = [];
 		this.screen = screen;

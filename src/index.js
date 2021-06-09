@@ -3,7 +3,6 @@ const openpgp = require('openpgp');
 const dbInit = require('./database.js');
 const { token, login } = require('./client.js');
 const { readFile, writeFile } = require('./utils.js');
-// const { Revoker } = require('./revoker.js');
 const { Stowaway } = require('./stowaway.js');
 const SAVE_DIR = './DO_NOT_SHARE/';
 const DATABASE = SAVE_DIR + 'stowaway.db';
@@ -52,7 +51,6 @@ else if (process.argv.length > 2 && (process.argv[2] === '--servers' || process.
 		console.error(err);
 		process.exit(1);
 	});
-	// list all servers your bot has access to
 }
 else if (process.argv.length > 2 && process.argv[2] === '--revoke') {
 	if (process.argv.length > 4) {

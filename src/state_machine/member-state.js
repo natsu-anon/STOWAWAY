@@ -6,7 +6,6 @@ const KEYBINDS =
 [Escape] return to previous state
 [W/S] scroll up/down members
 [H] bring up handshake channel selector`;
-// [Tab] return to channel navigator`;
 
 class MemberState extends State {
 
@@ -58,12 +57,6 @@ class MemberState extends State {
 			this.emit('to previous', this.previousState);
 		}
 	}
-
-	/*
-	tab () {
-		this.emit('to navigate');
-	}
-	*/
 
 	w () {
 		this.emit('scroll', -1);

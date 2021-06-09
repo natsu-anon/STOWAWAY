@@ -8,7 +8,6 @@ const KEYBINDS =
 [W/S] scroll to previous/next channel
 [A/D] jump to first channel in previous/next server
 [M] view members of current channel displayed in messages box (if possible)`;
-// [Tab] begin reading current channel displayed in messages box (if possible)
 
 class HandshakeState extends State {
 
@@ -60,12 +59,6 @@ class HandshakeState extends State {
 	enter () {
 		this.emit('handshake');
 	}
-
-	/*
-	tab () {
-		this.emit('to read', false);
-	}
-	*/
 
 	m () {
 		this.emit('to member', this.previousState);

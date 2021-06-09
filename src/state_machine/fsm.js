@@ -145,8 +145,6 @@ class FSM extends EventEmitter {
 
 	ctrlS () { this._current.ctrlS(); }
 
-	// e () { this._current.e(); }
-
 	h () { this._current.h(); }
 
 	m () { this._current.m(); }

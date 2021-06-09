@@ -18,9 +18,7 @@ const SCREEN_TITLE = 'ＳＴＯＷＡＷＡＹ';
 const ERR_LOG = './error.log';
 
 function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CERTIFICATE, SAVE_DIR, tokenFlag) {
-	let cli, client, db;
-	const errStream = writeStream(ERR_LOG);
-	// const check = await versionCheck(VERSION_URL, VERSION);
+	let cli, client, db, errStream;
 	versionCheck(VERSION_URL, VERSION)
 		.then(check => initialize(BANNER, SCREEN_TITLE, DATABASE, API_TOKEN, PRIVATE_KEY, VERSION, REVOCATION_CERTIFICATE, SAVE_DIR, check, tokenFlag))
 	.then(async ({ stowaway, client, key, passphrase, db, channels, peers, screen }) => {
@@ -34,15 +32,15 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 				'CHANGE_NICKNAME'
 			]
 		});
-		// const debugLog = writeStream('./debug.txt');
 
 		//  COMMAND LINE INTERFACE  //
 
 		cli = new StowawayCLI(screen, SCREEN_TITLE, client.user.username, client.user.tag, invite);
 		const quit = () => {
-			// debugLog.end();
 			const stop = cli.spin('closing...');
-			errStream.end();
+			if (errStream != null) {
+				errStream.end();
+			}
 			cli.destroy();
 			client.destroy();
 			db.close(() => {
@@ -50,14 +48,12 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 				process.exit(0);
 			});
 		};
-		stowaway.on('error', error => { errStream.write(error); errStream.write('\n'); });
-		// stowaway.on('debug', str => { debugLog.write(str); debugLog.write('\n'); });
-		// stowaway.on('error', err => { cli.warn(err); });
-		// stowaway.on('debug', debug => { cli.notify(`DEBUG: ${debug}`); });
-		// stowaway.on('decryption failure', message => {
-		// 	cli.notify(`failed to decrypt message from ${message.author.tag} on ${message.channel.name}`);
-		// });
-		// cli.screen.on('resize', () => { cli.render(); });
+		stowaway.on('error', error => {
+			if (errStream == null) {
+				errStream = writeStream(ERR_LOG);
+			}
+			errStream.write(`${error}\n`);
+		});
 
 		await stowaway.launch(client, key, passphrase);
 
@@ -68,6 +64,7 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 		const revoker = new Revoker(stowaway, client, PRIVATE_KEY, REVOCATION_CERTIFICATE).setKey(key);
 		const hMediator = new HandshakedMediator(await (new HandshakedModel()).initialize(stowaway, client, channels), channels);
 		const cMediator = new ChannelsMediator(await (new ChannelsModel()).initialize(stowaway, client, channels), invite);
+
 		//  UPDATE LISTENING TO RENDER //
 
 		hMediator.on('update', text => {
@@ -94,7 +91,6 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 
 		const fsm = new FSMBuilder()
 			.navigate(() => {
-				// debugLog.write('navigate enter\n');
 				cli.stateText = `NAVIGATE`;
 				cli.stateColor = NavigateColor;
 				cli.navigation.style.border.fg = 'green';
@@ -102,10 +98,8 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 			},
 			() => {
 				cli.navigation.style.border.fg = 'white';
-				// debugLog.write('navigate exit\n');
 			})
 			.handshake(prevState => {
-				// debugLog.write('handshake enter\n');
 				cli.stateText = `HANDSHAKE | from: ${prevState.name}`;
 				cli.stateColor = HandshakeColor;
 				cli.select(box => {
@@ -138,11 +132,9 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 				cli.render();
 			},
 			() => {
-				// debugLog.write('read exit\n');
 				cli.messages.style.border.fg = 'white';
 			})
 			.write(() => {
-				// debugLog.write('write enter\n');
 				cli.input.focus();
 				if (fsm._write.publicMessage) {
 					cli.input.setLabel(` All stowaways will receive this message `);
@@ -157,16 +149,13 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 				cli.render();
 			},
 			() => {
-				// debugLog.write('write exit\n');
 				cli.input.style.border.fg = 'white';
 				cli.input.setLabel(` Message ${stowaway.channel.name} `);
 				cli.input.cancel();
 				cli.input.clearValue();
 				cli.screen.focusPop();
-				// cli.screen.grabKeys = false;
 			})
 			.member(prevState => {
-				// debugLog.write('member enter\n');
 				cli.select(box => {
 					box.setLabel(' Loading channel information. ');
 					box.setContent('loading...');
@@ -563,10 +552,15 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 			db.close();
 		}
 		if (err != null) {
+			if (errStream == null) {
+				errStream = writeStream(ERR_LOG);
+			}
 			errStream.write(`CRITICAL ERROR:\n${err}`);
 			console.error(err);
 		}
-		errStream.end();
+		if (errStream != null) {
+			errStream.end();
+		}
 		console.log('If you believe a bug caused this you can report it here: \x1b[4mhttps://github.com/natsu-anon/STOWAWAY/issues/new/choose\x1b[0m');
 		console.log('See \'error.log\' for the error log');
 		console.log('\nPass --help to see usage information');

@@ -22,7 +22,6 @@ function revocationForm (screen, label, keyEvents) {
 			fg: 'red'
 		}
 	});
-	// setupEvents(form, keyEvents);
 	blessed.text({
 		parent: form,
 		top: 0,

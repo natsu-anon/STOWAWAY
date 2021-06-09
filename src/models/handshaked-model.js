@@ -6,7 +6,6 @@ function channelData (channel) {
 	return {
 		id: channel.id,
 		name: channel.name,
-		// guildId: channel.guild.id,
 	};
 }
 
