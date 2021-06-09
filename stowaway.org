@@ -1,7 +1,7 @@
 * DONE force others to test in skunkworks
 
 * TODO cleanup
-  - [ ] delete unused files
+  - [X] delete unused files
   - [ ] delete commented out lines
 
 * TODO release
