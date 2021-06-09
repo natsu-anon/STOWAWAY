@@ -7,18 +7,9 @@ function lessThan (semanticVersion0, semanticVersion1) {
 	const v0 = semanticVersion0.match(SV_RGX);
 	const v1 = semanticVersion1.match(SV_RGX);
 	if (v0 !== null && v1 !== null) {
-		if (v0[1] > v1[1]) {
-			return false;
-		}
-		else if (v0[1] === v1[1] && v0[2] > v1[2]) {
-			return false;
-		}
-		else if (v0[1] === v1[1] && v0[2] === v1[2] && v0[3] >= v1[3]) {
-			return false;
-		}
-		else {
-			true;
-		}
+		return v0[1] < v1[1] ||
+			(v0[1] >= v1[1] && v0[2] < v1[2]) ||
+			(v0[1] >= v1[1] && v0[2] >= v0[2] && v0[3] < v1[3]);
 	}
 	else {
 		throw Error('Non-semantic version encountered');
