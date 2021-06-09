@@ -1,27 +1,14 @@
 {
-	"1.1.0 release": {
-		"version": "1.1.0",
-		"ignore": "100% baka",
-		"url": "https://github.com/natsu-anon/STOWAWAY/releases",
-		"text": "hey fam, I actually tested this version with other people so hopefully it's not a poorly written POS like the  1.0.X releases.  I also did some security updates, however these updates mean backwards compatibility is broken again (mea culpa).  (delete this if not true) I also slimmed down the executable a bit.",
-		"changelog": [
-			"Using lokijs for local storage instead of nedb",
-			"Reduced redundant processing of same messages",
-			"member display updates when keys signed and such",
-			"fully-launched revocation reworked--no longer duplicates inputs",
-			"command line flags to manually overwrite database when protocols break down",
-			"fixed bug that would crash stowaway if you tried to revoke immediately after launching"
-		]
-	},
-	"version": "1.0.1",
-	"ignore": "i cant spel",
+	"version": "1.1.0",
+	"ignore": "100% baka",
 	"url": "https://github.com/natsu-anon/STOWAWAY/releases",
-	"text": "I mistyped the function that displayed the date as 'toLocalTimesString' instead of 'toLocalTimeString' (did you spot the difference--because I sure didn't) and the consequences were worse than I expected.  Sorry I spent time learning emacs instead of fixing this first.  Go to https://github.com/natsu-anon/STOWAWAY/releases for the download!",
-	"changelog" : [
-		"Removed one 's'",
-		"Handshake repeats is limited to the first time STOWAWAY fails a decryption it thinks it shouldn't have",
-		"verison checker also displays url of where to go to get the new release",
-		"un-swapped the license & readme file",
-		"using 7zip now because tar isn't playing well with my batch file that I use to for all the releases )^:<"
+	"text": "Replaced a package to fix a security issue that probably wasn't an issue, however these updates mean backwards compatibility is broken again (mea culpa). Unlike previous release I actually tested this version with other living humna beings so it hopefully it's not a poorly written POS like the 1.0.X releases",
+	"changelog": [
+		"Using loki.js for local storage instead of nedb",
+		"Reduced redundant processing of same messages",
+		"member display updates when keys signed and such",
+		"fully-launched revocation reworked--no longer duplicates inputs",
+		"command line flags to manually overwrite database when protocols break down",
+		"fixed bug that would crash stowaway if you tried to revoke immediately after launching"
 	]
 }
