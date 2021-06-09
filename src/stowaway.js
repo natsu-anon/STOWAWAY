@@ -1224,7 +1224,7 @@ class Stowaway extends EventEmitter {
 						await savedKey.update(testKey);
 						const armor = savedKey.armor();
 						doc.public_key = armor;
-						if (!doc.channels.incldues(message.channel.id)) {
+						if (!doc.channels.includes(message.channel.id)) {
 							doc.channels.push(message.channel.id);
 						}
 						this.peers.update(doc);
