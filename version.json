@@ -4,7 +4,6 @@
 	"url": "https://github.com/natsu-anon/STOWAWAY/releases",
 	"text": "THIS IS THE POWER OF COMPLAINING AT ME ABOUT BUGS",
 	"changelog": [
-		"messages that SHOULD be handled are",
-		"pressing 'h' and 'm' close the handshake and member respectively window while open"
+		"messages that SHOULD be handled are"
 	]
 }
