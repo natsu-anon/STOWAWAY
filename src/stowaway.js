@@ -453,6 +453,9 @@ class Stowaway extends EventEmitter {
 				})
 				.then(key => {
 					doc.public_key = key.armor();
+					if (!doc.channels.includes(message.channel.id)) {
+						doc.channels.push(message.channel.id);
+					}
 					this.peers.update(doc);
 				})
 				.catch(err => { throw err; });
@@ -1218,6 +1221,9 @@ class Stowaway extends EventEmitter {
 					await savedKey.update(testKey);
 					const armor = savedKey.armor();
 					doc.public_key = armor;
+					if (!doc.channels.incldues(message.channel.id)) {
+						doc.channels.push(message.channel.id);
+					}
 					this.peers.update(doc);
 					this.emit('key update', message);
 					return {
