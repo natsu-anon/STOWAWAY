@@ -100,7 +100,7 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 				cli.render();
 			},
 			() => {
-				cli.navigation.style.border.fg = 'white';
+				cli.navigation.style.border.fg = cli.defaultBorder;
 			})
 			.handshake(prevState => {
 				cli.stateText = `HANDSHAKE | from: ${prevState.name}`;
@@ -135,7 +135,7 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 				cli.render();
 			},
 			() => {
-				cli.messages.style.border.fg = 'white';
+				cli.messages.style.border.fg = cli.defaultBorder;
 			})
 			.write(() => {
 				cli.input.focus();
@@ -152,7 +152,7 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 				cli.render();
 			},
 			() => {
-				cli.input.style.border.fg = 'white';
+				cli.input.style.border.fg = cli.defaultBorder;
 				cli.input.setLabel(` Message ${stowaway.channel.name} `);
 				cli.input.cancel();
 				cli.input.clearValue();
@@ -543,6 +543,7 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 		});
 		cli.selector.hide();
 		cli.render();
+		cli.defaultBorder = cli.messages.style.border.fg;
 	})
 	.catch(err => {
 		if (cli != null) {
