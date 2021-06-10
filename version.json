@@ -3,6 +3,7 @@
 	"url": "https://github.com/natsu-anon/STOWAWAY/releases",
 	"text": "bugfixes & QoL improvements fresh outta the oven",
 	"changelog": [
+		"binary ~30Mb smaller!",
 		"autoscroll upon new messages if at the bottom works again",
 		"made a yellow parens & question mark appear next to username for unverified messages instead of (UNVERIFIED)",
 		"fixed bug preventing fetching older messages",
