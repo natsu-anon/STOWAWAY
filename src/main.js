@@ -48,7 +48,6 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 				process.exit(0);
 			});
 		};
-		errStream = errStream = writeStream(ERR_LOG);
 		stowaway.on('error', error => {
 			if (errStream == null) {
 				errStream = writeStream(ERR_LOG);
