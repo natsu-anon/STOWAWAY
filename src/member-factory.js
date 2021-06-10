@@ -170,7 +170,7 @@ class MembersFactory {
 		if (this.current != null) {
 			this.current.unsubscribe();
 		}
-		const peerIds = this.peers.find({ channels: { $contains: channel.id }}).map(doc => doc.user_id);
+		const peerIds = this.peers.find({ channels: { $contains: channel.id } }).map(doc => doc.user_id);
 		Promise.all(peerIds.map(id => channel.guild.members.fetch(id)))
 		.then(members => {
 			const m = new Members(members.map(member => member.user), this.stowaway, channel);
