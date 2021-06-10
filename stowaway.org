@@ -1,3 +1,9 @@
+* TODO 1.1.3 super fast fixes
+  - [X] test fetchNewer/fetchOlder -- make sure they actually work
+  - [X] test out multiple peers
+  - [X] remove fingerprint
+  - [X] make database serialize TITE
+
 * TODO document source
 
 * DONE tidy up the repo [2/2]
