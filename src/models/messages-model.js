@@ -6,7 +6,7 @@ class ChannelMessage {
 		this.date = date;
 		this.name = signed ? `{green-fg}${author.username}{/green-fg}` : author.username;
 		if (!verified) {
-			this.name = `${this.name}{yellow-fg}(UNVERIFIED){/yellow-fg}`;
+			this.name = `${this.name}{yellow-fg}(?){/yellow-fg}`;
 		}
 		this.plainText = plainText;
 	}
@@ -51,6 +51,16 @@ class Handshake {
 	}
 }
 
+class Entrance {
+	constructor (date) {
+		this.date = date;
+	}
+
+	get text () {
+		return `\t{blue-bg}{black-fg}You entered the channel at ${this.date.toLocaleDateString()} ${this.date.toLocaleTimeString()}!{/}`;
+	}
+}
+
 class SignedKey {
 	constructor (date, author) {
 		this.date = date;
@@ -91,7 +101,7 @@ class Revocation {
 
 		}
 		else {
-			return `\t{yellow-bg}{black-fg}${this.name} (${this.tag}) revoked his key at ${this.date.toLocaleDateString()} ${this.date.toLocaleTimeString()}, if you signed his old key consider signing his new one (if you trust this revocation){/}`;
+			return `\t{yellow-bg}{black-fg}${this.name} (${this.tag}) revoked his key at ${this.date.toLocaleDateString()} ${this.date.toLocaleTimeString()}, if you signed his old key and trust this revocation consider signing his new key{/}`;
 		}
 	}
 }
@@ -125,6 +135,7 @@ class MessagesModel extends Model {
 		stowaway.on('key update', message => { this._keyUpdate(message); });
 		stowaway.on('revocation', (message, blockReason) => { this._revocation(message, blockReason); });
 		stowaway.on('compromised', message => { this._compromised(message); });
+		stowaway.on('entrance', message => { this._entrance(message); });
 	}
 
 	listen (channelId) {
@@ -173,6 +184,17 @@ class MessagesModel extends Model {
 				id: message.id,
 				timestamp: message.createdTimestamp,
 				content: new Handshake(message.createdAt, message.author, accepted)
+			});
+			this._sortThenUpdate();
+		}
+	}
+
+	_entrance (message) {
+		if (message.channel.id === this.channelId) {
+			this._messages.push({
+				id: message.id,
+				timestamp: message.createdTimestamp,
+				content: new Entrance(message.createdAt)
 			});
 			this._sortThenUpdate();
 		}
