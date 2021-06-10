@@ -10,72 +10,88 @@ BEST_PRACTICES += 'delete any local copies left on your computer.\n';
 BEST_PRACTICES += '5. IMMEADIATELY REVOKE YOUR PRIVATE KEY if you think anyone has your private key with or without the passphrase (see README.txt).';
 
 
-function existingKey (lockedKey, keyPath, revocationPath, stowaway, client, cli) {
-	const challenge = natoPhrase();
-	return new Promise((resolve, reject) => {
-		cli.toggleQuestion({
-			text: 'Enter key passphrase then press [Enter] to continue; Press [Escape] to begin key revocation',
-			censor: true,
-			callback: phrase => {
-				openpgp.decryptKey({
-					privateKey: lockedKey,
-					passphrase: phrase
-				})
-				.then(key => {
-					resolve({ key, passphrase: phrase });
-				})
-				.catch(() => {
-					reject(Error('Failed to decrypt key!  Consider revoking your key if you have forgotten your password!'));
-				});
-			}
-		},
-		{
-			text: `Enter {underline}${challenge}{/underline} then press [Enter] to revoke your key THIS IS IRREVERSIBLE; Press [Escape] to decrypt key.`,
-			callback: input => {
-				if (input.toUpperCase() === challenge) {
-					readFile(revocationPath)
-					.then(data => {
-						cli.cat('{black-fg}{yellow-bg}REVOCATION PROCESS INITIATED!{/}');
-						generateKey(keyPath, revocationPath, cli, false)
-						.then(({ key, revocationCertificate, passphrase }) => {
-							cli.screen.ignoreLocked = [];
-							cli.screen.lockKeys = true;
-							stowaway.revokeKey(client, lockedKey, key, data)
-							.then(k => {
-								openpgp.encryptKey({
-									privateKey: k,
-									passphrase
+function existingKey (lockedKey, keyPath, revocationPath, stowaway, client, cli, passphrase) {
+	if (passphrase != null) {
+		return new Promise((resolve, reject) => {
+			openpgp.decryptKey({
+				privateKey: lockedKey,
+				passphrase
+			})
+			.then(key => {
+				resolve({ key, passphrase });
+			})
+			.catch(() => {
+				reject(Error('Failed to decrypt key!  Consider revoking your key if you have forgotten your password!'));
+			})
+		});
+	}
+	else {
+		const challenge = natoPhrase();
+		return new Promise((resolve, reject) => {
+			cli.toggleQuestion({
+				text: 'Enter key passphrase then press [Enter] to continue; Press [Escape] to begin key revocation',
+				censor: true,
+				callback: phrase => {
+					openpgp.decryptKey({
+						privateKey: lockedKey,
+						passphrase: phrase
+					})
+					.then(key => {
+						resolve({ key, passphrase: phrase });
+					})
+					.catch(() => {
+						reject(Error('Failed to decrypt key!  Consider revoking your key if you have forgotten your password!'));
+					});
+				}
+			},
+			{
+				text: `Enter {underline}${challenge}{/underline} then press [Enter] to revoke your key THIS IS IRREVERSIBLE; Press [Escape] to decrypt key.`,
+				callback: input => {
+					if (input.toUpperCase() === challenge) {
+						readFile(revocationPath)
+						.then(data => {
+							cli.cat('{black-fg}{yellow-bg}REVOCATION PROCESS INITIATED!{/}');
+							generateKey(keyPath, revocationPath, cli, false)
+							.then(({ key, revocationCertificate, passphrase }) => {
+								cli.screen.ignoreLocked = [];
+								cli.screen.lockKeys = true;
+								stowaway.revokeKey(client, lockedKey, key, data)
+								.then(k => {
+									openpgp.encryptKey({
+										privateKey: k,
+										passphrase
+									})
+									.then(encryptedKey => {
+										return Promise.all([
+											writeFile(keyPath, encryptedKey.armor()),
+											writeFile(revocationPath, revocationCertificate)
+										]);
+									})
+									.then(() => {
+										resolve({ key: k, passphrase });
+									});
 								})
-								.then(encryptedKey => {
-									return Promise.all([
-										writeFile(keyPath, encryptedKey.armor()),
-										writeFile(revocationPath, revocationCertificate)
-									]);
-								})
-								.then(() => {
-									resolve({ key: k, passphrase });
-								});
+								.catch(reject);
 							})
 							.catch(reject);
 						})
+						.catch(() => {
+							reject(Error('Error while attempting to read armored revocation certificate'));
+						})
+						.finally(() => {
+							cli.screen.ignoreLocked = ['C-c'];
+							cli.lockKeys = false;
+						});
+					}
+					else {
+						existingKey(lockedKey, keyPath, revocationPath, stowaway, client, cli)
+						.then(resolve)
 						.catch(reject);
-					})
-					.catch(() => {
-						reject(Error('Error while attempting to read armored revocation certificate'));
-					})
-					.finally(() => {
-						cli.screen.ignoreLocked = ['C-c'];
-						cli.lockKeys = false;
-					});
+					}
 				}
-				else {
-					existingKey(lockedKey, keyPath, revocationPath, stowaway, client, cli)
-					.then(resolve)
-					.catch(reject);
-				}
-			}
-		}, 'escape');
-	});
+			}, 'escape');
+		});
+	}
 }
 
 async function generateKey (keyPath, revocationPath, cli, writeFlag) {
@@ -121,7 +137,7 @@ async function generateKey (keyPath, revocationPath, cli, writeFlag) {
 	}
 }
 
-function init (keyPath, revocationPath, stowaway, client, cli) {
+function init (keyPath, revocationPath, stowaway, client, cli, passphrase) {
 	return new Promise((resolve, reject) => {
 		cli.log('\t- checking for existing key... ');
 		access(keyPath)
@@ -134,7 +150,7 @@ function init (keyPath, revocationPath, stowaway, client, cli) {
 				cli.cat('{green-fg}Found a key file!{/}');
 				cli.log(`\t- key nickname: {underline}${key.getUserIDs()}{/}`);
 				cli.log(`\t- key fingerprint: {underline}${key.getFingerprint()}{/} `);
-				return existingKey(key, keyPath, revocationPath, stowaway, client, cli);
+				return existingKey(key, keyPath, revocationPath, stowaway, client, cli, passphrase);
 			})
 			.then(({ key, passphrase }) => { resolve({ key, passphrase }); })
 			.catch(reject);

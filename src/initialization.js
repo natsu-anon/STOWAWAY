@@ -46,7 +46,7 @@ const WARNING = `
  * 5. STOWAWAY
 */
 
-function init (BANNER, SCREEN_TITLE, DATABASE, API_TOKEN, PRIVATE_KEY, VERSION, REVOCATION_CERTIFICATE, SAVE_DIR, versionText, tokenFlag) {
+function init (BANNER, SCREEN_TITLE, DATABASE, API_TOKEN, PRIVATE_KEY, VERSION, REVOCATION_CERTIFICATE, SAVE_DIR, versionText, passphrase) {
 	const initEmitter = new EventEmitter();
 	initEmitter.on('quit init', () => {
 		process.exit(0);
@@ -76,14 +76,7 @@ function init (BANNER, SCREEN_TITLE, DATABASE, API_TOKEN, PRIVATE_KEY, VERSION, 
 		})
 		.then(({ db, channels, peers, revocations }) => {
 			return new Promise((res, rej) => {
-				let clientPromise;
-				if (tokenFlag) {
-					clientPromise = clientLogin(API_TOKEN, cli);
-				}
-				else {
-					clientPromise = clientInit(API_TOKEN, cli);
-				}
-				clientPromise.then(client => {
+				clientInit(API_TOKEN, cli).then(client => {
 					initEmitter.prependOnceListener('quit init', () => {
 						client.destroy();
 					});
@@ -99,7 +92,7 @@ function init (BANNER, SCREEN_TITLE, DATABASE, API_TOKEN, PRIVATE_KEY, VERSION, 
 			cli.log('>initializing PGP key... ');
 			const stowaway = new Stowaway(channels, peers, revocations, PRIVATE_KEY, VERSION);
 			return new Promise((res, rej) => {
-				keyInit(PRIVATE_KEY, REVOCATION_CERTIFICATE, stowaway, client, cli)
+				keyInit(PRIVATE_KEY, REVOCATION_CERTIFICATE, stowaway, client, cli, passphrase)
 				.then(({ key, passphrase }) => { // NOTE: key is decrypted
 					cli.cat('{green-fg}DONE!{/}');
 					cli.log('{black-fg}{green-bg}>>STOWING AWAY!{/}');

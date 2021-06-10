@@ -10,7 +10,7 @@ const API_TOKEN = SAVE_DIR + 'stowaway.token';
 const PRIVATE_KEY = SAVE_DIR + 'stowaway.key';
 const REVOCATION_CERTIFICATE = 'stowaway.revoke';
 
-const VERSION = '1.1.2';
+const VERSION = '1.1.3';
 const BANNER = `      _  __ __        __        __
  //  /_\` / / / | | | /_/ | | | /_/ /_/  //
 //  ._/ / /_/  |/|/ / /  |/|/ / /  /   //  v ${VERSION}
@@ -151,10 +151,10 @@ else if (process.argv.length > 2 && process.argv[2] === '--overwrite') {
 	}
 }
 else if (process.argv.length === 3) {
-	require('./main.js')(VERSION, BANNER, DATABASE, process.argv[2], PRIVATE_KEY, REVOCATION_CERTIFICATE, SAVE_DIR, true);
+	require('./main.js')(VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CERTIFICATE, SAVE_DIR, process.argv[2]);
 }
 else if (process.argv.length <= 2) {
-	require('./main.js')(VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CERTIFICATE, SAVE_DIR, false);
+	require('./main.js')(VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CERTIFICATE, SAVE_DIR);
 }
 else {
 	console.error(`Unrecognized command: ${process.argv.slice(2).join(' ')}`);

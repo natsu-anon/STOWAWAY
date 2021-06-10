@@ -1,5 +1,5 @@
 module.exports = function () {
-	let help = '\n  STOWAWAY [options]\n\n';
+	let help = '\n  STOWAWAY [options] [passphrase]\n\n';
 	help += '  Options:\n';
 	help += '    -a, --about                                       \tbasic gestalt\n';
 	help += '    -h, --help                                        \toutput usage information\n';
@@ -15,5 +15,6 @@ module.exports = function () {
 	help += '    --overwrite <channel_id> <message_id>             \t';
 	help += 'overwrite saved public key of message author with one provided in the message \x1b[4mNOTE: requires a valid token file\x1b[0m\n';
 	help += '  If you do not pass any optional flags, STOWAWAY will launch regularly.\n';
+	help += '  If you pass in an optional passphrase, STOWAWAY will launch regularly and attempt to decrypt saved key with the given passphrase.\n'
 	console.log(help);
 };
