@@ -1,11 +1,12 @@
 {
-	"version": "1.1.2",
-	"ignore": "AAAAAA",
+	"version": "1.1.3",
 	"url": "https://github.com/natsu-anon/STOWAWAY/releases",
-	"text": "THIS IS THE POWER OF ME TESTING RELEASES",
+	"text": "bugfixes & QoL improvements fresh outta the oven",
 	"changelog": [
-		"history inquiry causes make sense",
-		"use 's' instead of 'a' to scroll through members",
-		"version checking actually works again"
+		"autoscroll upon new messages if at the bottom works again",
+		"made a yellow parens & question mark appear next to username for unverified messages instead of (UNVERIFIED)",
+		"fixed bug preventing fetching older messages",
+		"fixed bug preventing key updates following revocation",
+		"fixed bug that caused messages to be encrypted with wrong keys in channels with more than 1 peer"
 	]
 }
