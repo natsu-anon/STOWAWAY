@@ -48,6 +48,7 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 				process.exit(0);
 			});
 		};
+		errStream = errStream = writeStream(ERR_LOG);
 		stowaway.on('error', error => {
 			if (errStream == null) {
 				errStream = writeStream(ERR_LOG);
@@ -80,9 +81,12 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 		cli.navigation.setScrollPerc(hMediator.percentage);
 		const messages = new MessagesModel(stowaway);
 		messages.on('update', text => {
-			cli.messages.setContent(text);
 			if (cli.messages.getScrollPerc() === 100 || cli.messages.height >= cli.messages.getScrollHeight()) {
+				cli.messages.setContent(text);
 				cli.messages.setScrollPerc(100);
+			}
+			else {
+				cli.messages.setContent(text);
 			}
 			cli.render();
 		});
@@ -477,7 +481,7 @@ function main (VERSION, BANNER, DATABASE, API_TOKEN, PRIVATE_KEY, REVOCATION_CER
 		//  CLI DRIVEN STATE TRANSITIONS  //
 
 		cli.input.on('submit', () => {
-			if (cli.input.value.length > 0) {
+			if (cli.input.strWidth(cli.input.value) > 0) {
 				messenger.message(cli.input.value);
 			}
 			fsm.read();
