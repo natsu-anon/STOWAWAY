@@ -686,14 +686,19 @@ class Stowaway extends EventEmitter {
 								throw Error(`missing keys for channel message in JSON. Keys found:\n${Object.keys(json)}`);
 							}
 						}
-						else if (message.author.id === this.id && json.type === HANDSHAKE && json.respond) {
-							this.emit('entrance', message);
-						}
-						else if (message.author.id !== this.id) {
-							return this._cacheMessage(json, message, false);
+						else if (message.author.id === this.id) {
+							if (json.type === HANDSHAKE && (typeof json.respond) === 'boolean' && json.respond) {
+								this.emit('entrance', message);
+							}
+							else if (json.type === REVOCATION) {
+								this.emit('revoke key', message);
+							}
+							else {
+								return Promise.resolve();
+							}
 						}
 						else {
-							return Promise.resolve();
+							return this._cacheMessage(json, message, false);
 						}
 					})
 					.catch(err => {
