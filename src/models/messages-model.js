@@ -1,14 +1,14 @@
 const Model = require('./model.js');
 
 class ChannelMessage {
-	constructor (publicFlag, date, author, verified, signed, plainText) {
+	constructor (publicFlag, date, author, messageData) {
 		this.publicFlag = publicFlag;
 		this.date = date;
-		this.name = signed ? `{green-fg}${author.username}{/green-fg}` : author.username;
-		if (!verified) {
+		this.name = messageData.signed ? `{green-fg}${author.username}{/green-fg}` : author.username;
+		if (!messageData.verified) {
 			this.name = `${this.name}{yellow-fg}(?){/yellow-fg}`;
 		}
-		this.plainText = plainText;
+		this.plainText = messageData.plainText;
 	}
 
 	get text () {
@@ -106,6 +106,16 @@ class Revocation {
 	}
 }
 
+class RevokeKey {
+	constructor (date) {
+		this.date = date;
+	}
+
+	get text () {
+		return `\t{yellow-bg}{black-fg}You revoked your key at ${this.date.toLocaleDateString()} ${this.date.toLocaleTimeString()}, kindly ask others to sign your new key{/}`;
+	}
+}
+
 class Compromised {
 	constructor (date, message) {
 		this.date = date;
@@ -136,6 +146,7 @@ class MessagesModel extends Model {
 		stowaway.on('revocation', (message, blockReason) => { this._revocation(message, blockReason); });
 		stowaway.on('compromised', message => { this._compromised(message); });
 		stowaway.on('entrance', message => { this._entrance(message); });
+		stowaway.on('revoke key', message => { this._revokeKey(message); });
 	}
 
 	listen (channelId) {
@@ -157,94 +168,53 @@ class MessagesModel extends Model {
 	}
 
 	_channelMessage (message, data, publicFlag) {
-		if (message.channel.id === this.channelId) {
-			this._messages.push({
-				id: message.id,
-				timestamp: message.createdTimestamp,
-				content: new ChannelMessage(publicFlag, message.createdAt, message.author, data.verified, data.signed, data.plainText)
-			});
-			this._sortThenUpdate();
-		}
+		this._add(message, new ChannelMessage(publicFlag, message.createdAt, message.author, data));
 	}
 
 	_decryptionFailure (message) {
-		if (message.channel.id === this.channelId) {
-			this._messages.push({
-				id: message.id,
-				timestamp: message.createdTimestamp,
-				content: new DecryptionFailure(message.createdAt, message.author)
-			});
-			this._sortThenUpdate();
-		}
+		this._add(message, new DecryptionFailure(message.createdAt, message.author));
 	}
 
 	_handshake (message, accepted) {
-		if (message.channel.id === this.channelId) {
-			this._messages.push({
-				id: message.id,
-				timestamp: message.createdTimestamp,
-				content: new Handshake(message.createdAt, message.author, accepted)
-			});
-			this._sortThenUpdate();
-		}
+		this._add(message, new Handshake(message.createdAt, message.author, accepted));
 	}
 
 	_entrance (message) {
-		if (message.channel.id === this.channelId) {
-			this._messages.push({
-				id: message.id,
-				timestamp: message.createdTimestamp,
-				content: new Entrance(message.createdAt)
-			});
-			this._sortThenUpdate();
-		}
+		this._add(message, new Entrance(message.createdAt));
 	}
 
 	_signedKey (message) {
-		if (message.channel.id === this.channelId) {
-			this._messages.push({
-				id: message.id,
-				timestamp: message.createdTimestamp,
-				content: new SignedKey(message.createdAt, message.author)
-			});
-			this._sortThenUpdate();
-		}
+		this._add(message, new SignedKey(message.createdAt, message.author));
 	}
 
 	_keyUpdate (message) {
-		if (message.channel.id === this.channelId) {
-			this._messages.push({
-				id: message.id,
-				timestamp: message.createdTimestamp,
-				content: new KeyUpdate(message.createdAt, message.author)
-			});
-			this._sortThenUpdate();
-		}
+		this._add(message, new KeyUpdate(message.createdAt, message.author));
 	}
 
 	_revocation (message, blockReason) {
-		if (message.channel.id === this.channelId) {
-			this._messages.push({
-				id: message.id,
-				timestamp: message.createdTimestamp,
-				content: new Revocation(message.createdAt, message.author, blockReason)
-			});
-			this._sortThenUpdate();
-		}
+		this._add(message, new Revocation(message.createdAt, message.author, blockReason));
 	}
 
 	_compromised (message) {
+		this._add(new Compromised(message.createdAt, message));
+	}
+
+	_revokeKey (message) {
+		this._add(message, new RevokeKey(message.createdAt));
+	}
+
+	_add (message, content) {
 		if (message.channel.id === this.channelId) {
 			this._messages.push({
 				id: message.id,
 				timestamp: message.createdTimestamp,
-				content: new Compromised(message.createdAt, message)
+				content
 			});
 			this._sortThenUpdate();
 		}
 	}
 
-	_sortThenUpdate() {
+	_sortThenUpdate () {
 		this._messages.sort((a, b) => { return a.timestamp - b.timestamp; });
 		this.emit('update', this.text);
 	}
