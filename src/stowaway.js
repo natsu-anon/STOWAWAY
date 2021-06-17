@@ -73,6 +73,7 @@ function getAttachment (message, name=FILE) {
 }
 
 
+// use to cache settings (channel, public vs signed-only) before sending
 class Messenger {
 	constructor (stowaway) {
 		this.stowaway = stowaway;
@@ -92,6 +93,8 @@ class Messenger {
 		}
 	}
 }
+
+// idk why I always extend EventEmitter instead of just compositioning
 class Stowaway extends EventEmitter {
 
 	constructor (channels, peers, revocations, keyFile, version, comment='', verbose=false) {
@@ -138,6 +141,7 @@ class Stowaway extends EventEmitter {
 		});
 	}
 
+	// fetches messages on argument channel following provided messageId
 	fetchNewer (channel, messageId) {
 		return new Promise(resolve => {
 			const doc = this._findChannel(channel.id);
@@ -148,7 +152,6 @@ class Stowaway extends EventEmitter {
 				})
 				.then(messages => {
 					return Promise.all(messages.map(message => this._handleActive(message)));
-					// return this._handleConsecutive(messages);
 				})
 				.catch(err => {
 					if (err != null) {
@@ -163,6 +166,7 @@ class Stowaway extends EventEmitter {
 		});
 	}
 
+	// fetches messages on argument channel preceding provided messageId
 	fetchOlder (channel, messageId) {
 		return new Promise(resolve => {
 			const doc = this._findChannel(channel.id);
@@ -187,18 +191,20 @@ class Stowaway extends EventEmitter {
 		});
 	}
 
-	knownSignatures (userId) {
+	// NOTE: not used
+	// returns peer ids that have signed argument peerId's known key
+	knownSignatures (peerId) {
 		return new Promise(async (resolve, reject) => {
-			const doc = this._findPeer(userId);
+			const doc = this._findPeer(peerId);
 			const docs = this._allPeers();
 			if (doc != null) {
 				const publicKey = await openpgp.readKey({ armoredKey: doc.public_key });
-				const { publicKeys, userIds } = await new Promise(res => {
+				const { publicKeys, peerIds } = await new Promise(res => {
 					Promise.all(docs.map(x => {
 						return openpgp.readKey({ armoredKey: x.public_key });
 					}))
 					.then(keys => {
-						res({ publicKeys: keys, userIds: docs.map(x => x.user_id) });
+						res({ publicKeys: keys, peerIds: docs.map(x => x.user_id) });
 					})
 					.catch(reject);
 				});
@@ -206,7 +212,7 @@ class Stowaway extends EventEmitter {
 				const res = [];
 				for (let i = 0; i < bonafides.length; i++) {
 					if (bonafides[i].valid) {
-						res.push(userIds[i]);
+						res.push(peerIds[i]);
 					}
 				}
 				resolve(res);
@@ -318,6 +324,7 @@ class Stowaway extends EventEmitter {
 		return channel;
 	}
 
+	// performs the handshake protocol & db entries for a new channel
 	_loadUnknown (channel) {
 		return new Promise(resolve => {
 			this._sendHandshake(channel, true)
@@ -396,6 +403,7 @@ class Stowaway extends EventEmitter {
 		});
 	}
 
+	// send a message to the peers whose keys you've signed on the given channel
 	messageSigned (channel, text) {
 		this._publicKeys(channel)
 		.then(publicKeys => {
@@ -428,7 +436,9 @@ class Stowaway extends EventEmitter {
 		.catch(err => { this.emit('error', `failed to encrypt: ${text}\n${err.stack}`); });
 	}
 
-	// NO LONGER A PROMISE
+	// number of peers on the channel
+	// NOTE: not used
+	// NOTE: rewrite this -- you cache channel ids peers have handshaked
 	numberStowaways (channel) {
 		let res = 0;
 		this._allPeers().forEach(doc => {
@@ -440,6 +450,7 @@ class Stowaway extends EventEmitter {
 		return res;
 	}
 
+	// forcibly overwrite peer data using provided message (must containt a public key etc.)
 	overrwrite (message) {
 		if (message.editedAt != null) {
 			throw Error(`Cannot overwrite using an edited message: ${message.id}`);
@@ -469,9 +480,7 @@ class Stowaway extends EventEmitter {
 		}
 	}
 
-	// OK to run before launch
-	// can revoke key0 without passphrase
-	// assume key1 is decrypted already
+	// revokes key0 with revocationCertificate, then sends a revocation with key1 (the new one) to all known channels
 	revokeKey (client, key0, key1, revocationCertificate) {
 		return new Promise(async (resolve, reject) => {
 			const channelIds = this.channels.data.map(x => x.channel_id);
@@ -517,23 +526,24 @@ class Stowaway extends EventEmitter {
 		});
 	}
 
-	signKey (channel, userId) {
+	// signs key associated with peerId on argument channel
+	signKey (channel, peerId) {
 		return new Promise(resolve => {
-			const doc = this._findPeer(userId);
+			const doc = this._findPeer(peerId);
 			if (doc != null) {
 				openpgp.readKey({ armoredKey: doc.public_key })
 				.then(publicKey => publicKey.signPrimaryUser([ this.key ]))
 				.then(signedKey => this._send(channel, this._attachJSON({
 					type: SIGNED_KEY,
-					recipient: userId,
+					recipient: peerId,
 					public_key: signedKey.armor()
 				}, FILE)))
 				.catch(err => {
 					if (err.message === ERR_ARMORED) {
-						this.emit('error', `Stowaway.signKey(): misformed armored key in database for user id ${userId}`);
+						this.emit('error', `Stowaway.signKey(): misformed armored key in database for user id ${peerId}`);
 					}
 					else {
-						this.emit('error', `unexpected error in Stowaway.signKey() for user id ${userId}`);
+						this.emit('error', `unexpected error in Stowaway.signKey() for user id ${peerId}`);
 					}
 				})
 				.finally(resolve);
@@ -544,9 +554,10 @@ class Stowaway extends EventEmitter {
 		});
 	}
 
-	async signedKey (userId) {
+	// checks to see if you have signed a peer's key
+	async signedKey (peerId) {
 		try {
-			const publicKey = await this._publicKey(userId, 'Stowaway.signedKey()');
+			const publicKey = await this._publicKey(peerId, 'Stowaway.signedKey()');
 			const bonafides = await publicKey.verifyPrimaryUser([ this.key ]);
 			return bonafides.find(x => x.valid) != null;
 		}
@@ -572,6 +583,7 @@ class Stowaway extends EventEmitter {
 		return this.peers.findOne({ user_id: userId, public_key: { $exists: true } });
 	}
 
+	// inquire the history of the author that write the argument message
 	_inquireHistory (message) {
 		if (message.author.id !== this.id) {
 			const peer = this._findPeer(message.author.id);
@@ -656,6 +668,7 @@ class Stowaway extends EventEmitter {
 		}, FILE));
 	}
 
+	// used to update the latest timestamp & message id seen on a channel (so that way use doesn't have to scroll down from initial handshake each time)
 	_updateLatests (channelId, id, ts) {
 		this.channels.findAndUpdate({ channel_id: channelId }, docs => {
 			if (ts > docs.last_seen.ts) {
@@ -666,7 +679,8 @@ class Stowaway extends EventEmitter {
 
 	//  MESSAGE HANDLING  //
 
-	// AFTER 1.1.0: SESSION SUPPORT
+	// handles messages on the "active" channel -- called from  client's message event
+	// NOTE: AFTER 1.1.X: SESSION SUPPORT
 	_handleActive (message) {
 		const doc = this._findChannel(message.channel.id);
 		if (doc.decryption_failures.includes(message.id)) {
@@ -720,6 +734,7 @@ class Stowaway extends EventEmitter {
 		}
 	}
 
+	// handles messages on the "non-active" channels -- called from client's message event
 	_handleCache (message) {
 		if (message.author.id !== this.id && this._validMessage(message)) {
 			this._processJSON(message)
@@ -737,6 +752,9 @@ class Stowaway extends EventEmitter {
 		}
 	}
 
+	// process messages that may be cached afterwards for faster retrieval
+	// only the "active" channel can fetch older messages & notify is false for messages on the "active channel"
+	// so, if notify is false check to see if the message id has already been cached int he doc for the message's channel
 	_cacheMessage (json, message, notify) {
 		if (notify) {
 			return this._processMessage(json, message, notify);
@@ -761,6 +779,7 @@ class Stowaway extends EventEmitter {
 		});
 	}
 
+	// common stuff to do after processing a message
 	_processComplete({ cache, color, text, notify, message }) {
 		if ((this.verbose || notify) && color != null && text != null) {
 			this.emit('notify', color, text);
