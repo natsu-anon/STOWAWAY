@@ -299,7 +299,12 @@ class Stowaway extends EventEmitter {
 				.then(channel => {
 					if (channel.deleted || !Permissions(channel, client.user).valid) {
 						this.channels.remove(doc);
+						// also update the database PLEASE
 					}
+				})
+				.catch(err => {
+					this.channels.remove(doc);
+					// also update the database PLEASE
 				})
 				.finally(res);
 			})))
