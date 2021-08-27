@@ -41,6 +41,7 @@ const VIEW = 'VIEW_CHANNEL';
 const SEND = 'SEND_MESSAGES';
 const READ = 'READ_MESSAGE_HISTORY';
 
+// NOTE: are you checking that the channel is a TextChannel before this?
 function Permissions (channel, user) {
 	const permissions = channel.permissionsFor(user);
 	const viewable = permissions.has(VIEW);
@@ -268,9 +269,11 @@ class Stowaway extends EventEmitter {
 				this.channels.findAndRemove({ channel_id: ch0.id });
 			}
 		});
+		// do something on guildCreate?  YES.
 		client.on('guildDelete', guild => {
 			guild.channels.cache.each(channel => {
 				this.channels.findAndRemove({ channel_id: channel.id });
+				// NOTE: don't also change the database in case bot gets re-added to server
 			});
 		});
 		client.on('guildUpdate', (guild0, guild1) => {
@@ -299,12 +302,12 @@ class Stowaway extends EventEmitter {
 				.then(channel => {
 					if (channel.deleted || !Permissions(channel, client.user).valid) {
 						this.channels.remove(doc);
-						// also update the database PLEASE
+						// NOTE: don't also change the database in case bot gets re-added to server
 					}
 				})
 				.catch(err => {
 					this.channels.remove(doc);
-					// also update the database PLEASE
+					// NOTE: don't also change the database in case bot gets re-added to server
 				})
 				.finally(res);
 			})))
